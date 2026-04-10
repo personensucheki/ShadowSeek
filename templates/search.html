@@ -190,11 +190,18 @@
 </div>
 
 <script>
-// Agenten-Suche + Loading
+// Agenten-Suche + Loading (jetzt mit allen Feldern)
 document.getElementById('agent-search-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    if (!username) return;
+
+    const username  = document.getElementById('username').value.trim();
+    const firstname = document.getElementById('firstname').value.trim();
+    const lastname  = document.getElementById('lastname').value.trim();
+    const city      = document.getElementById('city').value.trim();
+    const email     = document.getElementById('email').value.trim();
+
+    // Mindestens ein Feld muss ausgefüllt sein
+    if (!username && !firstname && !lastname && !email) return;
 
     const loadingScreen = document.getElementById('loading-screen');
     const status = document.getElementById('status');
@@ -204,7 +211,7 @@ document.getElementById('agent-search-form').addEventListener('submit', function
     const texts = [
         "Initialisiere ShadowSeek Agent...",
         "Durchsuche Social Media Netzwerke...",
-        "Scanne Adult & Dating Plattformen...",
+        "Scanne Dating & Adult Plattformen...",
         "Analysiere Deep-Web Verbindungen...",
         "Berechne Match-Scores..."
     ];
@@ -216,9 +223,16 @@ document.getElementById('agent-search-form').addEventListener('submit', function
     tabContents.forEach(el => el.style.display = 'none');
 
     const int = setInterval(() => {
-        i++;
+        i = (i + 1) % texts.length;
         status.textContent = texts ;
     }, 700);
+
+    // Alle Felder in die URL mitgeben
+    let queryString = `?username=${encodeURIComponent(username)}`;
+    if (firstname) queryString += `&firstname=${encodeURIComponent(firstname)}`;
+    if (lastname)  queryString += `&lastname=${encodeURIComponent(lastname)}`;
+    if (city)      queryString += `&city=${encodeURIComponent(city)}`;
+    if (email)     queryString += `&email=${encodeURIComponent(email)}`;
 
     setTimeout(() => {
         loadingScreen.style.display = 'none';
@@ -229,7 +243,7 @@ document.getElementById('agent-search-form').addEventListener('submit', function
     }, 3100);
 
     setTimeout(() => {
-        window.location.href = `/search?username=${encodeURIComponent(username)}`;
+        window.location.href = '/search' + queryString;
     }, 3100);
 });
 
