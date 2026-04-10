@@ -24,9 +24,8 @@
     </div>
 </div>
 
-
 <script>
-// Chatbot
+// Chatbot Logic
 const toggleBtn = document.getElementById('chat-toggle');
 const chatWindow = document.getElementById('chat-window');
 const messagesDiv = document.getElementById('chat-messages');
@@ -35,9 +34,13 @@ const sendBtn = document.getElementById('chat-send');
 
 function addMessage(text, isUser = false) {
     const div = document.createElement('div');
-    div.style.marginBottom = '14px';
-    div.style.textAlign = isUser ? 'right' : 'left';
-    div.style.color = isUser ? '#00f0ff' : '#e0e0e0';
+    div.style.marginBottom = '16px';
+    div.style.padding = '10px 14px';
+    div.style.borderRadius = '12px';
+    div.style.maxWidth = '85%';
+    div.style.background = isUser ? '#00f0ff' : '#2a3a52';
+    div.style.color = isUser ? '#0a0c14' : '#e0e0e0';
+    div.style.marginLeft = isUser ? 'auto' : '0';
     div.textContent = text;
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -50,12 +53,14 @@ toggleBtn.addEventListener('click', () => {
 sendBtn.addEventListener('click', async () => {
     const text = input.value.trim();
     if (!text) return;
+
     addMessage(text, true);
     input.value = '';
 
     const loading = document.createElement('div');
     loading.textContent = 'denkt...';
     loading.style.color = '#666';
+    loading.style.fontStyle = 'italic';
     messagesDiv.appendChild(loading);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
