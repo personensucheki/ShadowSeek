@@ -29,81 +29,56 @@ def shadowseek_search(query):
     if not username:
         return None
 
-    # 1. Basis-Score berechnen
-    score = 65
+    def shadowseek_search(query):
+        username = query.get('username', '').strip()
+        firstname = query.get('firstname', '').strip()
+        lastname = query.get('lastname', '').strip()
+        city = query.get('city', '').strip()
+        email = query.get('email', '').strip()
 
-    # 2. Bonus für zusätzliche Infos
-    if query.get('firstname'): score += 12
-    if query.get('lastname'): score += 15
-    if query.get('city'): score += 8
-    if query.get('email'): score += 18
+        # Mindestens ein Feld muss ausgefüllt sein
+        if not (username or firstname or lastname or city or email):
+            return None
 
-    # 3. Plattformen & Kategorien
-    platforms = {
-        'social': [
-            ('Instagram', 92),
-            ('TikTok', 87),
-            ('Twitter/X', 79),
-            ('Facebook', 71),
-            ('Reddit', 64)
-        ],
-        'dating': [
-            ('OnlyFans', 91),
-            ('Fansly', 83)
-        ],
-        'porn': [
-            ('Pornhub', 91),
-            ('ManyVids', 83),
-            ('Stripchat', 76)
-        ]
-    }
+        # Username hat höchste Priorität, aber auch andere Felder reichen aus
+        search_term = username or firstname or lastname or email or city
 
-    categorized_results = {}
-    for category, plat_list in platforms.items():
-        categorized_results[category] = []
-        for name, base_score in plat_list:
-            final_score = min(99, int(base_score + (score - 65) * 0.8))
-            profile = {
-                'username': username,
-                'platform': name,
-                'profile_url': generate_profile_url(name, username),
-                'match_score': final_score,
-                'category': category
-            }
-            categorized_results[category].append(profile)
+        score = 65
+        if username: score += 25
+        if firstname: score += 12
+        if lastname: score += 15
+        if city: score += 8
+        if email: score += 18
 
-    total_findings = sum(len(profiles) for profiles in categorized_results.values())
-
-    return {
-        'categorized_results': categorized_results,
-        'meta': {
-            'query': username,
-            'total_profiles': total_findings,
-            'agent_confidence': min(98, score + 15),
-            'search_depth': 'Deep Scan' if score > 85 else 'Standard Scan',
-            'timestamp': 'just now'
+        platforms = {
+            'social': [('Instagram', 92), ('TikTok', 87), ('Twitter/X', 79), ('Facebook', 71)],
+            'dating': [('OnlyFans', 91), ('Fansly', 83)],
+            'porn': [('Pornhub', 91), ('ManyVids', 83), ('Stripchat', 76)]
         }
-    }
 
-# --- Agenten-Style Loading-Text-Liste (deutsch) ---
-SHADOWSEEK_LOADING_TEXTS = [
-    "Initialisiere ShadowSeek Agent...",
-    "Lade neuronale Suchmatrix...",
-    "Durchsuche Social Media Netzwerke...",
-    "Scanne Dating & Adult Plattformen...",
-    "Analysiere Deep-Web Verbindungen...",
-    "Kombiniere Metadaten & Querverweise...",
-    "Berechne Match-Scores...",
-    "Finalisiere Agenten-Report...",
-    "Erstelle Ergebnisübersicht...",
-    "Suche abgeschlossen – Ergebnisse werden geladen..."
-]
+        categorized_results = {}
+        for category, plat_list in platforms.items():
+            categorized_results[category] = []
+            for name, base_score in plat_list:
+                final_score = min(99, int(base_score + (score - 65) * 0.8))
+                profile = {
+                    'username': search_term,
+                    'platform': name,
+                    'profile_url': f"https://{name.lower().replace('/', '').replace(' ', '')}.com/{search_term.lower()}",
+                    'match_score': final_score,
+                    'category': category
+                }
+                categorized_results[category].append(profile)
 
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shadowseek.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db.init_app(app)
-with app.app_context():
+        return {
+            'categorized_results': categorized_results,
+            'meta': {
+                'query': search_term,
+                'total_profiles': sum(len(v) for v in categorized_results.values()),
+                'agent_confidence': min(98, score + 15),
+                'search_depth': 'Deep Scan' if score > 85 else 'Standard Scan'
+            }
+        }
     db.create_all()
 
 # Chatbot-API-Route (direkt vor /search)
