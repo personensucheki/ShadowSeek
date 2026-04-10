@@ -1,146 +1,32 @@
-{% extends "base.html" %}
-
-{% block title %}ShadowSeek{% endblock %}
-
-{% block content %}
-<style>
-    .hero {
-        min-height: 85vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        padding-top: 80px;
-    }
-    
-    .logo {
-        font-size: 5.8rem;
-        font-weight: 900;
-        letter-spacing: -4px;
-        background: linear-gradient(90deg, #00ddff, #4d9fff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 16px;
-    }
-    
-    .tagline {
-        color: #00f0ff;
-        font-size: 1.45rem;
-        margin-bottom: 50px;
-        font-weight: 500;
-    }
-    
-    .search-box {
-        width: 100%;
-        max-width: 720px;
-        position: relative;
-    }
-    
-    .search-input {
-        width: 100%;
-        padding: 22px 28px;
-        font-size: 1.4rem;
-        border-radius: 50px;
-        border: 1px solid #334155;
-        background: #1f2937;
-        color: white;
-        outline: none;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-    }
-    
-    .search-input:focus {
-        border-color: #60a5fa;
-        box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.25);
-    }
-    
-    .search-btn {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: #60a5fa;
-        color: #0a0c14;
-        border: none;
-        padding: 16px 36px;
-        border-radius: 50px;
-        font-weight: 700;
-        font-size: 1.15rem;
-        cursor: pointer;
-    }
-
-    #search-results {
-        width: 100%;
-        max-width: 720px;
-        margin-top: 30px;
-    }
-</style>
-
-<div class="hero">
-    <h1 class="logo">ShadowSeek</h1>
-    <p class="tagline">Privat. Sicher. Ohne Tracking.</p>
-    
-    <div class="search-box">
-        <form id="search-form" autocomplete="off">
-            <input type="text" 
-                   class="search-input" 
-                   id="search-query"
-                   placeholder="Wonach suchst du?" 
-                   required>
-            <button type="submit" class="search-btn">Suchen</button>
-        </form>
-    </div>
-
-    <div id="search-results"></div>
 </div>
+</div>
+
 
 <!-- Chatbot -->
-<button id="chat-toggle" style="position:fixed; bottom:30px; right:30px; width:65px; height:65px; border-radius:50%; background:#00f0ff; color:#0a0c14; border:none; font-size:32px; box-shadow:0 0 30px rgba(0,240,255,0.6); cursor:pointer; z-index:999;">💬</button>
+<button id="chat-toggle" style="position:fixed; bottom:30px; right:30px; width:68px; height:68px; border-radius:50%; background:#00f0ff; color:#0a0c14; border:none; font-size:28px; box-shadow:0 0 30px rgba(0,240,255,0.7); cursor:pointer; z-index:999;">💬</button>
 
-<div id="chat-window" style="display:none; position:fixed; bottom:110px; right:30px; width:340px; height:480px; background:#1a2333; border-radius:16px; box-shadow:0 10px 40px rgba(0,0,0,0.6); overflow:hidden; z-index:1000;">
-    <div style="background:#00f0ff; color:#0a0c14; padding:16px; font-weight:bold; text-align:center;">ShadowSeek Assistant</div>
-    <div id="chat-messages" style="height:360px; overflow-y:auto; padding:16px; background:#16213a;"></div>
-    <div style="padding:12px; background:#1f2a44; display:flex;">
-        <input id="chat-input" type="text" placeholder="Frag mich was..." style="flex:1; padding:14px; border:none; border-radius:12px; background:#0f1829; color:white;">
-        <button id="chat-send" style="margin-left:8px; padding:14px 24px; background:#00f0ff; color:#0a0c14; border:none; border-radius:12px; font-weight:bold;">Senden</button>
+<div id="chat-window" style="display:none; position:fixed; bottom:115px; right:30px; width:360px; height:520px; background:#1e2838; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,0.7); overflow:hidden; z-index:1000; border:1px solid #334155;">
+    
+    <!-- Header -->
+    <div style="background:linear-gradient(90deg,#00f0ff,#4d9fff); color:#0a0c14; padding:16px 20px; font-weight:bold; font-size:1.1em; display:flex; align-items:center; justify-content:space-between;">
+        ShadowSeek Assistant
+        <span onclick="document.getElementById('chat-window').style.display='none'" style="cursor:pointer;font-size:22px;">×</span>
+    </div>
+
+    <!-- Messages -->
+    <div id="chat-messages" style="height:380px; overflow-y:auto; padding:20px; background:#16213a; color:#e0e0e0; line-height:1.5;"></div>
+
+    <!-- Input -->
+    <div style="padding:14px; background:#1e2838; border-top:1px solid #334155; display:flex; gap:8px;">
+        <input id="chat-input" type="text" placeholder="Frag mich was..." 
+               style="flex:1; padding:14px 18px; border:none; border-radius:12px; background:#0f1829; color:white; font-size:1em;">
+        <button id="chat-send" style="padding:14px 26px; background:#00f0ff; color:#0a0c14; border:none; border-radius:12px; font-weight:bold;">Senden</button>
     </div>
 </div>
 
+
 <script>
-// Suche + Chatbot
-document.getElementById('search-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const query = document.getElementById('search-query').value.trim();
-    if (!query) return;
-
-    const resultsDiv = document.getElementById('search-results');
-    resultsDiv.innerHTML = '<div style="color:#00f0ff;margin-top:18px;">Suche läuft...</div>';
-
-    try {
-        const res = await fetch('/api/search', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ query })
-        });
-        const data = await res.json();
-
-        if (data.error) {
-            resultsDiv.innerHTML = `<div style=\"color:#ff5555;margin-top:18px;\">${data.error}</div>`;
-        } else if (data.organic && data.organic.length) {
-            resultsDiv.innerHTML = data.organic.map(r => `
-                <div style=\"margin:18px 0;padding:18px 22px;background:#181a1b;border-radius:12px;\">
-                    <a href=\"${r.link}\" target=\"_blank\" style=\"color:#00f0ff;font-size:1.15em;font-weight:bold;text-decoration:none;\">${r.title}</a>
-                    <div style=\"color:#aaa;margin:6px 0 0 0;\">${r.snippet || ''}</div>
-                </div>
-            `).join('');
-        } else {
-            resultsDiv.innerHTML = '<div style=\"color:#aaa;margin-top:18px;\">Keine Ergebnisse gefunden.</div>';
-        }
-    } catch (err) {
-        resultsDiv.innerHTML = '<div style=\"color:#ff5555;margin-top:18px;\">Fehler bei der Suche.</div>';
-    }
-});
-
+// Chatbot
 const toggleBtn = document.getElementById('chat-toggle');
 const chatWindow = document.getElementById('chat-window');
 const messagesDiv = document.getElementById('chat-messages');
@@ -151,7 +37,7 @@ function addMessage(text, isUser = false) {
     const div = document.createElement('div');
     div.style.marginBottom = '14px';
     div.style.textAlign = isUser ? 'right' : 'left';
-    div.style.color = isUser ? '#00f0ff' : '#ddd';
+    div.style.color = isUser ? '#00f0ff' : '#e0e0e0';
     div.textContent = text;
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
