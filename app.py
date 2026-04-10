@@ -1,5 +1,3 @@
-
-
 from flask import Flask, render_template, request
 from models import db, PublicProfile
 import os
@@ -127,6 +125,27 @@ def chat():
             temperature=0.7
         )
         return {'reply': response.choices[0].message.content}
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/search', methods=['POST'])
+def api_search():
+    data = request.get_json()
+    query = data.get('query', '')
+    api_key = os.getenv('SERPER_API_KEY')
+    if not api_key:
+        return {'error': 'Serper API-Key fehlt'}, 500
+    if not query:
+        return {'error': 'Kein Suchbegriff angegeben'}, 400
+
+    url = "https://google.serper.dev/search"
+    headers = {"X-API-KEY": api_key, "Content-Type": "application/json"}
+    payload = {"q": query}
+
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
     except Exception as e:
         return {'error': str(e)}, 500
 

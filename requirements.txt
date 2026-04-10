@@ -4,3 +4,4 @@ flask
 gunicorn
 flask_sqlalchemy
 requests
+serper

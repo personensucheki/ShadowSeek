@@ -86,6 +86,51 @@
             <button type="submit" class="search-btn">Suchen</button>
         </form>
     </div>
+        <div class="search-box">
+            <form id="search-form" autocomplete="off">
+                <input type="text" 
+                       class="search-input" 
+                       name="q" 
+                       id="search-query"
+                       placeholder="Username, Name, E-Mail, Ort..." 
+                       required>
+                <button type="submit" class="search-btn">Suchen</button>
+            </form>
+            <div id="search-results"></div>
+        </div>
+
+    <script>
+    document.getElementById('search-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const query = document.getElementById('search-query').value.trim();
+        if (!query) return;
+        const resultsDiv = document.getElementById('search-results');
+        resultsDiv.innerHTML = '<div style="color:#00f0ff;margin-top:18px;">Suche läuft...</div>';
+
+        try {
+            const res = await fetch('/api/search', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ query })
+            });
+            const data = await res.json();
+            if (data.error) {
+                resultsDiv.innerHTML = '<div style="color:#ff5555;margin-top:18px;">' + data.error + '</div>';
+            } else if (data.organic && data.organic.length) {
+                resultsDiv.innerHTML = data.organic.map(r =>
+                    `<div style="margin:18px 0;padding:18px 22px;background:#181a1b;border-radius:12px;">
+                        <a href="${r.link}" target="_blank" style="color:#00f0ff;font-size:1.15em;font-weight:bold;text-decoration:none;">${r.title}</a>
+                        <div style="color:#aaa;margin:6px 0 0 0;">${r.snippet || ''}</div>
+                    </div>`
+                ).join('');
+            } else {
+                resultsDiv.innerHTML = '<div style="color:#aaa;margin-top:18px;">Keine Ergebnisse gefunden.</div>';
+            }
+        } catch (err) {
+            resultsDiv.innerHTML = '<div style="color:#ff5555;margin-top:18px;">Fehler bei der Suche.</div>';
+        }
+    });
+    </script>
 </div>
 
 <!-- Chatbot -->
