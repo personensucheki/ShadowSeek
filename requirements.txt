@@ -1,3 +1,5 @@
+# Für Chatbot-API
+openai
 flask
 gunicorn
 flask_sqlalchemy
