@@ -141,12 +141,9 @@
         {% if social_results %}
             {% for profile in social_results %}
             <div class="result-card">
-                <img class="profile-pic" src="{{ profile.profile_pic or 'https://via.placeholder.com/90' }}" alt="Profilbild">
-                <div class="profile-name">{{ profile.firstname or '' }} {{ profile.lastname or '' }}</div>
-                <div class="platform">{{ profile.platform or 'Social Media' }}</div>
-                <div class="short-info">{{ profile.bio or 'Kein Info vorhanden' }}</div>
-                <div class="found-at">{{ profile.username }}</div>
-                <a href="{{ profile.profile_url or '#' }}" class="profile-btn" target="_blank">Zum Profil</a>
+                <div class="profile-name">@{{ profile.username }}</div>
+                <div class="platform">{{ profile.platform }}</div>
+                <a href="{{ profile.profile_url }}" class="profile-btn" target="_blank">Zum Profil</a>
             </div>
             {% endfor %}
         {% else %}
@@ -164,12 +161,9 @@
         {% if combined_results %}
             {% for profile in combined_results %}
             <div class="result-card">
-                <img class="profile-pic" src="{{ profile.profile_pic or 'https://via.placeholder.com/90' }}" alt="Profilbild">
-                <div class="profile-name">{{ profile.firstname or '' }} {{ profile.lastname or '' }}</div>
-                <div class="platform">{{ profile.platform or 'Dating/Adult' }}</div>
-                <div class="short-info">{{ profile.bio or 'Kein Info vorhanden' }}</div>
-                <div class="found-at">{{ profile.username }}</div>
-                <a href="{{ profile.profile_url or '#' }}" class="profile-btn" target="_blank">Zum Profil</a>
+                <div class="profile-name">@{{ profile.username }}</div>
+                <div class="platform">{{ profile.platform }}</div>
+                <a href="{{ profile.profile_url }}" class="profile-btn" target="_blank">Zum Profil</a>
             </div>
             {% endfor %}
         {% else %}
@@ -185,12 +179,9 @@
         {% if porn_results %}
             {% for profile in porn_results %}
             <div class="result-card">
-                <img class="profile-pic" src="{{ profile.profile_pic or 'https://via.placeholder.com/90' }}" alt="Profilbild">
-                <div class="profile-name">{{ profile.firstname or '' }} {{ profile.lastname or '' }}</div>
-                <div class="platform">{{ profile.platform or 'Porn' }}</div>
-                <div class="short-info">{{ profile.bio or 'Kein Info vorhanden' }}</div>
-                <div class="found-at">{{ profile.username }}</div>
-                <a href="{{ profile.profile_url or '#' }}" class="profile-btn" target="_blank">Zum Profil</a>
+                <div class="profile-name">@{{ profile.username }}</div>
+                <div class="platform">{{ profile.platform }}</div>
+                <a href="{{ profile.profile_url }}" class="profile-btn" target="_blank">Zum Profil</a>
             </div>
             {% endfor %}
         {% else %}
