@@ -214,8 +214,8 @@
             <span class="modal-close" onclick="closeModal('login-modal')">×</span>
             <h2>Anmelden</h2>
             <form id="login-form" autocomplete="off">
-                <input type="text" name="username" placeholder="Benutzername" required autofocus>
-                <input type="password" name="password" placeholder="Passwort" required>
+                <input type="text" id="login-username" name="username" placeholder="Benutzername" required autofocus>
+                <input type="password" id="login-password" name="password" placeholder="Passwort" required>
                 <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Login</button>
                 <div style="margin-top:10px;text-align:right;">
                     <a href="#" onclick="showForgotModal();return false;">Passwort vergessen?</a>
@@ -228,10 +228,10 @@
             <span class="modal-close" onclick="closeModal('register-modal')">×</span>
             <h2>Registrieren</h2>
             <form id="register-form" autocomplete="off">
-                <input type="text" name="username" placeholder="Benutzername" required autofocus>
-                <input type="email" name="email" placeholder="E-Mail" required>
-                <input type="password" name="password" placeholder="Passwort" required>
-                <input type="password" name="password2" placeholder="Passwort wiederholen" required>
+                <input type="text" id="reg-username" name="username" placeholder="Benutzername" required autofocus>
+                <input type="email" id="reg-email" name="email" placeholder="E-Mail" required>
+                <input type="password" id="reg-password" name="password" placeholder="Passwort" required>
+                <input type="password" id="reg-password2" name="password2" placeholder="Passwort wiederholen" required>
                 <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Registrieren</button>
             </form>
         </div>
@@ -241,7 +241,7 @@
             <span class="modal-close" onclick="closeModal('forgot-modal')">×</span>
             <h2>Passwort zurücksetzen</h2>
             <form id="forgot-form" autocomplete="off">
-                <input type="email" name="email" placeholder="E-Mail" required autofocus>
+                <input type="email" id="forgot-email" name="email" placeholder="E-Mail" required autofocus>
                 <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Link senden</button>
             </form>
         </div>
@@ -281,11 +281,65 @@
         }
         // Demo: Prevent default form submit, show alert
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('login-form').onsubmit = function(e){ e.preventDefault(); alert('Demo: Login!'); };
-            document.getElementById('register-form').onsubmit = function(e){ e.preventDefault(); alert('Demo: Registrierung!'); };
-            document.getElementById('forgot-form').onsubmit = function(e){ e.preventDefault(); alert('Demo: Passwort-Link gesendet!'); };
+            document.getElementById('login-form').onsubmit = function(e){ e.preventDefault(); login(); };
+            document.getElementById('register-form').onsubmit = function(e){ e.preventDefault(); register(); };
+            document.getElementById('forgot-form').onsubmit = function(e){ e.preventDefault(); sendResetLink(); };
         });
     </script>
+<script>
+function login() {
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+
+    fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+    })
+    .then(res => res.text())
+    .then(text => {
+        if (text.includes("erfolgreich")) {
+            alert("✅ Erfolgreich eingeloggt!");
+            closeModal('login-modal');
+        } else {
+            alert("❌ " + text);
+        }
+    });
+}
+
+function register() {
+    const username = document.getElementById('reg-username').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+
+    fetch('/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+    })
+    .then(res => res.text())
+    .then(text => {
+        alert(text);
+        if (text.includes("erfolgreich")) closeModal('register-modal');
+    });
+}
+
+function sendResetLink() {
+    const email = document.getElementById('forgot-email').value;
+    if (!email) return alert("Bitte E-Mail eingeben");
+
+    fetch('/forgot-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `email=${encodeURIComponent(email)}`
+    })
+    .then(res => res.text())
+    .then(text => {
+        alert(text);
+        closeModal('forgot-modal');
+    });
+}
+</script>
 </body>
         <div class="navbar-logo">ShadowSeek</div>
         <div class="navbar-center">
