@@ -156,9 +156,7 @@
     <!-- Login Modal -->
     <div id="login-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
         <div style="background:#23272a; width:380px; padding:32px; border-radius:16px; position:relative;">
-            <button onclick="closeModal('login-modal')" 
-                    style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:28px; color:#888; cursor:pointer;">×</button>
-            
+            <!-- Schließen-Button entfernt wie gewünscht -->
             <h2 style="text-align:center; color:#8ab4f8; margin-bottom:24px;">Anmelden</h2>
             <input type="text" placeholder="Username oder E-Mail" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
             <input type="password" placeholder="Passwort" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
@@ -199,8 +197,11 @@
         document.getElementById('login-modal').style.display = 'none';
         document.getElementById('register-modal').style.display = 'flex';
     }
+
+    // Modal sauber schließen (nur eine Funktion, keine Dopplung)
     function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
+        const modal = document.getElementById(modalId);
+        if (modal) modal.style.display = 'none';
     }
     function logout() {
         alert("Du wurdest abgemeldet.");
