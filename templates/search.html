@@ -1,20 +1,13 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Suchergebnis</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #181a1b; color: #f1f1f1; text-align: center; margin-top: 15vh; }
-        .result { font-size: 1.5em; margin-top: 30px; }
-        a { color: #8ab4f8; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <h1>Suchergebnis</h1>
-    <div class="result">
+{% extends "base.html" %}
+
+{% block title %}ShadowSeek - Suche{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-top: 100px;">
+    <h1 style="color: #8ab4f8; margin-bottom: 30px;">Suchergebnis</h1>
+    <div style="font-size: 1.3em; margin-bottom: 30px;">
         Suche nach: <strong>{{ query }}</strong>
     </div>
-    <p><a href="/">Zurück zur Startseite</a></p>
-</body>
-</html>
+    <a href="/" style="color: #8ab4f8; text-decoration: underline;">Zurück zur Startseite</a>
+</div>
+{% endblock %}

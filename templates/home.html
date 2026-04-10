@@ -1,23 +1,19 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>ShadowSeek – Startseite</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #181a1b; color: #f1f1f1; text-align: center; margin-top: 10vh; }
-        .search-box { margin: 0 auto; max-width: 400px; }
-        input[type="text"] { width: 70%; padding: 10px; border-radius: 5px; border: none; }
-        button { padding: 10px 20px; border-radius: 5px; border: none; background: #444; color: #fff; cursor: pointer; }
-        button:hover { background: #222; }
-    </style>
-</head>
-<body>
-    <h1>Willkommen bei ShadowSeek</h1>
-    <div class="search-box">
+{% extends "base.html" %}
+
+{% block title %}ShadowSeek - Start{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-top: 80px;">
+    <h1 style="color: #8ab4f8; margin-bottom: 30px;">Willkommen bei ShadowSeek</h1>
+    <div style="max-width: 500px; margin: 0 auto;">
         <form action="/search" method="get">
-            <input type="text" name="q" placeholder="Suchbegriff eingeben..." required>
-            <button type="submit">Suchen</button>
+            <input type="text" name="q" placeholder="Suchbegriff eingeben..." 
+                   style="width: 70%; padding: 14px; font-size: 1.1em; border-radius: 8px; border: none;">
+            <button type="submit" 
+                    style="padding: 14px 28px; font-size: 1.1em; background: #8ab4f8; color: black; border: none; border-radius: 8px; margin-left: 8px;">
+                Suchen
+            </button>
         </form>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
