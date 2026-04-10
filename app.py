@@ -157,6 +157,7 @@ def home():
 
 
 
+
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     if request.method == 'POST':
@@ -172,7 +173,6 @@ def search():
         city = request.args.get('city', '').strip()
         email = request.args.get('email', '').strip()
 
-    # ShadowSeek Algorithmus aufrufen
     query_data = {
         'username': username,
         'firstname': firstname,
@@ -183,19 +183,9 @@ def search():
 
     results = shadowseek_search(query_data)
 
-    if not results:
-        return render_template('search.html', 
-                               categorized_results={}, 
-                               username=username,
-                               firstname=firstname,
-                               lastname=lastname,
-                               city=city,
-                               email=email,
-                               error="Bitte gib mindestens einen Username ein.")
-
     return render_template('search.html', 
-                           categorized_results=results ,
-                           meta=results.get('meta'),
+                           categorized_results=results if results else {},
+                           meta=results if results else {},
                            username=username,
                            firstname=firstname,
                            lastname=lastname,

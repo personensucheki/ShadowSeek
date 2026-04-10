@@ -34,10 +34,17 @@
 		font-weight: bold; 
 		cursor: pointer; 
 	}
+	.loading {
+		display: none;
+		text-align: center;
+		color: #00f0ff;
+		font-size: 1.2em;
+		margin-top: 30px;
+	}
 </style>
 
 <div class="search-hero">
-	<form method="POST" action="/search">
+	<form method="POST" action="/search" id="search-form">
 		<div class="search-fields">
 			<input type="text" name="username" placeholder="Username" required>
 			<input type="text" name="firstname" placeholder="Vorname">
@@ -45,8 +52,19 @@
 			<input type="text" name="city" placeholder="Wohnort">
 			<input type="email" name="email" placeholder="E-Mail">
 		</div>
-		<button class="search-btn" type="submit">Suchen</button>
+		<button type="submit" class="search-btn" id="search-button">Suchen</button>
 	</form>
 </div>
 
+<div id="loading" class="loading">
+	<div>🔍 ShadowSeek Agent wird initialisiert...</div>
+	<div style="margin-top:12px;">Durchsuche Social Media & Adult Plattformen...</div>
+</div>
+
+<script>
+document.getElementById('search-form').addEventListener('submit', function() {
+	document.getElementById('loading').style.display = 'block';
+	document.getElementById('search-button').style.display = 'none';
+});
+</script>
 {% endblock %}
