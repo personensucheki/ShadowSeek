@@ -7,7 +7,8 @@ from openai import OpenAI
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+api_key = os.environ.get('OPENAI_API_KEY')
+client = OpenAI(api_key=api_key) if api_key else None
 
 # --- ShadowSeek Search Algorithmus v1.0 (Flask-kompatibel) ---
 def shadowseek_search(query):
@@ -83,8 +84,12 @@ def shadowseek_search(query):
     db.create_all()
 
 # Chatbot-API-Route (direkt vor /search)
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    if not client:
+        return {'reply': 'Chatbot ist aktuell deaktiviert (kein API-Key).'}, 503
+    
     data = request.get_json()
     user_message = data.get('message', '')
 
