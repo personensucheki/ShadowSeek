@@ -5,6 +5,7 @@ import requests
 from openai import OpenAI
 
 app = Flask(__name__)
+app.config['DEBUG'] = True
 client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 
 # --- ShadowSeek Search Algorithmus v1.0 (Flask-kompatibel) ---
