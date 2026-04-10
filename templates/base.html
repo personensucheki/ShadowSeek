@@ -62,8 +62,8 @@
             <a href="#">Admin</a>
         </div>
         <div class="navbar-right">
-            <button onclick="showLoginModal()" style="background:transparent;border:1px solid #00f0ff;color:#00f0ff;">Anmelden</button>
-            <button onclick="showRegisterModal()" style="background:#00f0ff;color:#0a0c14;border:none;">Registrieren</button>
+            <button onclick="showLoginModal()" class="btn-outline">Anmelden</button>
+            <button onclick="showRegisterModal()" class="btn-filled">Registrieren</button>
         </div>
     </nav>
 
@@ -208,8 +208,85 @@
         }
     </style>
 </head>
-<body>
-    <nav class="navbar">
+    <!-- Modals: Login, Register, Forgot Password -->
+    <div id="login-modal" class="modal-bg" style="display:none;">
+        <div class="modal">
+            <span class="modal-close" onclick="closeModal('login-modal')">×</span>
+            <h2>Anmelden</h2>
+            <form id="login-form" autocomplete="off">
+                <input type="text" name="username" placeholder="Benutzername" required autofocus>
+                <input type="password" name="password" placeholder="Passwort" required>
+                <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Login</button>
+                <div style="margin-top:10px;text-align:right;">
+                    <a href="#" onclick="showForgotModal();return false;">Passwort vergessen?</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="register-modal" class="modal-bg" style="display:none;">
+        <div class="modal">
+            <span class="modal-close" onclick="closeModal('register-modal')">×</span>
+            <h2>Registrieren</h2>
+            <form id="register-form" autocomplete="off">
+                <input type="text" name="username" placeholder="Benutzername" required autofocus>
+                <input type="email" name="email" placeholder="E-Mail" required>
+                <input type="password" name="password" placeholder="Passwort" required>
+                <input type="password" name="password2" placeholder="Passwort wiederholen" required>
+                <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Registrieren</button>
+            </form>
+        </div>
+    </div>
+    <div id="forgot-modal" class="modal-bg" style="display:none;">
+        <div class="modal">
+            <span class="modal-close" onclick="closeModal('forgot-modal')">×</span>
+            <h2>Passwort zurücksetzen</h2>
+            <form id="forgot-form" autocomplete="off">
+                <input type="email" name="email" placeholder="E-Mail" required autofocus>
+                <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Link senden</button>
+            </form>
+        </div>
+    </div>
+    <style>
+        .modal-bg { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(10,12,20,0.85); z-index:2000; display:flex; align-items:center; justify-content:center; }
+        .modal { background:#1e2838; color:#e0e0e0; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.5); padding:36px 32px 28px 32px; min-width:320px; max-width:90vw; position:relative; }
+        .modal-close { position:absolute; top:16px; right:18px; font-size:28px; color:#00f0ff; cursor:pointer; }
+        .modal h2 { margin-top:0; margin-bottom:18px; color:#00f0ff; font-weight:600; }
+        .modal input { width:100%; padding:10px 12px; margin-bottom:12px; border-radius:7px; border:1px solid #334155; background:#16213a; color:#e0e0e0; font-size:1em; }
+        .modal input:focus { outline:2px solid #00f0ff; border-color:#00f0ff; }
+        .btn-filled { background:#00f0ff; color:#0a0c14; border:none; border-radius:7px; padding:10px 0; font-weight:600; cursor:pointer; transition:background 0.2s; }
+        .btn-filled:hover { background:#4d9fff; }
+        .btn-outline { background:transparent; border:1.5px solid #00f0ff; color:#00f0ff; border-radius:7px; padding:10px 0; font-weight:600; cursor:pointer; transition:background 0.2s, color 0.2s; }
+        .btn-outline:hover { background:#00f0ff; color:#0a0c14; }
+    </style>
+    <script>
+        function showLoginModal() {
+            closeAllModals();
+            document.getElementById('login-modal').style.display = 'flex';
+        }
+        function showRegisterModal() {
+            closeAllModals();
+            document.getElementById('register-modal').style.display = 'flex';
+        }
+        function showForgotModal() {
+            closeAllModals();
+            document.getElementById('forgot-modal').style.display = 'flex';
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+        function closeAllModals() {
+            ['login-modal','register-modal','forgot-modal'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+        }
+        // Demo: Prevent default form submit, show alert
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('login-form').onsubmit = function(e){ e.preventDefault(); alert('Demo: Login!'); };
+            document.getElementById('register-form').onsubmit = function(e){ e.preventDefault(); alert('Demo: Registrierung!'); };
+            document.getElementById('forgot-form').onsubmit = function(e){ e.preventDefault(); alert('Demo: Passwort-Link gesendet!'); };
+        });
+    </script>
+</body>
         <div class="navbar-logo">ShadowSeek</div>
         <div class="navbar-center">
             <a href="/">Home</a>
