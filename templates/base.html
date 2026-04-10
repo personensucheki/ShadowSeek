@@ -154,24 +154,30 @@
     </nav>
 
     <!-- Login Modal -->
-    <div id="login-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
-        <div style="background:#23272a; width:380px; padding:30px; border-radius:16px;">
+    <div id="login-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
+        <div style="background:#23272a; width:380px; padding:32px; border-radius:16px; position:relative;">
+            <button onclick="closeModal('login-modal')" 
+                    style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:28px; color:#888; cursor:pointer;">×</button>
+            
             <h2 style="text-align:center; color:#8ab4f8; margin-bottom:24px;">Anmelden</h2>
             <input type="text" placeholder="Username oder E-Mail" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
             <input type="password" placeholder="Passwort" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
-            <button style="width:100%; padding:14px; background:#8ab4f8; color:#181a1b; border:none; border-radius:8px; font-weight:bold; margin-top:16px;">Anmelden</button>
-            <p onclick="switchToRegister()" style="text-align:center; color:#8ab4f8; margin-top:16px; cursor:pointer;">Noch kein Account? Jetzt registrieren</p>
+            <button style="width:100%; padding:14px; margin-top:16px; background:#8ab4f8; color:#181a1b; border:none; border-radius:8px; font-weight:bold;">Anmelden</button>
+            <p onclick="switchToRegister()" style="text-align:center; color:#8ab4f8; margin-top:20px; cursor:pointer;">Noch kein Account? Jetzt registrieren</p>
         </div>
     </div>
 
     <!-- Register Modal -->
-    <div id="register-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
-        <div style="background:#23272a; width:380px; padding:30px; border-radius:16px;">
+    <div id="register-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
+        <div style="background:#23272a; width:380px; padding:32px; border-radius:16px; position:relative;">
+            <button onclick="closeModal('register-modal')" 
+                    style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:28px; color:#888; cursor:pointer;">×</button>
+            
             <h2 style="text-align:center; color:#8ab4f8; margin-bottom:24px;">Registrieren</h2>
             <input type="text" placeholder="Username" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
             <input type="email" placeholder="E-Mail" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
             <input type="password" placeholder="Passwort" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
-            <button style="width:100%; padding:14px; background:#8ab4f8; color:#181a1b; border:none; border-radius:8px; font-weight:bold; margin-top:20px;">Konto erstellen</button>
+            <button style="width:100%; padding:14px; margin-top:20px; background:#8ab4f8; color:#181a1b; border:none; border-radius:8px; font-weight:bold;">Konto erstellen</button>
         </div>
     </div>
 
@@ -192,6 +198,9 @@
     function switchToRegister() {
         document.getElementById('login-modal').style.display = 'none';
         document.getElementById('register-modal').style.display = 'flex';
+    }
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
     }
     function logout() {
         alert("Du wurdest abgemeldet.");
