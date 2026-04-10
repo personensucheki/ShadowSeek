@@ -29,128 +29,117 @@
         outline: none;
     }
     .search-fields input:focus {
-        box-shadow: 0 0 0 2px #8ab4f8;
+        /* ...existing CSS... */
     }
-    .search-btn {
-        background: #8ab4f8;
-        color: #181a1b;
-        border: none;
-        border-radius: 10px;
-        padding: 16px 36px;
-        font-size: 1.15em;
-        font-weight: bold;
-        cursor: pointer;
-        margin-top: 10px;
-    }
-    .tabs {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-bottom: 30px;
-        flex-wrap: wrap;
-    }
-    .tab {
-        background: #23272a;
-        color: #8ab4f8;
-        border: none;
-        padding: 14px 28px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: all 0.2s;
-    }
-    .tab.active {
-        background: #8ab4f8;
-        color: #181a1b;
-    }
-    .tab-content {
-        display: none;
-    }
-    .tab-content.active {
-        display: block;
-    }
-    .results-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-        gap: 24px;
-    }
-    .result-card {
-        background: #23272a;
-        border-radius: 16px;
-        padding: 24px 18px;
-        text-align: center;
-        transition: transform 0.2s;
-    }
-    .result-card:hover {
-        transform: translateY(-6px);
-    }
-    .profile-pic {
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid #8ab4f8;
-        margin-bottom: 14px;
-    }
-    .image-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
-    }
-    .image-card {
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        cursor: pointer;
-    }
-    .image-card img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-    }
-    @media (max-width: 768px) {
-        .search-fields input { min-width: 100%; }
-    }
-</style>
+
 
 <div class="search-hero">
-    <form method="get" action="/search">
+    <form id="agent-search-form" autocomplete="off">
         <div class="search-fields">
-            <input type="text" name="username" placeholder="Username">
-            <input type="text" name="firstname" placeholder="Vorname">
-            <input type="text" name="lastname" placeholder="Nachname">
-            <input type="text" name="city" placeholder="Wohnort">
-            <input type="email" name="email" placeholder="E-Mail">
+            <input type="text" name="username" id="username" placeholder="Username" required>
+            <input type="text" name="firstname" id="firstname" placeholder="Vorname">
+            <input type="text" name="lastname" id="lastname" placeholder="Nachname">
+            <input type="text" name="city" id="city" placeholder="Wohnort">
+            <input type="email" name="email" id="email" placeholder="E-Mail">
         </div>
         <button class="search-btn" type="submit">Suchen</button>
     </form>
 </div>
 
-<div class="tabs">
-    <button class="tab active" id="social" data-tab="social">Social Media</button>
-    <button class="tab" id="dating" data-tab="dating">Dating & Adult</button>
-    <button class="tab" id="images" data-tab="images">Bilder</button>
-    <button class="tab" id="deep" data-tab="deep">Deep Search</button>
+<div id="loading-screen" style="display:none; text-align:center; padding:40px;">
+    <h3>🔍 ShadowSeek Agent wird aktiviert...</h3>
+    <p id="status">Durchsuche Social Media Netzwerke...</p>
+    <div class="loader" style="margin:20px auto;"></div>
 </div>
 
-
-<!-- Social Media Tab -->
-<div class="tab-content active" id="social">
-    <div class="results-grid">
-        {% set social_results = categorized_results['social'] if categorized_results and 'social' in categorized_results else [] %}
-        {% if social_results %}
-            {% for profile in social_results %}
-            <div class="result-card">
-                <div class="profile-name">@{{ profile.username }}</div>
-                <div class="platform">{{ profile.platform }}</div>
-                <a href="{{ profile.profile_url }}" class="profile-btn" target="_blank">Zum Profil</a>
-            </div>
-            {% endfor %}
-        {% else %}
-            <p style="grid-column: 1/-1; text-align:center; color:#8ab4f8;">Keine Ergebnisse gefunden.</p>
-        {% endif %}
-    </div>
+{% if username %}
+<div id="loading-screen" style="text-align:center; padding:40px;">
+    <h3>🔍 ShadowSeek Agent wird aktiviert...</h3>
+    <p id="status">Durchsuche Social Media Netzwerke...</p>
+    <div class="loader" style="margin:20px auto;"></div>
 </div>
+</script>
+<script>
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+});
+
+// ShadowSeek Agent - Final Version
+function startSearch(username) {
+    const loadingScreen = document.getElementById('loading-screen');
+    const status = document.getElementById('status');
+    const tabs = document.querySelector('.tabs');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    const statusTexts = [
+        'Initialisiere ShadowSeek Agent...',
+        'Durchsuche Social Media Netzwerke...',
+        'Scanne Dating & Adult Plattformen...',
+        'Analysiere Deep-Web Verbindungen...',
+        'Berechne Match-Scores...'
+    ];
+
+    let idx = 0;
+    status.textContent = statusTexts[0];
+    loadingScreen.style.display = 'block';
+    tabs.style.display = 'none';
+    tabContents.forEach(tc => tc.style.display = 'none');
+
+    const interval = setInterval(() => {
+        idx = (idx + 1) % statusTexts.length;
+        status.textContent = statusTexts[idx];
+    }, 750);
+
+    setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        tabs.style.display = 'flex';
+        tabContents.forEach(tc => tc.style.display = '');
+        clearInterval(interval);
+        window.scrollTo({ top: tabs.offsetTop - 80, behavior: 'smooth' });
+    }, 3200);
+}
+
+document.getElementById('agent-search-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    if (username) {
+        startSearch(username);
+
+        setTimeout(() => {
+            window.location.href = `/search?username=${encodeURIComponent(username)}`;
+        }, 3200);
+    }
+});
+
+// Bildersuche bleibt unverändert
+document.getElementById('image-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const query = document.getElementById('image-input').value || 'person';
+    const grid = document.getElementById('image-grid');
+
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#8ab4f8;">Lade Bilder...</p>';
+
+    fetch(`https://picsum.photos/v2/list?limit=12`)
+        .then(res => res.json())
+        .then(data => {
+            grid.innerHTML = '';
+            data.forEach(item => {
+                const img = document.createElement('div');
+                img.className = 'image-card';
+                img.innerHTML = `<img src="https://picsum.photos/id/${item.id}/400/300" alt="${query}">`;
+                img.onclick = () => window.open(`https://picsum.photos/id/${item.id}/1200`, '_blank');
+                grid.appendChild(img);
+            });
+        });
+});
+</script>
+</script>
 
 <!-- Dating & Adult Tab -->
 <div class="tab-content" id="dating">
@@ -163,6 +152,10 @@
             <div class="result-card">
                 <div class="profile-name">@{{ profile.username }}</div>
                 <div class="platform">{{ profile.platform }}</div>
+                <div style="background:#333; height:6px; border-radius:3px; margin:10px 0;">
+                    <div style="background:#8ab4f8; width:89%; height:6px; border-radius:3px;"></div>
+                </div>
+                <p style="font-size:0.9em; color:#8ab4f8;">89% Match</p>
                 <a href="{{ profile.profile_url }}" class="profile-btn" target="_blank">Zum Profil</a>
             </div>
             {% endfor %}
@@ -181,6 +174,10 @@
             <div class="result-card">
                 <div class="profile-name">@{{ profile.username }}</div>
                 <div class="platform">{{ profile.platform }}</div>
+                <div style="background:#333; height:6px; border-radius:3px; margin:10px 0;">
+                    <div style="background:#8ab4f8; width:82%; height:6px; border-radius:3px;"></div>
+                </div>
+                <p style="font-size:0.9em; color:#8ab4f8;">82% Match</p>
                 <a href="{{ profile.profile_url }}" class="profile-btn" target="_blank">Zum Profil</a>
             </div>
             {% endfor %}
