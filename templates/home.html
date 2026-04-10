@@ -4,23 +4,30 @@
 {% block title %}ShadowSeek{% endblock %}
 
 {% block content %}
-<div style="min-height:85vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding-top:80px;">
-    <h1 style="font-size:5.8rem; font-weight:900; letter-spacing:-4px; background:linear-gradient(90deg, #00ddff, #4d9fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:16px;">
+<div style="min-height:85vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding-top:80px; text-align:center;">
+    <h1 style="font-size:6.2rem; font-weight:900; letter-spacing:-6px; margin-bottom:12px; 
+               background:linear-gradient(90deg, #00ddff, #4d9fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
         ShadowSeek
     </h1>
-    <p style="color:#00f0ff; font-size:1.45rem; margin-bottom:50px; font-weight:500;">
+    <p style="color:#00f0ff; font-size:1.4rem; margin-bottom:60px; font-weight:500;">
         Privat. Sicher. Ohne Tracking.
     </p>
     
-    <form method="POST" action="/search" style="width:100%; max-width:720px;">
-        <div style="background:#1f2937; border-radius:50px; padding:8px; display:flex; box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+    <form method="POST" action="/search" style="width:100%; max-width:760px;">
+        <div style="background:#1f2937; border-radius:50px; padding:8px; display:flex; box-shadow:0 8px 30px rgba(0,0,0,0.6);">
             <input type="text" name="username" placeholder="Wonach suchst du?" 
-                   style="flex:1; padding:22px 28px; font-size:1.4rem; background:transparent; border:none; color:white; outline:none;" required>
+                   style="flex:1; padding:22px 32px; font-size:1.35rem; background:transparent; border:none; color:white; outline:none;" required>
             <button type="submit" 
-                    style="background:#60a5fa; color:#0a0c14; border:none; padding:16px 36px; border-radius:50px; font-weight:700; font-size:1.1rem;">
+                    style="background:#60a5fa; color:#0a0c14; border:none; padding:18px 42px; border-radius:50px; font-weight:700; font-size:1.15rem; cursor:pointer;">
                 Suchen
             </button>
         </div>
     </form>
+
+    <div style="margin-top:60px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+        <span style="background:#334155; color:#94a3b8; padding:8px 18px; border-radius:30px; font-size:0.95rem;">Social Media</span>
+        <span style="background:#334155; color:#94a3b8; padding:8px 18px; border-radius:30px; font-size:0.95rem;">Dating & Adult</span>
+        <span style="background:#334155; color:#94a3b8; padding:8px 18px; border-radius:30px; font-size:0.95rem;">Deep Search</span>
+    </div>
 </div>
 {% endblock %}
