@@ -117,6 +117,38 @@ sendBtn.addEventListener('click', async () => {
 input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendBtn.click();
 });
+
+</script>
+<script>
+// Agenten-Suche (wieder aktivieren)
+document.getElementById('agent-search-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    if (!username) return;
+
+    const loadingScreen = document.getElementById('loading-screen');
+    const status = document.getElementById('status');
+    const tabs = document.querySelector('.tabs');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    const texts = ["Initialisiere ShadowSeek Agent...", "Durchsuche Social Media...", "Scanne Adult-Plattformen...", "Berechne Match-Scores..." 0];
+    loadingScreen.style.display = 'block';
+    tabs.style.display = 'none';
+    tabContents.forEach(el => el.style.display = 'none');
+
+    const int = setInterval(() => {
+        i = (i + 1) % texts.length;
+        status.textContent = texts ;
+    }, 700);
+
+    setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        tabs.style.display = 'flex';
+        tabContents.forEach(el => el.style.display = '');
+        clearInterval(int);
+        window.location.href = `/search?username=${encodeURIComponent(username)}`;
+    }, 3100);
+});
 </script>
 
 {% endblock %}
