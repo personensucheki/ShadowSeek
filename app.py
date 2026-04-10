@@ -156,42 +156,51 @@ def home():
 
 
 
-@app.route('/search')
+
+@app.route('/search', methods=['GET', 'POST'])
 def search():
-    username = request.args.get('username', '').strip()
-    firstname = request.args.get('firstname', '').strip()
-    lastname = request.args.get('lastname', '').strip()
-    
-    categorized_results = {
-        'social': []
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        firstname = request.form.get('firstname', '').strip()
+        lastname = request.form.get('lastname', '').strip()
+        city = request.form.get('city', '').strip()
+        email = request.form.get('email', '').strip()
+    else:
+        username = request.args.get('username', '').strip()
+        firstname = request.args.get('firstname', '').strip()
+        lastname = request.args.get('lastname', '').strip()
+        city = request.args.get('city', '').strip()
+        email = request.args.get('email', '').strip()
+
+    # ShadowSeek Algorithmus aufrufen
+    query_data = {
+        'username': username,
+        'firstname': firstname,
+        'lastname': lastname,
+        'city': city,
+        'email': email
     }
 
-    if username:
-        platforms = [
-            {'name': 'Instagram', 'url': f'https://instagram.com/{username}', 'category': 'social'},
-            {'name': 'TikTok', 'url': f'https://tiktok.com/@{username}', 'category': 'social'},
-            {'name': 'Twitter/X', 'url': f'https://twitter.com/{username}', 'category': 'social'},
-            {'name': 'Facebook', 'url': f'https://facebook.com/{username}', 'category': 'social'},
-            {'name': 'OnlyFans', 'url': f'https://onlyfans.com/{username}', 'category': 'adult'},
-            {'name': 'Fansly', 'url': f'https://fansly.com/{username}', 'category': 'adult'},
-            {'name': 'Pornhub', 'url': f'https://pornhub.com/users/{username}', 'category': 'porn'},
-            {'name': 'ManyVids', 'url': f'https://manyvids.com/Profile/{username}', 'category': 'porn'},
-            {'name': 'Stripchat', 'url': f'https://stripchat.com/{username}', 'category': 'porn'},
-        ]
+    results = shadowseek_search(query_data)
 
-        for p in platforms:
-            profile = {
-                'username': username,
-                'platform': p['name'],
-                'profile_url': p['url'],
-                'match_score': 85 if p['category'] == 'social' else 78
-            }
-            if p['category'] == 'social':
-                categorized_results['social'].append(profile)
+    if not results:
+        return render_template('search.html', 
+                               categorized_results={}, 
+                               username=username,
+                               firstname=firstname,
+                               lastname=lastname,
+                               city=city,
+                               email=email,
+                               error="Bitte gib mindestens einen Username ein.")
 
     return render_template('search.html', 
-                           categorized_results=categorized_results, 
-                           username=username)
+                           categorized_results=results ,
+                           meta=results.get('meta'),
+                           username=username,
+                           firstname=firstname,
+                           lastname=lastname,
+                           city=city,
+                           email=email)
 
 
 

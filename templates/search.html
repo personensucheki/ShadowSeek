@@ -3,75 +3,7 @@
 {% block title %}ShadowSeek - Suche{% endblock %}
 
 {% block content %}
-<style>
-    .search-hero { 
-        background: linear-gradient(120deg, #23272a 60%, #181a1b 100%); 
-        border-radius: 18px; 
-        padding: 38px 24px 32px; 
-        margin: 40px auto; 
-        max-width: 800px; 
-        box-shadow: 0 6px 32px rgba(0,0,0,0.22); 
-    }
-    .search-fields { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
-    .search-fields input { 
-        background: #181a1b; 
-        color: #f1f1f1; 
-        border: none; 
-        border-radius: 10px; 
-        padding: 16px 18px; 
-        font-size: 1.05em; 
-        min-width: 180px; 
-        outline: none; 
-    }
-    .search-fields input:focus { box-shadow: 0 0 0 2px #8ab4f8; }
-    .search-btn { 
-        background: #8ab4f8; 
-        color: #181a1b; 
-        border: none; 
-        border-radius: 10px; 
-        padding: 16px 36px; 
-        font-size: 1.15em; 
-        font-weight: bold; 
-        cursor: pointer; 
-    }
-    .tabs { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
-    .tab { background: #23272a; color: #8ab4f8; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-weight: 500; }
-    .tab.active { background: #8ab4f8; color: #181a1b; }
-    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 24px; }
-    .result-card { 
-        background: #23272a; 
-        border-radius: 16px; 
-        padding: 24px 18px; 
-        text-align: center; 
-    }
-    .result-card:hover { transform: translateY(-6px); }
-</style>
-
-<div class="search-hero">
-    <form id="agent-search-form" method="POST" action="/search">
-        <div class="search-fields">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="text" name="firstname" placeholder="Vorname">
-            <input type="text" name="lastname" placeholder="Nachname">
-            <input type="text" name="city" placeholder="Wohnort">
-            <input type="email" name="email" placeholder="E-Mail">
-        </div>
-        <button class="search-btn" type="submit">Suchen</button>
-    </form>
-</div>
-
-{% if categorized_results or username %}
-<div class="results-grid">
-    {% for profile in categorized_results.get('social', []) %}
-    <div class="result-card">
-        <div style="width:68px;height:68px;margin:0 auto 12px;background:#2c3238;border-radius:12px;"></div>
-        <h3>{{ profile.platform }}</h3>
-        <p style="color:#8ab4f8;">@{{ profile.username }}</p>
-        <div class="match-text">Match: {{ profile.match_score }}%</div>
-        <a href="{{ profile.profile_url }}" target="_blank" class="profile-btn">Profil öffnen →</a>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
+<form id="agent-search-form" method="POST" action="/search">
+	<!-- ...deine Suchfelder und Buttons... -->
+</form>
 {% endblock %}
