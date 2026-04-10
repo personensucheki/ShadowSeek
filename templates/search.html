@@ -394,7 +394,6 @@ document.getElementById('image-form').addEventListener('submit', function(e) {
 
 <div id="chat-window" style="display:none; position:fixed; bottom:90px; right:20px; width:320px; height:460px; background:#23272a; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.4); overflow:hidden; z-index:1000;">
     <div style="background:#8ab4f8; color:#181a1b; padding:14px; font-weight:bold; text-align:center;">ShadowSeek Assistant</div>
-    
     <div id="chat-messages" style="height:340px; overflow-y:auto; padding:14px; background:#1e2124;"></div>
     
     <div style="padding:10px; background:#2c3238; display:flex;">
@@ -404,16 +403,12 @@ document.getElementById('image-form').addEventListener('submit', function(e) {
 </div>
 
 <script>
-// Chatbot öffnen/schließen
-document.getElementById('chat-toggle').addEventListener('click', () => {
-    const win = document.getElementById('chat-window');
-    win.style.display = win.style.display === 'block' ? 'none' : 'block';
-});
-
-// Einfacher Chatbot (kann später erweitert werden)
-const messages = document.getElementById('chat-messages');
+// Chatbot mit echter OpenAI-Anbindung
+const messagesDiv = document.getElementById('chat-messages');
 const input = document.getElementById('chat-input');
 const sendBtn = document.getElementById('chat-send');
+const chatWindow = document.getElementById('chat-window');
+const toggleBtn = document.getElementById('chat-toggle');
 
 function addMessage(text, isUser = false) {
     const div = document.createElement('div');
@@ -421,29 +416,49 @@ function addMessage(text, isUser = false) {
     div.style.textAlign = isUser ? 'right' : 'left';
     div.style.color = isUser ? '#8ab4f8' : '#ddd';
     div.textContent = text;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-sendBtn.addEventListener('click', () => {
+toggleBtn.addEventListener('click', () => {
+    chatWindow.style.display = chatWindow.style.display === 'block' ? 'none' : 'block';
+});
+
+sendBtn.addEventListener('click', async () => {
     const text = input.value.trim();
     if (!text) return;
-    
+
     addMessage(text, true);
     input.value = '';
 
-    setTimeout(() => {
-        if (text.toLowerCase().includes("suche") || text.toLowerCase().includes("finden")) {
-            addMessage("Ich durchsuche gerade Social Media und Adult-Plattformen nach dem Namen. Gib mir einen Username oder Namen!");
-        } else if (text.toLowerCase().includes("wie") && text.toLowerCase().includes("funktioniert")) {
-            addMessage("Ich bin ShadowSeek. Ich scanne verschiedene Plattformen nach Profilen und zeige dir die Treffer mit Match-Score.");
+    // Lade-Anzeige
+    const loadingMsg = document.createElement('div');
+    loadingMsg.textContent = 'denkt...';
+    loadingMsg.style.color = '#666';
+    messagesDiv.appendChild(loadingMsg);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    try {
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+
+        const data = await res.json();
+        loadingMsg.remove();
+
+        if (data.reply) {
+            addMessage(data.reply);
         } else {
-            addMessage("Verstanden. Ich arbeite gerade daran, noch bessere Ergebnisse für dich zu finden.");
+            addMessage('Etwas ist schiefgelaufen...', false);
         }
-    }, 800);
+    } catch (e) {
+        loadingMsg.remove();
+        addMessage('Sorry, ich bin gerade offline.', false);
+    }
 });
 
-// Enter-Taste zum Senden
 input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendBtn.click();
 });
