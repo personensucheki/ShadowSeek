@@ -272,15 +272,17 @@
     </script>
 <script>
 function login() {
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+
+    if (!username || !password) return alert("Bitte alles ausfüllen");
 
     fetch('/login', {
         method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
     })
-    .then(res => res.text())
+    .then(r => r.text())
     .then(text => {
         if (text.includes("erfolgreich")) {
             alert("✅ Erfolgreich eingeloggt!");
@@ -288,40 +290,42 @@ function login() {
         } else {
             alert("❌ " + text);
         }
-    });
+    })
+    .catch(() => alert("Verbindungsfehler"));
 }
 
 function register() {
-    const username = document.getElementById('reg-username').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
+    const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value.trim();
+
+    if (!username || !email || !password) return alert("Bitte alles ausfüllen");
 
     fetch('/register', {
         method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
     })
-    .then(res => res.text())
+    .then(r => r.text())
     .then(text => {
         alert(text);
         if (text.includes("erfolgreich")) hideRegisterModal();
-    });
+    })
+    .catch(() => alert("Verbindungsfehler"));
 }
 
 function sendResetLink() {
-    const email = document.getElementById('forgot-email').value;
+    const email = document.getElementById('forgot-email').value.trim();
     if (!email) return alert("Bitte E-Mail eingeben");
 
     fetch('/forgot-password', {
         method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `email=${encodeURIComponent(email)}`
     })
-    .then(res => res.text())
-    .then(text => {
-        alert(text);
-        hideForgotModal();
-    });
+    .then(r => r.text())
+    .then(text => alert(text))
+    .catch(() => alert("Verbindungsfehler"));
 }
 </script>
 </body>
