@@ -1,81 +1,157 @@
 {% extends "base.html" %}
 
-{% block title %}ShadowSeek - Suche{% endblock %}
+{% block title %}ShadowSeek{% endblock %}
 
 {% block content %}
 <style>
-    .search-hero { background: linear-gradient(120deg, #23272a 60%, #181a1b 100%); border-radius: 18px; padding: 38px 24px 32px; margin: 0 auto 40px auto; max-width: 800px; box-shadow: 0 6px 32px rgba(0,0,0,0.22); }
-    .search-fields { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
-    .search-fields input { background: #181a1b; color: #f1f1f1; border: none; border-radius: 10px; padding: 16px 18px; font-size: 1.05em; min-width: 180px; outline: none; }
-    .search-fields input:focus { box-shadow: 0 0 0 2px #8ab4f8; }
-    .search-btn { background: #8ab4f8; color: #181a1b; border: none; border-radius: 10px; padding: 16px 36px; font-size: 1.15em; font-weight: bold; cursor: pointer; }
-    .tabs { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
-    .tab { background: #23272a; color: #8ab4f8; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-weight: 500; }
-    .tab.active { background: #8ab4f8; color: #181a1b; }
-    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 24px; }
-    .result-card { background: #23272a; border-radius: 16px; padding: 24px 18px; text-align: center; }
-    .result-card:hover { transform: translateY(-6px); }
-    .platform-logo { width: 68px; height: 68px; margin: 0 auto 12px; border-radius: 12px; overflow: hidden; background: #2c3238; }
-    .platform-logo img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
-    .progress-bar { background:#333; height:6px; border-radius:3px; margin:12px 0; overflow: hidden; }
-    .progress { background:#8ab4f8; height:100%; transition: width 1.2s ease; }
-    .match-text { font-size:0.95em; color:#8ab4f8; margin:8px 0 16px; }
-    .profile-btn { background:#8ab4f8; color:#181a1b; padding:10px 24px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-block; }
+    .hero {
+        min-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding-top: 80px;
+    }
+    
+    .logo {
+        font-size: 5.8rem;
+        font-weight: 900;
+        letter-spacing: -4px;
+        background: linear-gradient(90deg, #00ddff, #4d9fff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 16px;
+    }
+    
+    .tagline {
+        color: #00f0ff;
+        font-size: 1.45rem;
+        margin-bottom: 50px;
+        font-weight: 500;
+    }
+    
+    .search-box {
+        width: 100%;
+        max-width: 720px;
+        position: relative;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 22px 28px;
+        font-size: 1.4rem;
+        border-radius: 50px;
+        border: 1px solid #334155;
+        background: #1f2937;
+        color: white;
+        outline: none;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    }
+    
+    .search-input:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.25);
+    }
+    
+    .search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #60a5fa;
+        color: #0a0c14;
+        border: none;
+        padding: 16px 36px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 1.15rem;
+        cursor: pointer;
+    }
+
+    #search-results {
+        width: 100%;
+        max-width: 720px;
+        margin-top: 30px;
+    }
 </style>
 
-<div class="search-hero">
-    <form id="agent-search-form" autocomplete="off">
-        <div class="search-fields">
-            <input type="text" name="username" id="username" placeholder="Username" required>
-            <input type="text" name="firstname" id="firstname" placeholder="Vorname">
-            <input type="text" name="lastname" id="lastname" placeholder="Nachname">
-            <input type="text" name="city" id="city" placeholder="Wohnort">
-            <input type="email" name="email" id="email" placeholder="E-Mail">
-        </div>
-        <button class="search-btn" type="submit">Suchen</button>
-    </form>
-</div>
+<div class="hero">
+    <h1 class="logo">ShadowSeek</h1>
+    <p class="tagline">Privat. Sicher. Ohne Tracking.</p>
+    
+    <div class="search-box">
+        <form id="search-form" autocomplete="off">
+            <input type="text" 
+                   class="search-input" 
+                   id="search-query"
+                   placeholder="Wonach suchst du?" 
+                   required>
+            <button type="submit" class="search-btn">Suchen</button>
+        </form>
+    </div>
 
-<div id="loading-screen" style="display:none; text-align:center; padding:60px 20px;">
-    <h3>🔍 ShadowSeek Agent wird aktiviert...</h3>
-    <p id="status" style="margin:15px 0; font-size:1.1em;">Initialisiere ShadowSeek Agent...</p>
-    <div class="loader"></div>
+    <div id="search-results"></div>
 </div>
-
-<div class="tabs">
-    <button class="tab active" data-tab="social">Social Media</button>
-    <button class="tab" data-tab="dating">Dating & Adult</button>
-    <button class="tab" data-tab="deep">Deep Search</button>
-    <button class="tab" data-tab="images">Bilder</button>
-</div>
-
-<!-- Ergebnisse und Chatbot kommen hier rein - aber erstmal nur der Chatbot, damit die Seite lädt -->
 
 <!-- Chatbot -->
-<button id="chat-toggle" style="position:fixed; bottom:20px; right:20px; width:60px; height:60px; border-radius:50%; background:#8ab4f8; color:#181a1b; border:none; font-size:28px; box-shadow:0 4px 20px rgba(0,0,0,0.3); cursor:pointer; z-index:1000;">💬</button>
+<button id="chat-toggle" style="position:fixed; bottom:30px; right:30px; width:65px; height:65px; border-radius:50%; background:#00f0ff; color:#0a0c14; border:none; font-size:32px; box-shadow:0 0 30px rgba(0,240,255,0.6); cursor:pointer; z-index:999;">💬</button>
 
-<div id="chat-window" style="display:none; position:fixed; bottom:90px; right:20px; width:320px; height:460px; background:#23272a; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.4); overflow:hidden; z-index:1000;">
-    <div style="background:#8ab4f8; color:#181a1b; padding:14px; font-weight:bold; text-align:center;">ShadowSeek Assistant</div>
-    <div id="chat-messages" style="height:340px; overflow-y:auto; padding:14px; background:#1e2124;"></div>
-    <div style="padding:10px; background:#2c3238; display:flex;">
-        <input id="chat-input" type="text" placeholder="Frag mich was..." style="flex:1; padding:12px; border:none; border-radius:8px; background:#181a1b; color:white;">
-        <button id="chat-send" style="margin-left:8px; padding:12px 18px; background:#8ab4f8; color:#181a1b; border:none; border-radius:8px;">Senden</button>
+<div id="chat-window" style="display:none; position:fixed; bottom:110px; right:30px; width:340px; height:480px; background:#1a2333; border-radius:16px; box-shadow:0 10px 40px rgba(0,0,0,0.6); overflow:hidden; z-index:1000;">
+    <div style="background:#00f0ff; color:#0a0c14; padding:16px; font-weight:bold; text-align:center;">ShadowSeek Assistant</div>
+    <div id="chat-messages" style="height:360px; overflow-y:auto; padding:16px; background:#16213a;"></div>
+    <div style="padding:12px; background:#1f2a44; display:flex;">
+        <input id="chat-input" type="text" placeholder="Frag mich was..." style="flex:1; padding:14px; border:none; border-radius:12px; background:#0f1829; color:white;">
+        <button id="chat-send" style="margin-left:8px; padding:14px 24px; background:#00f0ff; color:#0a0c14; border:none; border-radius:12px; font-weight:bold;">Senden</button>
     </div>
 </div>
 
 <script>
-// Chatbot Funktionalität
+// Suche + Chatbot
+document.getElementById('search-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const query = document.getElementById('search-query').value.trim();
+    if (!query) return;
+
+    const resultsDiv = document.getElementById('search-results');
+    resultsDiv.innerHTML = '<div style="color:#00f0ff;margin-top:18px;">Suche läuft...</div>';
+
+    try {
+        const res = await fetch('/api/search', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            resultsDiv.innerHTML = `<div style=\"color:#ff5555;margin-top:18px;\">${data.error}</div>`;
+        } else if (data.organic && data.organic.length) {
+            resultsDiv.innerHTML = data.organic.map(r => `
+                <div style=\"margin:18px 0;padding:18px 22px;background:#181a1b;border-radius:12px;\">
+                    <a href=\"${r.link}\" target=\"_blank\" style=\"color:#00f0ff;font-size:1.15em;font-weight:bold;text-decoration:none;\">${r.title}</a>
+                    <div style=\"color:#aaa;margin:6px 0 0 0;\">${r.snippet || ''}</div>
+                </div>
+            `).join('');
+        } else {
+            resultsDiv.innerHTML = '<div style=\"color:#aaa;margin-top:18px;\">Keine Ergebnisse gefunden.</div>';
+        }
+    } catch (err) {
+        resultsDiv.innerHTML = '<div style=\"color:#ff5555;margin-top:18px;\">Fehler bei der Suche.</div>';
+    }
+});
+
+const toggleBtn = document.getElementById('chat-toggle');
+const chatWindow = document.getElementById('chat-window');
 const messagesDiv = document.getElementById('chat-messages');
 const input = document.getElementById('chat-input');
 const sendBtn = document.getElementById('chat-send');
-const chatWindow = document.getElementById('chat-window');
-const toggleBtn = document.getElementById('chat-toggle');
 
 function addMessage(text, isUser = false) {
     const div = document.createElement('div');
-    div.style.marginBottom = '12px';
+    div.style.marginBottom = '14px';
     div.style.textAlign = isUser ? 'right' : 'left';
-    div.style.color = isUser ? '#8ab4f8' : '#ddd';
+    div.style.color = isUser ? '#00f0ff' : '#ddd';
     div.textContent = text;
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -88,67 +164,32 @@ toggleBtn.addEventListener('click', () => {
 sendBtn.addEventListener('click', async () => {
     const text = input.value.trim();
     if (!text) return;
-
     addMessage(text, true);
     input.value = '';
 
-    const loadingMsg = document.createElement('div');
-    loadingMsg.textContent = 'denkt...';
-    loadingMsg.style.color = '#666';
-    messagesDiv.appendChild(loadingMsg);
+    const loading = document.createElement('div');
+    loading.textContent = 'denkt...';
+    loading.style.color = '#666';
+    messagesDiv.appendChild(loading);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
     try {
         const res = await fetch('/api/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ message: text })
         });
         const data = await res.json();
-        loadingMsg.remove();
+        loading.remove();
         if (data.reply) addMessage(data.reply);
-        else addMessage('Etwas ist schiefgelaufen...');
     } catch (e) {
-        loadingMsg.remove();
+        loading.remove();
         addMessage('Sorry, bin gerade offline.', false);
     }
 });
 
 input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendBtn.click();
-});
-
-</script>
-<script>
-// Agenten-Suche (wieder aktivieren)
-document.getElementById('agent-search-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    if (!username) return;
-
-    const loadingScreen = document.getElementById('loading-screen');
-    const status = document.getElementById('status');
-    const tabs = document.querySelector('.tabs');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    const texts = ["Initialisiere ShadowSeek Agent...", "Durchsuche Social Media...", "Scanne Adult-Plattformen...", "Berechne Match-Scores..."];
-    let i = 0;
-    loadingScreen.style.display = 'block';
-    tabs.style.display = 'none';
-    tabContents.forEach(el => el.style.display = 'none');
-
-    const int = setInterval(() => {
-        i = (i + 1) % texts.length;
-        status.textContent = texts ;
-    }, 700);
-
-    setTimeout(() => {
-        loadingScreen.style.display = 'none';
-        tabs.style.display = 'flex';
-        tabContents.forEach(el => el.style.display = '');
-        clearInterval(int);
-        window.location.href = `/search?username=${encodeURIComponent(username)}`;
-    }, 3100);
 });
 </script>
 
