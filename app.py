@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from models import db, PublicProfile
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import requests
 from openai import OpenAI
@@ -167,6 +168,53 @@ def search():
                            lastname=lastname,
                            city=city,
                            email=email)
+
+
+# --- User Model (if not present in models.py) ---
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+
+# --- Auth Routes for Modal Forms ---
+from flask import redirect, url_for, flash
+
+@app.route('/register', methods=['POST'])
+def register():
+    username = request.form.get('username')
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    if User.query.filter_by(username=username).first():
+        return "Username existiert bereits", 400
+    if User.query.filter_by(email=email).first():
+        return "E-Mail existiert bereits", 400
+
+    new_user = User(
+        username=username,
+        email=email,
+        password_hash=generate_password_hash(password)
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    return "Registrierung erfolgreich!"
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    user = User.query.filter_by(username=username).first()
+    if user and check_password_hash(user.password_hash, password):
+        return "Login erfolgreich!"
+    return "Falscher Username oder Passwort", 401
+
+@app.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    email = request.form.get('email')
+    # Hier später echte E-Mail-Funktion einbauen
+    return "Wenn die E-Mail existiert, wurde ein Reset-Link gesendet."
 
 
 
