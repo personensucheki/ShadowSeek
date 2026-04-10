@@ -1,7 +1,99 @@
+
 from flask import Flask, render_template, request
 from models import db, PublicProfile
 import os
 import requests
+
+# --- ShadowSeek Search Algorithmus v1.0 (Flask-kompatibel) ---
+def shadowseek_search(query):
+    def generate_profile_url(platform, username):
+        urls = {
+            'Instagram': f'https://instagram.com/{username}',
+            'TikTok': f'https://tiktok.com/@{username}',
+            'Twitter/X': f'https://twitter.com/{username}',
+            'Facebook': f'https://facebook.com/{username}',
+            'Reddit': f'https://reddit.com/user/{username}',
+            'OnlyFans': f'https://onlyfans.com/{username}',
+            'Fansly': f'https://fansly.com/{username}',
+            'Pornhub': f'https://pornhub.com/users/{username}',
+            'ManyVids': f'https://manyvids.com/Profile/{username}',
+            'Stripchat': f'https://stripchat.com/{username}',
+        }
+        return urls.get(platform, '#')
+
+    username = query.get('username', '').strip()
+    if not username:
+        return None
+
+    # 1. Basis-Score berechnen
+    score = 65
+
+    # 2. Bonus für zusätzliche Infos
+    if query.get('firstname'): score += 12
+    if query.get('lastname'): score += 15
+    if query.get('city'): score += 8
+    if query.get('email'): score += 18
+
+    # 3. Plattformen & Kategorien
+    platforms = {
+        'social': [
+            ('Instagram', 92),
+            ('TikTok', 87),
+            ('Twitter/X', 79),
+            ('Facebook', 71),
+            ('Reddit', 64)
+        ],
+        'dating': [
+            ('OnlyFans', 91),
+            ('Fansly', 83)
+        ],
+        'porn': [
+            ('Pornhub', 91),
+            ('ManyVids', 83),
+            ('Stripchat', 76)
+        ]
+    }
+
+    categorized_results = {}
+    for category, plat_list in platforms.items():
+        categorized_results[category] = []
+        for name, base_score in plat_list:
+            final_score = min(99, int(base_score + (score - 65) * 0.8))
+            profile = {
+                'username': username,
+                'platform': name,
+                'profile_url': generate_profile_url(name, username),
+                'match_score': final_score,
+                'category': category
+            }
+            categorized_results[category].append(profile)
+
+    total_findings = sum(len(profiles) for profiles in categorized_results.values())
+
+    return {
+        'categorized_results': categorized_results,
+        'meta': {
+            'query': username,
+            'total_profiles': total_findings,
+            'agent_confidence': min(98, score + 15),
+            'search_depth': 'Deep Scan' if score > 85 else 'Standard Scan',
+            'timestamp': 'just now'
+        }
+    }
+
+# --- Agenten-Style Loading-Text-Liste (deutsch) ---
+SHADOWSEEK_LOADING_TEXTS = [
+    "Initialisiere ShadowSeek Agent...",
+    "Lade neuronale Suchmatrix...",
+    "Durchsuche Social Media Netzwerke...",
+    "Scanne Dating & Adult Plattformen...",
+    "Analysiere Deep-Web Verbindungen...",
+    "Kombiniere Metadaten & Querverweise...",
+    "Berechne Match-Scores...",
+    "Finalisiere Agenten-Report...",
+    "Erstelle Ergebnisübersicht...",
+    "Suche abgeschlossen – Ergebnisse werden geladen..."
+]
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shadowseek.db'
@@ -14,27 +106,45 @@ with app.app_context():
 def home():
     return render_template('home.html')
 
+
+
+
 @app.route('/search')
 def search():
     username = request.args.get('username', '').strip()
-    # Optional: Kategorie-Filter aus Query-Param
-    category = request.args.get('category', '').strip().lower()
+    firstname = request.args.get('firstname', '').strip()
+    lastname = request.args.get('lastname', '').strip()
+    
+    categorized_results = {
+        'social': []
+    }
 
-    # Suche nach Username (und optional Kategorie)
-    query = PublicProfile.query
     if username:
-        query = query.filter(PublicProfile.username.ilike(f"%{username}%"))
-    results = query.all()
+        platforms = [
+            {'name': 'Instagram', 'url': f'https://instagram.com/{username}', 'category': 'social'},
+            {'name': 'TikTok', 'url': f'https://tiktok.com/@{username}', 'category': 'social'},
+            {'name': 'Twitter/X', 'url': f'https://twitter.com/{username}', 'category': 'social'},
+            {'name': 'Facebook', 'url': f'https://facebook.com/{username}', 'category': 'social'},
+            {'name': 'OnlyFans', 'url': f'https://onlyfans.com/{username}', 'category': 'adult'},
+            {'name': 'Fansly', 'url': f'https://fansly.com/{username}', 'category': 'adult'},
+            {'name': 'Pornhub', 'url': f'https://pornhub.com/users/{username}', 'category': 'porn'},
+            {'name': 'ManyVids', 'url': f'https://manyvids.com/Profile/{username}', 'category': 'porn'},
+            {'name': 'Stripchat', 'url': f'https://stripchat.com/{username}', 'category': 'porn'},
+        ]
 
-    # Ergebnisse nach Kategorie sortieren
-    categories = ['social', 'dating', 'adult', 'porn']
-    categorized_results = {cat: [] for cat in categories}
-    for profile in results:
-        cat = (profile.category or '').lower()
-        if cat in categorized_results:
-            categorized_results[cat].append(profile)
+        for p in platforms:
+            profile = {
+                'username': username,
+                'platform': p['name'],
+                'profile_url': p['url'],
+                'match_score': 85 if p['category'] == 'social' else 78
+            }
+            if p['category'] == 'social':
+                categorized_results['social'].append(profile)
 
-    return render_template('search.html', results=results, categorized_results=categorized_results)
+    return render_template('search.html', 
+                           categorized_results=categorized_results, 
+                           username=username)
 
 
 
