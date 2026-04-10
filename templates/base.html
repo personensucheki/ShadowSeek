@@ -87,136 +87,136 @@
             display: block;
         }
         @media (max-width: 700px) {
-            .navbar {
-                flex-direction: column;
-                height: auto;
-                padding: 1vw;
-            }
-            .navbar-center {
-                flex-direction: column;
-                gap: 0.5em;
-                width: 100%;
-                align-items: center;
-                margin: 10px 0;
-            }
-            .navbar-right {
-                width: 100%;
-                display: flex;
-                justify-content: flex-end;
-                margin-bottom: 5px;
-            }
-        }
-        main {
-            margin: 40px auto 0 auto;
-            max-width: 900px;
-            padding: 2vw;
-        }
-    </style>
-</head>
-<body>
-    <nav style="display:flex; justify-content:space-between; align-items:center; padding:0 40px; height:70px; background:#23272a;">
-        <div style="font-size:22px; font-weight:bold; color:#8ab4f8;">ShadowSeek</div>
-        
-        <div style="display:flex; gap:30px; font-weight:500;">
-            <a href="/" style="color:white; text-decoration:none;">Home</a>
-            <a href="/search" style="color:white; text-decoration:none;">Suche</a>
-            <a href="#" style="color:white; text-decoration:none;">Admin</a>
-        </div>
+            {% extends "base.html" %}
 
-        <div style="display:flex; align-items:center; gap:12px;">
-            <!-- Login & Register Buttons -->
-            <button onclick="showLoginModal()" 
-                    style="background:transparent; color:#8ab4f8; border:1px solid #8ab4f8; padding:9px 20px; border-radius:8px; cursor:pointer; font-weight:500;">
-                Anmelden
-            </button>
-            
-            <button onclick="showRegisterModal()" 
-                    style="background:#8ab4f8; color:#181a1b; border:none; padding:9px 24px; border-radius:8px; font-weight:bold; cursor:pointer;">
-                Registrieren
-            </button>
+            {% block title %}ShadowSeek{% endblock %}
 
-            <!-- Profil Dropdown -->
-            <div class="profile-dropdown" style="position:relative;">
-                <button onclick="toggleDropdown()" 
-                        style="background:transparent; color:white; border:none; display:flex; align-items:center; gap:8px; cursor:pointer;">
-                    Profil <span style="font-size:18px;">▼</span>
-                </button>
-                
-                <div id="dropdown-menu" style="display:none; position:absolute; right:0; top:45px; background:#23272a; border-radius:10px; box-shadow:0 10px 20px rgba(0,0,0,0.5); min-width:180px; overflow:hidden;">
-                    <a href="#" style="display:block; padding:14px 20px; color:white; text-decoration:none;">Mein Profil</a>
-                    <a href="#" style="display:block; padding:14px 20px; color:white; text-decoration:none;">Meine Suchen</a>
-                    <a href="#" style="display:block; padding:14px 20px; color:white; text-decoration:none;">Einstellungen</a>
-                    <hr style="margin:4px 0; border:none; border-top:1px solid #444;">
-                    <a href="#" onclick="logout()" style="display:block; padding:14px 20px; color:#ff5555; text-decoration:none;">Abmelden</a>
+            {% block content %}
+            <style>
+                body {
+                    background: radial-gradient(circle at center, #0a0e17 0%, #000 70%);
+                    margin: 0;
+                    padding: 0;
+                    min-height: 100vh;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    color: #f1f1f1;
+                    overflow-x: hidden;
+                }
+
+                .world-bg {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: url('/static/img/worldmap.svg') center/cover no-repeat;
+                    opacity: 0.18;
+                    z-index: -1;
+                    pointer-events: none;
+                }
+
+                .hero {
+                    min-height: 85vh;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .logo {
+                    width: 150px;
+                    height: 150px;
+                    background: linear-gradient(135deg, #00f0ff, #0066ff);
+                    border-radius: 26px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 4.8rem;
+                    font-weight: 900;
+                    color: white;
+                    box-shadow: 0 0 80px rgba(0, 240, 255, 0.7);
+                    margin-bottom: 20px;
+                }
+
+                .slogan {
+                    color: #00f0ff;
+                    font-size: 1.65rem;
+                    font-weight: 600;
+                    text-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+                    margin-bottom: 60px;
+                    letter-spacing: 1.5px;
+                }
+
+                .search-box {
+                    width: 100%;
+                    max-width: 720px;
+                    position: relative;
+                }
+
+                .search-input {
+                    width: 100%;
+                    padding: 24px 28px 24px 70px;
+                    font-size: 1.4rem;
+                    border-radius: 50px;
+                    border: 2px solid rgba(0, 240, 255, 0.25);
+                    background: rgba(15, 23, 42, 0.85);
+                    color: white;
+                    outline: none;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+                }
+
+                .search-input:focus {
+                    border-color: #00f0ff;
+                    box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.3);
+                }
+
+                .search-icon {
+                    position: absolute;
+                    left: 30px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 1.8rem;
+                    color: #00f0ff;
+                }
+
+                .search-btn {
+                    position: absolute;
+                    right: 8px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: linear-gradient(90deg, #00f0ff, #0066ff);
+                    color: #0a0c14;
+                    border: none;
+                    padding: 16px 40px;
+                    border-radius: 50px;
+                    font-weight: 700;
+                    font-size: 1.15rem;
+                    cursor: pointer;
+                    box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+                }
+            </style>
+
+            <div class="world-bg"></div>
+
+            <div class="hero">
+                <div class="logo">SS</div>
+                <div class="slogan">Finde, was im Schatten verborgen liegt.</div>
+    
+                <div class="search-box">
+                    <form action="/search" method="get">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" 
+                               class="search-input" 
+                               name="q" 
+                               placeholder="Wonach suchst du? Name, Username, Ort, Begriff..." 
+                               autocomplete="off" 
+                               required>
+                        <button type="submit" class="search-btn">Suchen</button>
+                    </form>
                 </div>
             </div>
-        </div>
-    </nav>
 
-    <!-- Login Modal -->
-    <div id="login-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
-        <div style="background:#23272a; width:380px; padding:32px; border-radius:16px; position:relative;">
-            <!-- Schließen-Button entfernt wie gewünscht -->
-            <h2 style="text-align:center; color:#8ab4f8; margin-bottom:24px;">Anmelden</h2>
-            <input type="text" placeholder="Username oder E-Mail" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
-            <input type="password" placeholder="Passwort" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
-            <button style="width:100%; padding:14px; margin-top:16px; background:#8ab4f8; color:#181a1b; border:none; border-radius:8px; font-weight:bold;">Anmelden</button>
-            <p onclick="switchToRegister()" style="text-align:center; color:#8ab4f8; margin-top:20px; cursor:pointer;">Noch kein Account? Jetzt registrieren</p>
-        </div>
-    </div>
-
-    <!-- Register Modal -->
-    <div id="register-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
-        <div style="background:#23272a; width:380px; padding:32px; border-radius:16px; position:relative;">
-            <button onclick="closeModal('register-modal')" 
-                    style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:28px; color:#888; cursor:pointer;">×</button>
-            
-            <h2 style="text-align:center; color:#8ab4f8; margin-bottom:24px;">Registrieren</h2>
-            <input type="text" placeholder="Username" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
-            <input type="email" placeholder="E-Mail" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
-            <input type="password" placeholder="Passwort" style="width:100%; padding:14px; margin:10px 0; background:#181a1b; border:none; border-radius:8px; color:white;">
-            <button style="width:100%; padding:14px; margin-top:20px; background:#8ab4f8; color:#181a1b; border:none; border-radius:8px; font-weight:bold;">Konto erstellen</button>
-        </div>
-    </div>
-
-    <script>
-    // Dropdown
-    function toggleDropdown() {
-        const menu = document.getElementById('dropdown-menu');
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-    }
-
-    // Modals
-    function showLoginModal() { 
-        document.getElementById('login-modal').style.display = 'flex'; 
-    }
-    function showRegisterModal() { 
-        document.getElementById('register-modal').style.display = 'flex'; 
-    }
-    function switchToRegister() {
-        document.getElementById('login-modal').style.display = 'none';
-        document.getElementById('register-modal').style.display = 'flex';
-    }
-
-    // Modal sauber schließen (nur eine Funktion, keine Dopplung)
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) modal.style.display = 'none';
-    }
-    function logout() {
-        alert("Du wurdest abgemeldet.");
-        location.reload();
-    }
-
-    // Klick außerhalb schließt Dropdown
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.profile-dropdown')) {
-            document.getElementById('dropdown-menu').style.display = 'none';
-        }
-    });
-    </script>
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-</body>
+            {% endblock %}
 </html>
