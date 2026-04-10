@@ -131,7 +131,8 @@ document.getElementById('agent-search-form').addEventListener('submit', function
     const tabs = document.querySelector('.tabs');
     const tabContents = document.querySelectorAll('.tab-content');
 
-    const texts = ["Initialisiere ShadowSeek Agent...", "Durchsuche Social Media...", "Scanne Adult-Plattformen...", "Berechne Match-Scores..." 0];
+    const texts = ["Initialisiere ShadowSeek Agent...", "Durchsuche Social Media...", "Scanne Adult-Plattformen...", "Berechne Match-Scores..."];
+    let i = 0;
     loadingScreen.style.display = 'block';
     tabs.style.display = 'none';
     tabContents.forEach(el => el.style.display = 'none');
