@@ -1,8 +1,34 @@
 
+
 from flask import Flask, render_template, request
 from models import db, PublicProfile
 import os
 import requests
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    data = request.get_json()
+    user_message = data.get('message', '')
+
+    if not user_message:
+        return {'error': 'No message'}, 400
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Du bist ShadowSeek Assistant. Ein cooler, direkter und etwas frecher KI-Assistent für eine Personensuchmaschine. Du hilfst bei Fragen zu Social Media Profilen, Datenschutz und Deep Search. Antworte kurz, frech und auf Deutsch."},
+                {"role": "user", "content": user_message}
+            ],
+            max_tokens=300,
+            temperature=0.7
+        )
+        return {'reply': response.choices[0].message.content}
+    except Exception as e:
+        return {'error': str(e)}, 500
 
 # --- ShadowSeek Search Algorithmus v1.0 (Flask-kompatibel) ---
 def shadowseek_search(query):
