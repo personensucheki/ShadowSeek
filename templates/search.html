@@ -133,18 +133,64 @@
     <button class="tab" id="deep" data-tab="deep">Deep Search</button>
 </div>
 
-<!-- Social Media -->
+
+<!-- Social Media Tab -->
 <div class="tab-content active" id="social">
     <div class="results-grid">
-        {% if results %}
-            {% for profile in results %}
+        {% set social_results = categorized_results['social'] if categorized_results and 'social' in categorized_results else [] %}
+        {% if social_results %}
+            {% for profile in social_results %}
             <div class="result-card">
                 <img class="profile-pic" src="{{ profile.profile_pic or 'https://via.placeholder.com/90' }}" alt="Profilbild">
                 <div class="profile-name">{{ profile.firstname or '' }} {{ profile.lastname or '' }}</div>
                 <div class="platform">{{ profile.platform or 'Social Media' }}</div>
-                <div class="short-info">{{ profile.info or 'Kein Info vorhanden' }}</div>
+                <div class="short-info">{{ profile.bio or 'Kein Info vorhanden' }}</div>
                 <div class="found-at">{{ profile.username }}</div>
-                <a href="#" class="profile-btn">Zum Profil</a>
+                <a href="{{ profile.profile_url or '#' }}" class="profile-btn" target="_blank">Zum Profil</a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="grid-column: 1/-1; text-align:center; color:#8ab4f8;">Keine Ergebnisse gefunden.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Dating & Adult Tab -->
+<div class="tab-content" id="dating">
+    <div class="results-grid">
+        {% set dating_results = categorized_results['dating'] if categorized_results and 'dating' in categorized_results else [] %}
+        {% set adult_results = categorized_results['adult'] if categorized_results and 'adult' in categorized_results else [] %}
+        {% set combined_results = dating_results + adult_results %}
+        {% if combined_results %}
+            {% for profile in combined_results %}
+            <div class="result-card">
+                <img class="profile-pic" src="{{ profile.profile_pic or 'https://via.placeholder.com/90' }}" alt="Profilbild">
+                <div class="profile-name">{{ profile.firstname or '' }} {{ profile.lastname or '' }}</div>
+                <div class="platform">{{ profile.platform or 'Dating/Adult' }}</div>
+                <div class="short-info">{{ profile.bio or 'Kein Info vorhanden' }}</div>
+                <div class="found-at">{{ profile.username }}</div>
+                <a href="{{ profile.profile_url or '#' }}" class="profile-btn" target="_blank">Zum Profil</a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="grid-column: 1/-1; text-align:center; color:#8ab4f8;">Keine Ergebnisse gefunden.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Porn Tab -->
+<div class="tab-content" id="deep">
+    <div class="results-grid">
+        {% set porn_results = categorized_results['porn'] if categorized_results and 'porn' in categorized_results else [] %}
+        {% if porn_results %}
+            {% for profile in porn_results %}
+            <div class="result-card">
+                <img class="profile-pic" src="{{ profile.profile_pic or 'https://via.placeholder.com/90' }}" alt="Profilbild">
+                <div class="profile-name">{{ profile.firstname or '' }} {{ profile.lastname or '' }}</div>
+                <div class="platform">{{ profile.platform or 'Porn' }}</div>
+                <div class="short-info">{{ profile.bio or 'Kein Info vorhanden' }}</div>
+                <div class="found-at">{{ profile.username }}</div>
+                <a href="{{ profile.profile_url or '#' }}" class="profile-btn" target="_blank">Zum Profil</a>
             </div>
             {% endfor %}
         {% else %}
