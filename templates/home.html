@@ -14,6 +14,50 @@
                 Suchen
             </button>
         </form>
+        <div style="margin-top: 18px;">
+            <a href="#" onclick="showForgotModal(); return false;" class="forgot-link">Passwort vergessen?</a>
+        </div>
     </div>
 </div>
+
+<!-- Passwort vergessen Modal -->
+<div id="forgot-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:#23272a; padding:32px; border-radius:16px; width:380px; text-align:center; margin:auto; position:relative; top:20vh;">
+        <h3 style="color:#8ab4f8; margin-bottom:20px;">Passwort zurücksetzen</h3>
+        <p style="color:#aaa; margin-bottom:24px;">Gib deine E-Mail-Adresse ein und wir senden dir ein neues Passwort zu.</p>
+        <input type="email" id="reset-email" placeholder="Deine E-Mail-Adresse" 
+               style="width:100%; padding:14px; margin-bottom:20px; background:#181a1b; border:none; border-radius:8px; color:white;">
+        <button onclick="sendReset()" 
+                style="background:#8ab4f8; color:#181a1b; border:none; padding:14px; width:100%; border-radius:8px; font-weight:bold; margin-bottom:16px;">
+            Neues Passwort zusenden
+        </button>
+        <button onclick="closeModal()" 
+                style="background:transparent; color:#888; border:none; padding:12px;">
+            Abbrechen
+        </button>
+    </div>
+</div>
+
+<script>
+function showForgotModal() {
+    document.getElementById('forgot-modal').style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('forgot-modal').style.display = 'none';
+}
+function sendReset() {
+    const email = document.getElementById('reset-email').value.trim();
+    if (!email) {
+        alert("Bitte gib eine E-Mail-Adresse ein.");
+        return;
+    }
+    alert("✅ Ein neues Passwort wurde an " + email + " gesendet.\n\n(Dies ist nur eine Simulation)");
+    closeModal();
+}
+document.querySelector('.forgot-link').addEventListener('click', function(e) {
+    e.preventDefault();
+    showForgotModal();
+});
+</script>
+
 {% endblock %}
