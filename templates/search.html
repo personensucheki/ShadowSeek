@@ -3,11 +3,224 @@
 {% block title %}ShadowSeek - Suche{% endblock %}
 
 {% block content %}
-<div style="text-align: center; margin-top: 100px;">
-    <h1 style="color: #8ab4f8; margin-bottom: 30px;">Suchergebnis</h1>
-    <div style="font-size: 1.3em; margin-bottom: 30px;">
-        Suche nach: <strong>{{ query }}</strong>
+<style>
+    .search-hero {
+        background: linear-gradient(120deg, #23272a 60%, #181a1b 100%);
+        border-radius: 18px;
+        padding: 38px 24px 32px 24px;
+        margin: 0 auto 36px auto;
+        max-width: 800px;
+        box-shadow: 0 6px 32px rgba(0,0,0,0.22);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .search-hero form {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .search-input {
+        width: 70%;
+        max-width: 420px;
+        background: #181a1b;
+        color: #f1f1f1;
+        border: none;
+        border-radius: 12px 0 0 12px;
+        padding: 20px 22px;
+        font-size: 1.25em;
+        outline: none;
+        box-shadow: 0 2px 12px rgba(138,180,248,0.07);
+        transition: box-shadow 0.2s;
+    }
+    .search-input:focus {
+        box-shadow: 0 0 0 2px #8ab4f8;
+    }
+    .search-btn {
+        background: #8ab4f8;
+        color: #181a1b;
+        border: none;
+        border-radius: 0 12px 12px 0;
+        padding: 20px 32px;
+        font-size: 1.25em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+        box-shadow: 0 2px 12px rgba(138,180,248,0.07);
+    }
+    .search-btn:hover {
+        background: #5a8be0;
+    }
+    .tabs {
+        display: flex;
+        justify-content: center;
+        gap: 2vw;
+        margin: 36px 0 28px 0;
+    }
+    .tab {
+        background: #23272a;
+        color: #8ab4f8;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-size: 1.13em;
+        padding: 14px 36px;
+        border-radius: 10px 10px 0 0;
+        cursor: pointer;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        transition: border-bottom 0.2s, color 0.2s, background 0.2s;
+    }
+    .tab.active, .tab:hover {
+        color: #f1f1f1;
+        border-bottom: 3px solid #8ab4f8;
+        background: #181a1b;
+    }
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+        gap: 32px;
+        margin-top: 10px;
+    }
+    .result-card {
+        background: linear-gradient(120deg, #23272a 70%, #181a1b 100%);
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+        padding: 28px 20px 22px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.15s, box-shadow 0.15s;
+        position: relative;
+    }
+    .result-card:hover {
+        transform: translateY(-6px) scale(1.035);
+        box-shadow: 0 10px 32px rgba(138,180,248,0.13);
+    }
+    .profile-pic {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 16px;
+        border: 2.5px solid #8ab4f8;
+        background: #181a1b;
+    }
+    .profile-name {
+        font-size: 1.18em;
+        font-weight: bold;
+        color: #f1f1f1;
+        margin-bottom: 7px;
+        text-align: center;
+    }
+    .platform {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.05em;
+        color: #8ab4f8;
+        margin-bottom: 8px;
+    }
+    .platform-icon {
+        width: 24px;
+        height: 24px;
+        vertical-align: middle;
+    }
+    .short-info {
+        font-size: 1em;
+        color: #b0b0b0;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    .found-at {
+        font-size: 0.98em;
+        color: #8ab4f8;
+        margin-bottom: 16px;
+        text-align: center;
+        word-break: break-all;
+    }
+    .profile-btn {
+        background: #8ab4f8;
+        color: #181a1b;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 28px;
+        font-size: 1.08em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-top: 8px;
+        box-shadow: 0 2px 8px rgba(138,180,248,0.07);
+    }
+    .profile-btn:hover {
+        background: #5a8be0;
+    }
+    @media (max-width: 700px) {
+        .search-hero { padding: 18px 2vw; }
+        .tabs { flex-direction: column; gap: 0.5em; }
+        .results-grid { grid-template-columns: 1fr; }
+        .search-input { width: 100%; max-width: none; }
+    }
+</style>
+
+<div class="search-hero">
+    <form method="get" action="/search">
+        <input class="search-input" type="text" name="q" placeholder="Username, Name, Ort oder E-Mail...">
+        <button class="search-btn" type="submit">Suchen</button>
+    </form>
+</div>
+
+<div class="tabs">
+    <button class="tab active">Social Media</button>
+    <button class="tab">Dating & Adult</button>
+    <button class="tab">Bilder</button>
+    <button class="tab">Deep Search</button>
+</div>
+
+<div class="results-grid">
+    <!-- Fake-Ergebnisse -->
+    <div class="result-card">
+        <img class="profile-pic" src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profilbild">
+        <div class="profile-name">Max Mustermann</div>
+        <div class="platform">
+            <img class="platform-icon" src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook">
+            Facebook
+        </div>
+        <div class="short-info">Marketing Manager aus Berlin</div>
+        <div class="found-at">facebook.com/max.mustermann</div>
+        <a href="#" class="profile-btn">Zum Profil</a>
     </div>
-    <a href="/" style="color: #8ab4f8; text-decoration: underline;">Zurück zur Startseite</a>
+    <div class="result-card">
+        <img class="profile-pic" src="https://randomuser.me/api/portraits/women/44.jpg" alt="Profilbild">
+        <div class="profile-name">Lisa Beispiel</div>
+        <div class="platform">
+            <img class="platform-icon" src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/instagram.svg" alt="Instagram">
+            Instagram
+        </div>
+        <div class="short-info">Fotografin aus Hamburg</div>
+        <div class="found-at">instagram.com/lisa.b</div>
+        <a href="#" class="profile-btn">Zum Profil</a>
+    </div>
+    <div class="result-card">
+        <img class="profile-pic" src="https://randomuser.me/api/portraits/men/85.jpg" alt="Profilbild">
+        <div class="profile-name">Jonas Test</div>
+        <div class="platform">
+            <img class="platform-icon" src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/twitter.svg" alt="Twitter">
+            Twitter
+        </div>
+        <div class="short-info">Softwareentwickler aus Köln</div>
+        <div class="found-at">twitter.com/jonas_test</div>
+        <a href="#" class="profile-btn">Zum Profil</a>
+    </div>
+    <div class="result-card">
+        <img class="profile-pic" src="https://randomuser.me/api/portraits/women/68.jpg" alt="Profilbild">
+        <div class="profile-name">Sophie Musterfrau</div>
+        <div class="platform">
+            <img class="platform-icon" src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/linkedin.svg" alt="LinkedIn">
+            LinkedIn
+        </div>
+        <div class="short-info">HR-Managerin aus München</div>
+        <div class="found-at">linkedin.com/in/sophie-musterfrau</div>
+        <a href="#" class="profile-btn">Zum Profil</a>
+    </div>
 </div>
 {% endblock %}
