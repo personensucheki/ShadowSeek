@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request
+from flask_migrate import Migrate
 from flask_mail import Mail, Message
 from flask_wtf import CSRFProtect
 from models import db, PublicProfile, User
@@ -11,6 +12,7 @@ from openai import OpenAI
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.secret_key = os.environ.get('SECRET_KEY', 'devsecret')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///shadowseek.db')
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'localhost')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 25))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'false').lower() == 'true'
@@ -18,8 +20,9 @@ app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@shadowseek.de')
-mail = Mail(app)
+db.init_app(app)
 csrf = CSRFProtect(app)
+migrate = Migrate(app, db)
 
 # Flask-Login Setup
 login_manager = LoginManager()
