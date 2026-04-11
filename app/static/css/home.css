@@ -104,18 +104,32 @@ body {
     align-items: center;
     gap: 0;
     margin: 0 auto 0.5em auto;
-    background: var(--surface);
+    background: linear-gradient(135deg, rgba(12, 12, 12, 0.96), rgba(24, 8, 24, 0.92));
     border-radius: 999px;
-    box-shadow: 0 0 0 3px var(--pink), 0 0 24px var(--green), 0 0 44px var(--pink);
-    border: 3px solid var(--pink);
+    box-shadow: 0 0 0 2px rgba(255, 0, 255, 0.5), 0 0 24px rgba(0, 255, 159, 0.2), 0 0 44px rgba(255, 0, 255, 0.22);
+    border: 2px solid rgba(255, 0, 255, 0.46);
     padding: 6px 8px 6px 22px;
     position: relative;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
+
+.landing-search-form:hover,
+.landing-search-form:focus-within {
+    border-color: rgba(0, 255, 159, 0.92);
+    box-shadow: 0 0 0 2px rgba(0, 255, 159, 0.4), 0 0 30px rgba(0, 255, 159, 0.28), 0 0 48px rgba(255, 0, 255, 0.24);
+    transform: translateY(-1px);
+}
+
 .searchbar-wrapper {
     display: flex;
     align-items: center;
     flex: 1 1 0%;
     position: relative;
+    min-height: 58px;
+    padding: 0 18px 0 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(0, 255, 159, 0.05));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 .engine-select {
     border: none;
@@ -138,8 +152,8 @@ body {
     outline: none;
     color: var(--text);
     font-size: 1.32rem;
-    padding: 12px 0;
-    font-weight: 500;
+    padding: 12px 0 12px 6px;
+    font-weight: 600;
     letter-spacing: 0.01em;
     border-radius: 0;
 }
@@ -179,8 +193,12 @@ body {
     letter-spacing: 0.01em;
 }
 .landing-search-input::placeholder {
-    color: var(--muted);
+    color: rgba(255, 255, 255, 0.62);
     opacity: 1;
+}
+
+.landing-search-input:focus::placeholder {
+    color: rgba(0, 255, 159, 0.66);
 }
 .landing-search-btn {
     background: linear-gradient(135deg, var(--green), var(--pink));

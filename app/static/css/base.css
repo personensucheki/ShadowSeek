@@ -21,11 +21,27 @@ body {
 }
 
 .navbar-logo {
+    display: inline-flex;
+    align-items: center;
     font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: 0.04em;
     color: #00ff9f;
+    text-decoration: none;
     text-shadow: 0 0 18px rgba(0, 255, 159, 0.2);
+    transition: color 0.18s ease, text-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.navbar-logo:hover,
+.navbar-logo:focus-visible {
+    color: #ffffff;
+    text-shadow: 0 0 18px rgba(0, 255, 159, 0.42), 0 0 24px rgba(255, 0, 255, 0.28);
+    transform: translateY(-1px);
+}
+
+.navbar-logo:focus-visible {
+    outline: 2px solid rgba(255, 0, 255, 0.45);
+    outline-offset: 6px;
 }
 
 .navbar-center {
