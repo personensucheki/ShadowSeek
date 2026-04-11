@@ -16,7 +16,7 @@ client = OpenAI(api_key=api_key) if api_key else None
 def home():
     return render_template('home.html')
 
-@app.route('/register', methods= )
+@app.route('/register', methods=['POST'])
 def register():
     username = request.form.get('username', '').strip()
     email = request.form.get('email', '').strip()
@@ -33,7 +33,7 @@ def login():
         return "Alle Felder erforderlich!", 400
     return "Login erfolgreich!"
 
-@app.route('/forgot-password', methods= )
+@app.route('/forgot-password', methods=['POST'])
 def forgot_password():
     email = request.form.get('email', '').strip()
     if not email:
