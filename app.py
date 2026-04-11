@@ -1,12 +1,26 @@
 from flask import Flask, render_template, request
 from models import db, PublicProfile, User
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 import os
 import requests
 from openai import OpenAI
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
+app.secret_key = os.environ.get('SECRET_KEY', 'devsecret')
+
+# Flask-Login Setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# UserMixin für User-Model
+User.__bases__ = (UserMixin,) + User.__bases__
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 api_key = os.environ.get('OPENAI_API_KEY')
 client = OpenAI(api_key=api_key) if api_key else None
 
@@ -203,11 +217,18 @@ def register():
 def login():
     username = request.form.get('username')
     password = request.form.get('password')
-
     user = User.query.filter_by(username=username).first()
     if user and check_password_hash(user.password_hash, password):
+        login_user(user)
         return "Login erfolgreich!"
     return "Falscher Username oder Passwort", 401
+
+# Logout-Route
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
 
 @app.route('/forgot-password', methods=['POST'])
 def forgot_password():
