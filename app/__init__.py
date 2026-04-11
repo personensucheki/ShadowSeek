@@ -54,11 +54,16 @@ def create_app(config_class=None):
     from .routes.admin_feedback import admin_feedback_bp
     app.register_blueprint(admin_feedback_bp)
 
-    @app.context_processor
-    def inject_csrf_token():
-        from flask_wtf.csrf import generate_csrf
 
-        return {"csrf_token": generate_csrf()}
+    @app.context_processor
+    def inject_csrf_token_and_user():
+        from flask_wtf.csrf import generate_csrf
+        from app.models.user import User
+        user_id = session.get("user_id")
+        current_user = None
+        if user_id:
+            current_user = User.query.get(user_id)
+        return {"csrf_token": generate_csrf(), "g": {'current_user': current_user}}
 
     @app.errorhandler(RequestEntityTooLarge)
     def handle_request_entity_too_large(error):

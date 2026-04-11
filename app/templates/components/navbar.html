@@ -3,7 +3,7 @@
     <div class="navbar-center">
         <a href="/">Home</a>
         <a href="/search">Suche</a>
-        {% if g.current_user and g.current_user.role in ['admin', 'super_admin'] %}
+        {% if session.get('is_admin') %}
             <a href="/admin">Admin</a>
         {% endif %}
     </div>
