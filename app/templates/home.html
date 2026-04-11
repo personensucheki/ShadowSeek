@@ -1,46 +1,36 @@
 {% extends "base.html" %}
-{% block title %}ShadowSeek{% endblock %}
+{% block title %}ShadowSeek – Geschützte Suche{% endblock %}
 {% block content %}
-<section class="hero-shell">
-    <div class="hero-copy">
-        <p class="hero-kicker">Cyber Recon Surface</p>
-        <h1 class="hero-logo">ShadowSeek</h1>
-        <p class="hero-sub">
-            Username-basierte Profilsuche mit direkten Reverse-Image-Links und einer fokussierten,
-            {% extends "base.html" %}
-            {% block title %}ShadowSeek – Geschützte Suche{% endblock %}
-            {% block content %}
-            <section class="search-landing">
-                <div class="search-landing-inner">
-                    <h1 class="search-branding">ShadowSeek</h1>
-                    <div class="search-claim">
-                        <span class="claim-main">Hier wirst du geschützt.</span>
-                        <span class="claim-sub">Präzise Suche in öffentlichen und freigegebenen Quellen.</span>
-                    </div>
-                    <form id="landing-search-form" class="landing-search-form" autocomplete="off">
-                        <input
-                            type="text"
-                            name="query"
-                            class="landing-search-input"
-                            placeholder="Username oder Begriff eingeben..."
-                            required
-                            autofocus
-                            maxlength="64"
-                            aria-label="Suchbegriff"
-                        >
-                        <button type="submit" class="landing-search-btn">Suchen</button>
-                    </form>
-                    <div id="category-bar" class="category-bar"></div>
-                    <div class="landing-chips">
-                        <span class="chip chip--green">Öffentliche Quellen</span>
-                        <span class="chip chip--pink">Geschützte Suche</span>
-                        <span class="chip chip--cyan">KI-gestützte Bewertung</span>
-                        <span class="chip chip--gray">DeepSearch bereit</span>
-                        <span class="chip chip--blue">Präzise Treffer</span>
-                    </div>
-                </div>
-            </section>
-            {% endblock %}
-            {% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">{% endblock %}
-            {% block extra_js %}<script src="{{ url_for('static', filename='js/landing.js') }}"></script>{% endblock %}
-                    <input type="number" name="age" min="1" max="120" placeholder="Optional">
+<section class="search-landing">
+    <div class="search-landing-inner">
+        <h1 class="search-branding">ShadowSeek</h1>
+        <div class="search-claim">
+            <span class="claim-main">Hier wirst du geschützt.</span>
+            <span class="claim-sub">Präzise Suche in öffentlichen und freigegebenen Quellen.</span>
+        </div>
+        <form id="landing-search-form" class="landing-search-form" autocomplete="off">
+            <input
+                type="text"
+                name="query"
+                class="landing-search-input"
+                placeholder="Username oder Begriff eingeben..."
+                required
+                autofocus
+                maxlength="64"
+                aria-label="Suchbegriff"
+            >
+            <button type="submit" class="landing-search-btn">Suchen</button>
+        </form>
+        <div id="category-bar" class="category-bar"></div>
+        <div class="landing-chips">
+            <span class="chip chip--green">Öffentliche Quellen</span>
+            <span class="chip chip--pink">Geschützte Suche</span>
+            <span class="chip chip--cyan">KI-gestützte Bewertung</span>
+            <span class="chip chip--gray">DeepSearch bereit</span>
+            <span class="chip chip--blue">Präzise Treffer</span>
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/landing.js') }}"></script>{% endblock %}
