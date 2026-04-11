@@ -35,6 +35,9 @@ class SearchApiTestCase(unittest.TestCase):
                 "REVERSE_IMAGE_MAX_AGE": 3600,
                 "PUBLIC_BASE_URL": "https://shadowseek.example",
                 "UPLOAD_DIRECTORY": self.temp_directory.name,
+                "SERPER_API_KEY": None,
+                "OPENAI_API_KEY": None,
+                "OPENAI_MAX_RERANK_CANDIDATES": 12,
             },
         )
         self.app = create_app(test_config)
@@ -109,6 +112,102 @@ class SearchApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         payload = response.get_json()
         self.assertIn("username", payload["errors"])
+
+    @patch("app.services.search_service.discover_profiles", return_value=[])
+    @patch("app.services.search_service.collect_serper_profiles")
+    def test_search_api_prefers_serper_when_available(self, collect_serper_profiles, _discover_profiles):
+        collect_serper_profiles.return_value = (
+            [
+                {
+                    "platform": "TikTok",
+                    "platform_slug": "tiktok",
+                    "category": "social",
+                    "username": "shadowseek",
+                    "profile_url": "https://www.tiktok.com/@shadowseek",
+                    "match_score": 96,
+                    "verification": "confirmed",
+                    "match_reason": "Direkter Username via Google/Serper",
+                    "http_status": 200,
+                    "source": "serper",
+                    "title": "shadowseek | TikTok",
+                    "snippet": "Profil",
+                }
+            ],
+            {"used": True, "queries": 2},
+        )
+        self.app.config["SERPER_API_KEY"] = "serper-test"
+
+        response = self.client.post("/api/search", data={"username": "shadowseek"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["meta"]["serper_used"])
+        self.assertEqual(payload["meta"]["serper_queries"], 2)
+        self.assertEqual(payload["profiles"][0]["source"], "serper")
+
+    @patch("app.services.search_service.discover_profiles")
+    @patch("app.services.search_service.rerank_profiles_with_openai")
+    def test_search_api_marks_ai_reranking(self, rerank_profiles_with_openai, discover_profiles):
+        discover_profiles.return_value = [
+            {
+                "platform": "Instagram",
+                "platform_slug": "instagram",
+                "category": "social",
+                "username": "shadowseek",
+                "profile_url": "https://www.instagram.com/shadowseek/",
+                "match_score": 91,
+                "verification": "confirmed",
+                "match_reason": "Direkter Username",
+                "http_status": 200,
+                "source": "direct",
+                "title": "",
+                "snippet": "",
+            },
+            {
+                "platform": "Reddit",
+                "platform_slug": "reddit",
+                "category": "community",
+                "username": "shadowseek",
+                "profile_url": "https://www.reddit.com/user/shadowseek/",
+                "match_score": 82,
+                "verification": "confirmed",
+                "match_reason": "Direkter Username",
+                "http_status": 200,
+                "source": "direct",
+                "title": "",
+                "snippet": "",
+            },
+        ]
+        rerank_profiles_with_openai.return_value = (
+            [
+                {
+                    "platform": "Reddit",
+                    "platform_slug": "reddit",
+                    "category": "community",
+                    "username": "shadowseek",
+                    "profile_url": "https://www.reddit.com/user/shadowseek/",
+                    "match_score": 97,
+                    "verification": "ai_reranked",
+                    "match_reason": "Handle und Plattformkontext passen am besten.",
+                    "http_status": 200,
+                    "source": "direct",
+                    "title": "",
+                    "snippet": "",
+                }
+            ],
+            True,
+        )
+        self.app.config["OPENAI_API_KEY"] = "openai-test"
+
+        response = self.client.post(
+            "/api/search",
+            data={"username": "shadowseek", "deep_search": "on"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["meta"]["ai_reranking_applied"])
+        self.assertEqual(payload["profiles"][0]["platform"], "Reddit")
 
 
 if __name__ == "__main__":

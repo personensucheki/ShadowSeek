@@ -25,6 +25,15 @@ class BaseConfig:
     REVERSE_IMAGE_MAX_AGE = int(os.environ.get("REVERSE_IMAGE_MAX_AGE", 3600))
     PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
     UPLOAD_DIRECTORY = os.environ.get("UPLOAD_DIRECTORY")
+    SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
+    SERPER_API_URL = os.environ.get("SERPER_API_URL", "https://google.serper.dev/search")
+    SERPER_RESULTS_PER_QUERY = int(os.environ.get("SERPER_RESULTS_PER_QUERY", 8))
+    SERPER_GL = os.environ.get("SERPER_GL", "de")
+    SERPER_HL = os.environ.get("SERPER_HL", "de")
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    OPENAI_RERANK_MODEL = os.environ.get("OPENAI_RERANK_MODEL", "gpt-5-mini")
+    OPENAI_TIMEOUT = float(os.environ.get("OPENAI_TIMEOUT", 12))
+    OPENAI_MAX_RERANK_CANDIDATES = int(os.environ.get("OPENAI_MAX_RERANK_CANDIDATES", 12))
 
 
 class DevConfig(BaseConfig):

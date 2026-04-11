@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `${payload.meta.profile_count} Treffer`,
             `${payload.meta.platform_count} Plattformen`,
             payload.query.deep_search ? "DeepSearch an" : "DeepSearch aus",
+            payload.meta.ai_reranking_applied ? "AI reranked" : "AI aus",
             formatTimestamp(payload.meta.generated_at),
         ];
 
@@ -78,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ["Google Lens", links.google_lens],
             ["TinEye", links.tineye],
             ["Yandex", links.yandex],
-            ["Temporäre Bild-URL", links.asset_url],
+            ["Temporaere Bild-URL", links.asset_url],
         ].forEach(([label, href]) => {
             const anchor = document.createElement("a");
             anchor.href = href;
@@ -116,9 +117,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const subtitle = document.createElement("p");
             subtitle.className = "profile-subtitle";
-            subtitle.textContent = `${profile.match_reason} · Kategorie ${profile.category} · HTTP ${profile.http_status}`;
+            const statusLabel = profile.http_status === "SERP" ? "SERP" : `HTTP ${profile.http_status}`;
+            subtitle.textContent = `${profile.match_reason} · Kategorie ${profile.category} · ${statusLabel}`;
 
-            content.append(platform, title, subtitle);
+            const detail = document.createElement("p");
+            detail.className = "profile-subtitle";
+            detail.textContent = profile.snippet || `Quelle ${profile.source || "direct"}`;
+
+            content.append(platform, title, subtitle, detail);
 
             const actions = document.createElement("div");
             actions.className = "profile-actions";
