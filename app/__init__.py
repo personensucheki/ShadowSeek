@@ -1,7 +1,5 @@
 from flask import Flask
-from .extensions import db, migrate
-
-
+from .extensions import csrf, db, migrate
 
 
 def create_app(config_class=None):
@@ -14,7 +12,6 @@ def create_app(config_class=None):
 
     db.init_app(app)
     migrate.init_app(app, db)
-    from .extensions import csrf
     csrf.init_app(app)
 
     # CSRF-Token für alle Templates bereitstellen
