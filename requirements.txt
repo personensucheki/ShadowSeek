@@ -7,5 +7,6 @@ gunicorn
 flask_sqlalchemy
 requests
 Flask-Limiter
+Flask-Talisman
 psycopg2-binary
 mysqlclient
