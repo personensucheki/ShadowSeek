@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ShadowSeek{% endblock %}</title>
+    
+    <!-- Hier kommt der AdSense Code rein -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6541606308707742"
+         crossorigin="anonymous"></script>
+    
     {% assets "css_all" %}
            <link rel="stylesheet" href="{{ url_for_static_cdn(ASSET_URL.split('/static/', 1)[-1]) }}">
     {% endassets %}
@@ -17,8 +22,8 @@
             <a href="/admin">Admin</a>
         </div>
         <div class="navbar-right">
-            <button onclick="showLoginModal()" class="btn-outline">Anmelden</button>
-            <button onclick="showRegisterModal()" class="btn-filled">Registrieren</button>
+            <button onclick="showLoginModal()" style="background:transparent;border:1px solid #00f0ff;color:#00f0ff;padding:8px 18px;border-radius:6px;">Anmelden</button>
+            <button onclick="showRegisterModal()" style="background:#00f0ff;color:#0a0c14;border:none;padding:8px 18px;border-radius:6px;">Registrieren</button>
         </div>
     </nav>
 
@@ -70,80 +75,72 @@
         }
     </style>
 </head>
-    <!-- Modals: Login, Register, Forgot Password -->
-    <div id="login-modal" class="modal-bg" style="display:none;">
-        <div class="modal">
-            <span class="modal-close" onclick="closeModal('login-modal')">×</span>
-            <h2>Anmelden</h2>
-            <form id="login-form" autocomplete="off">
-                {{ csrf_token() }}
-                <input type="text" id="login-username" name="username" placeholder="Benutzername" required autofocus>
-                <input type="password" id="login-password" name="password" placeholder="Passwort" required>
-                <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Login</button>
-                <div style="margin-top:10px;text-align:right;">
-                    <a href="#" onclick="showForgotModal();return false;">Passwort vergessen?</a>
-                </div>
-            </form>
-        </div>
+
+<!-- Modals: Login, Register, Forgot Password -->
+<div id="login-modal" class="modal-bg" style="display:none;">
+    <div class="modal">
+        <span class="modal-close" onclick="closeModal('login-modal')">×</span>
+        <h2>Anmelden</h2>
+        <form id="login-form" autocomplete="off">
+            <input type="text" id="login-username" name="username" placeholder="Benutzername" required autofocus>
+            <input type="password" id="login-password" name="password" placeholder="Passwort" required>
+            <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Login</button>
+            <div style="margin-top:10px;text-align:right;">
+                <a href="#" onclick="showForgotModal();return false;">Passwort vergessen?</a>
+            </div>
+        </form>
     </div>
-    <div id="register-modal" class="modal-bg" style="display:none;">
-        <div class="modal">
-            <span class="modal-close" onclick="closeModal('register-modal')">×</span>
-            <h2>Registrieren</h2>
-            <form id="register-form" autocomplete="off">
-                {{ csrf_token() }}
-                <input type="text" id="reg-username" name="username" placeholder="Benutzername" required autofocus>
-                <input type="email" id="reg-email" name="email" placeholder="E-Mail" required>
-                <input type="password" id="reg-password" name="password" placeholder="Passwort" required>
-                <input type="password" id="reg-password2" name="password2" placeholder="Passwort wiederholen" required>
-                <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Registrieren</button>
-            </form>
-        </div>
+</div>
+<div id="register-modal" class="modal-bg" style="display:none;">
+    <div class="modal">
+        <span class="modal-close" onclick="closeModal('register-modal')">×</span>
+        <h2>Registrieren</h2>
+        <form id="register-form" autocomplete="off">
+            <input type="text" id="reg-username" name="username" placeholder="Benutzername" required autofocus>
+            <input type="email" id="reg-email" name="email" placeholder="E-Mail" required>
+            <input type="password" id="reg-password" name="password" placeholder="Passwort" required>
+            <input type="password" id="reg-password2" name="password2" placeholder="Passwort wiederholen" required>
+            <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Registrieren</button>
+        </form>
     </div>
-    <div id="forgot-modal" class="modal-bg" style="display:none;">
-        <div class="modal">
-            <span class="modal-close" onclick="closeModal('forgot-modal')">×</span>
-            <h2>Passwort zurücksetzen</h2>
-            <form id="forgot-form" autocomplete="off">
-                {{ csrf_token() }}
-                <input type="email" id="forgot-email" name="email" placeholder="E-Mail" required autofocus>
-                <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Link senden</button>
-            </form>
-        </div>
+</div>
+<div id="forgot-modal" class="modal-bg" style="display:none;">
+    <div class="modal">
+        <span class="modal-close" onclick="closeModal('forgot-modal')">×</span>
+        <h2>Passwort zurücksetzen</h2>
+        <form id="forgot-form" autocomplete="off">
+            <input type="email" id="forgot-email" name="email" placeholder="E-Mail" required autofocus>
+            <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Link senden</button>
+        </form>
     </div>
-    <style>
-        /* moved to static/css/main.css */
-    </style>
-    <script>
-        function showLoginModal() {
-            closeAllModals();
-            document.getElementById('login-modal').style.display = 'flex';
-        }
-        function showRegisterModal() {
-            closeAllModals();
-            document.getElementById('register-modal').style.display = 'flex';
-        }
-        function showForgotModal() {
-            closeAllModals();
-            document.getElementById('forgot-modal').style.display = 'flex';
-        }
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-        }
-        function closeAllModals() {
-            ['login-modal','register-modal','forgot-modal'].forEach(id => {
-                document.getElementById(id).style.display = 'none';
-            });
-        }
-        // Demo: Prevent default form submit, show alert
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('login-form').onsubmit = function(e){ e.preventDefault(); login(); };
-            document.getElementById('register-form').onsubmit = function(e){ e.preventDefault(); register(); };
-            document.getElementById('forgot-form').onsubmit = function(e){ e.preventDefault(); sendResetLink(); };
-        });
-    </script>
+</div>
 <script>
-// ...existing code...
+function showLoginModal() {
+    closeAllModals();
+    document.getElementById('login-modal').style.display = 'flex';
+}
+function showRegisterModal() {
+    closeAllModals();
+    document.getElementById('register-modal').style.display = 'flex';
+}
+function showForgotModal() {
+    closeAllModals();
+    document.getElementById('forgot-modal').style.display = 'flex';
+}
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+function closeAllModals() {
+    ['login-modal','register-modal','forgot-modal'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+}
+// Demo: Prevent default form submit, show alert
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('login-form').onsubmit = function(e){ e.preventDefault(); alert('Login-Demo!'); };
+    document.getElementById('register-form').onsubmit = function(e){ e.preventDefault(); alert('Registrieren-Demo!'); };
+    document.getElementById('forgot-form').onsubmit = function(e){ e.preventDefault(); alert('Reset-Link-Demo!'); };
+});
 </script>
 </body>
         <div class="navbar-logo">ShadowSeek</div>

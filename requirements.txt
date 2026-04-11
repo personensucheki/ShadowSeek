@@ -1,11 +1,5 @@
-prometheus-flask-exporter
-sentry-sdk[flask]
-# Für Chatbot-API
+Flask
+Flask-SQLAlchemy
+Werkzeug
+python-dotenv
 openai
-flask
-gunicorn
-flask_sqlalchemy
-requests
-Flask-Limiter
-Flask-Talisman
-flask_cors
