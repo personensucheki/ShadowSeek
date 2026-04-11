@@ -1,56 +1,297 @@
-.search-page {
-    max-width: 900px;
-    margin: 40px auto;
-    background: #23272a;
-    border-radius: 18px;
-    padding: 38px 24px 32px;
-    box-shadow: 0 6px 32px rgba(0,0,0,0.22);
+
+/* === CYBER RECON SURFACE UI === */
+
+:root {
+    --recon-bg: #050509;
+    --recon-panel: #101014;
+    --recon-panel-strong: #18181e;
+    --recon-border: rgba(255,0,255,0.18);
+    --recon-border-strong: #00ff9f;
+    --recon-pink: #ff00ff;
+    --recon-green: #00ff9f;
+    --recon-cyan: #00f0ff;
+    --recon-text: #f7f7f7;
+    --recon-muted: #8f98a4;
+    --recon-shadow: 0 6px 32px rgba(0,0,0,0.22);
 }
-#search-form {
+
+body {
+    background: var(--recon-bg);
+}
+
+.recon-dashboard {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 38px 0 60px;
+}
+
+.recon-grid {
+    display: grid;
+    grid-template-columns: 1fr 2.2fr;
+    gap: 38px;
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .recon-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+}
+
+.recon-panel {
     display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
+    flex-direction: column;
+    gap: 28px;
+}
+.recon-panel--left {
+    min-width: 320px;
+    max-width: 420px;
+}
+.recon-panel--main {
+    min-width: 0;
+}
+
+/* === Cards & Panels === */
+.recon-card {
+    background: var(--recon-panel);
+    border-radius: 22px;
+    border: 1.5px solid var(--recon-border);
+    box-shadow: var(--recon-shadow);
+    padding: 36px 32px 30px 32px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.recon-card--branding {
     align-items: center;
-    margin-bottom: 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(255,0,255,0.08), rgba(0,255,159,0.08) 80%, var(--recon-panel) 100%);
+    border: 2px solid var(--recon-pink);
+    box-shadow: 0 0 44px 0 rgba(255,0,255,0.12), var(--recon-shadow);
 }
-#search-form input[type="text"] {
-    flex: 1;
-    padding: 16px 18px;
-    font-size: 1.15em;
-    background: #181a1b;
-    color: #f1f1f1;
-    border: none;
-    border-radius: 10px;
-    outline: none;
+.recon-card--form {
+    background: var(--recon-panel-strong);
+    border: 2px solid var(--recon-green);
+    box-shadow: 0 0 44px 0 rgba(0,255,159,0.12), var(--recon-shadow);
 }
-#search-form button {
-    background: #8ab4f8;
-    color: #181a1b;
-    border: none;
-    border-radius: 10px;
-    padding: 16px 36px;
-    font-size: 1.15em;
-    font-weight: 600;
-    cursor: pointer;
+.recon-card--results {
+    margin-top: 32px;
+    background: var(--recon-panel);
+    border: 1.5px solid var(--recon-cyan);
+    box-shadow: 0 0 44px 0 rgba(0,240,255,0.10), var(--recon-shadow);
 }
-.filter-bar {
+.recon-card--utility, .recon-card--stats {
+    background: var(--recon-panel-strong);
+    border: 1.5px solid var(--recon-border);
+}
+
+/* === Branding Panel === */
+.recon-branding {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+.recon-logo {
+    font-size: clamp(2.8rem, 7vw, 4.8rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: var(--recon-text);
+    text-shadow: 0 0 24px var(--recon-pink), 0 0 44px var(--recon-green);
+    margin-bottom: 0.2em;
+}
+.recon-sub {
+    font-size: 1.12rem;
+    color: var(--recon-green);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+.recon-desc {
+    color: var(--recon-muted);
+    font-size: 1.02rem;
+    margin-bottom: 0.2em;
+}
+.recon-chips {
     display: flex;
     gap: 10px;
-    margin-top: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
-.filter-chip {
-    background: #334155;
-    color: #94a3b8;
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     padding: 8px 18px;
-    border-radius: 30px;
-    font-size: 0.95rem;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    border-radius: 999px;
+    font-size: 0.93rem;
+    font-weight: 600;
+    border: 1.5px solid var(--recon-border);
+    background: rgba(255,255,255,0.04);
+    color: var(--recon-text);
+    letter-spacing: 0.04em;
 }
-.filter-chip.active, .filter-chip:focus {
-    background: #00f0ff;
-    color: #0a0c14;
+.chip--pink { border-color: var(--recon-pink); color: var(--recon-pink); background: rgba(255,0,255,0.08); }
+.chip--green { border-color: var(--recon-green); color: var(--recon-green); background: rgba(0,255,159,0.08); }
+.chip--cyan { border-color: var(--recon-cyan); color: var(--recon-cyan); background: rgba(0,240,255,0.08); }
+.chip--variation { border-color: var(--recon-pink); color: var(--recon-text); background: rgba(255,0,255,0.06); font-size: 0.91rem; }
+
+/* === Utility Cards === */
+.utility-title {
+    font-size: 1.08rem;
+    font-weight: 700;
+    color: var(--recon-green);
+    margin-bottom: 8px;
+}
+.utility-content {
+    color: var(--recon-text);
+    font-size: 0.98rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.variation-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+.utility-empty {
+    color: var(--recon-muted);
+    font-size: 0.96rem;
+}
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.97rem;
+    color: var(--recon-cyan);
+}
+
+/* === Form Panel === */
+.form-title {
+    font-size: 1.22rem;
+    font-weight: 800;
+    color: var(--recon-green);
+    margin-bottom: 18px;
+    letter-spacing: 0.06em;
+}
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.form-row {
+    display: flex;
+    gap: 18px;
+}
+.form-row label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.98rem;
+    color: var(--recon-text);
+}
+.form-row input[type="text"],
+.form-row input[type="number"],
+.form-row input[type="file"] {
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1.5px solid var(--recon-border);
+    background: var(--recon-panel-strong);
+    color: var(--recon-text);
+    font-size: 1.04rem;
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+.form-row input:focus {
+    border-color: var(--recon-pink);
+    box-shadow: 0 0 0 2px var(--recon-pink);
+}
+.form-platforms {
+    margin: 22px 0 0 0;
+}
+.platform-title {
+    font-size: 1.04rem;
+    color: var(--recon-cyan);
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.platform-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+.platform-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border-radius: 14px;
+    border: 1.5px solid var(--recon-border);
+    background: rgba(255,255,255,0.03);
+    color: var(--recon-muted);
+    font-size: 0.97rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.18s, color 0.18s, background 0.18s;
+}
+.platform-tile input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+.platform-tile:has(input:checked), .platform-tile input:checked + span {
+    color: var(--recon-green);
+    border-color: var(--recon-green);
+    background: rgba(0,255,159,0.08);
+}
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 22px;
+}
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--recon-text);
+    font-size: 0.98rem;
+}
+.btn-scan {
+    min-width: 160px;
+    min-height: 44px;
+    padding: 0 28px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--recon-pink), var(--recon-green));
+    color: #060606;
+    font-size: 1.08rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 0 28px rgba(255,0,255,0.18);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-scan:hover, .btn-scan:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 0 34px rgba(0,255,159,0.24);
+}
+
+/* === Results Panel === */
+.results-title {
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: var(--recon-cyan);
+    margin-bottom: 18px;
 }
 .results-list {
     display: flex;
@@ -60,44 +301,82 @@
 .result-card {
     display: flex;
     align-items: center;
-    background: #181a1b;
-    border-radius: 12px;
-    padding: 18px;
+    background: var(--recon-panel-strong);
+    border-radius: 16px;
+    border: 1.5px solid var(--recon-border);
     box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    padding: 18px 22px;
+    gap: 18px;
 }
 .result-avatar {
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    margin-right: 22px;
     object-fit: cover;
     background: #23272a;
+    border: 2px solid var(--recon-pink);
 }
 .result-info {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 .result-title {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #00f0ff;
+    font-size: 1.18em;
+    font-weight: 700;
+    color: var(--recon-green);
 }
 .result-platform {
     font-size: 1em;
-    color: #8ab4f8;
-    margin-bottom: 4px;
+    color: var(--recon-cyan);
+    margin-bottom: 2px;
 }
 .result-bio {
-    color: #b0b0b0;
-    margin-bottom: 6px;
+    color: var(--recon-muted);
+    margin-bottom: 4px;
+    font-size: 0.97em;
 }
 .result-link {
-    color: #00f0ff;
+    color: var(--recon-pink);
     text-decoration: underline;
-    font-weight: 500;
+    font-weight: 600;
+    margin-top: 6px;
+    align-self: flex-start;
 }
 .empty-state {
     text-align: center;
-    color: #8ab4f8;
-    margin: 40px 0;
-    font-size: 1.2em;
+    color: var(--recon-muted);
+    margin: 32px 0;
+    font-size: 1.08em;
+    padding: 18px;
+    border-radius: 16px;
+    border: 1.5px dashed var(--recon-border);
+}
+
+/* === Responsive === */
+@media (max-width: 900px) {
+    .recon-dashboard {
+        padding: 18px 0 40px;
+    }
+    .recon-card {
+        padding: 22px 12px 18px 12px;
+    }
+    .recon-panel--left {
+        min-width: 0;
+        max-width: 100%;
+    }
+}
+@media (max-width: 700px) {
+    .recon-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    .form-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .platform-grid {
+        grid-template-columns: 1fr;
+    }
 }

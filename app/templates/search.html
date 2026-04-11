@@ -1,25 +1,111 @@
 {% extends "base.html" %}
 {% block title %}Suche – ShadowSeek{% endblock %}
 {% block content %}
-<div class="search-page">
-    <form id="search-form" method="GET" action="/search">
-        <input type="text" name="query" value="{{ request.args.get('query', '') }}" placeholder="Suche..." required>
-        <button type="submit">Suchen</button>
-        <div class="search-filters">
-            {% include 'components/search_filters.html' %}
-        </div>
-    </form>
-    <div id="search-results">
-        {% if results %}
-            <div class="results-list">
-                {% for result in results %}
-                    {% include 'components/result_card.html' %}
-                {% endfor %}
+<div class="recon-dashboard">
+    <div class="recon-grid">
+        <!-- Branding & Utility Panel (links) -->
+        <aside class="recon-panel recon-panel--left">
+            <div class="recon-card recon-card--branding">
+                <div class="recon-branding">
+                    <div class="recon-logo">ShadowSeek</div>
+                    <div class="recon-sub">Cyber Recon Surface</div>
+                    <div class="recon-desc">Professionelle, username-basierte Profilsuche mit direktem Reverse-Image und KI-Reranking. Für echte Black Ops und Open Source Intelligence.</div>
+                    <div class="recon-chips">
+                        <span class="chip chip--pink">Neon Recon</span>
+                        <span class="chip chip--green">Live Platform Scan</span>
+                        <span class="chip chip--cyan">AI Rerank</span>
+                    </div>
+                </div>
             </div>
-            {% include 'components/pagination.html' %}
-        {% else %}
-            <div class="empty-state">Keine Ergebnisse gefunden. Bitte verfeinere deine Suche.</div>
-        {% endif %}
+            <div class="recon-card recon-card--utility">
+                <div class="utility-title">Generierte Variationen</div>
+                <div class="utility-content">
+                    {% if variations %}
+                        <ul class="variation-list">
+                            {% for v in variations %}
+                                <li class="chip chip--variation">{{ v }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="utility-empty">Noch keine Variationen.</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="recon-card recon-card--stats">
+                <div class="utility-title">Scan-Status</div>
+                <div class="utility-content">
+                    <div class="stat-row"><span>Treffer:</span> <span>{{ results|length if results else 0 }}</span></div>
+                    <div class="stat-row"><span>Reverse-Links:</span> <span>{{ reverse_links|length if reverse_links else 0 }}</span></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Search & Results Panel (rechts) -->
+        <section class="recon-panel recon-panel--main">
+            <div class="recon-card recon-card--form">
+                <form id="search-form" method="GET" action="/search" autocomplete="off">
+                    <div class="form-title">Recon Scan Control</div>
+                    <div class="form-fields">
+                        <div class="form-row">
+                            <label>Username
+                                <input type="text" name="query" value="{{ request.args.get('query', '') }}" placeholder="shadowseek.exe" required autofocus>
+                            </label>
+                            <label>Echtname
+                                <input type="text" name="real_name" placeholder="Optional">
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>Clanname
+                                <input type="text" name="clan_name" placeholder="Optional">
+                            </label>
+                            <label>Alter
+                                <input type="number" name="age" min="1" max="120" placeholder="Optional">
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>Postleitzahl
+                                <input type="text" name="postal_code" maxlength="10" placeholder="Optional">
+                            </label>
+                            <label>Bild-Upload
+                                <input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-platforms">
+                        <div class="platform-title">Plattformen</div>
+                        <div class="platform-grid">
+                            {% for platform in platforms %}
+                                <label class="platform-tile">
+                                    <input type="checkbox" name="platforms" value="{{ platform.slug }}" checked>
+                                    <span>{{ platform.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <label class="toggle">
+                            <input type="checkbox" name="deep_search">
+                            <span>DeepSearch + KI-Reranking</span>
+                        </label>
+                        <button class="btn-scan" type="submit">Scan starten</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="recon-card recon-card--results">
+                <div class="results-title">Gefundene Profile</div>
+                {% if results %}
+                    <div class="results-list">
+                        {% for result in results %}
+                            {% include 'components/result_card.html' %}
+                        {% endfor %}
+                    </div>
+                    {% include 'components/pagination.html' %}
+                {% else %}
+                    <div class="empty-state">Keine Ergebnisse gefunden. Bitte verfeinere deine Suche.</div>
+                {% endif %}
+            </div>
+        </section>
     </div>
 </div>
 {% endblock %}

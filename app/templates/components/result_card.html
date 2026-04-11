@@ -1,9 +1,21 @@
+
 <div class="result-card">
     <img src="{{ result.profile_pic or url_for('static', filename='img/default_avatar.png') }}" alt="Avatar" class="result-avatar">
     <div class="result-info">
-        <div class="result-title">{{ result.username }}</div>
         <div class="result-platform">{{ result.platform }}</div>
-        <div class="result-bio">{{ result.bio or '' }}</div>
-        <a href="{{ result.profile_url }}" target="_blank" class="result-link">Öffnen</a>
+        <div class="result-title">{{ result.username }}</div>
+        {% if result.bio %}<div class="result-bio">{{ result.bio }}</div>{% endif %}
+        <div class="result-meta-row">
+            {% if result.match_score is defined %}
+                <span class="chip chip--pink">Score: {{ result.match_score }}</span>
+            {% endif %}
+            {% if result.verification %}
+                <span class="chip chip--green">{{ result.verification|capitalize }}</span>
+            {% endif %}
+            {% if result.source %}
+                <span class="chip chip--cyan">{{ result.source|capitalize }}</span>
+            {% endif %}
+        </div>
+        <a href="{{ result.profile_url }}" target="_blank" class="result-link">Profil öffnen</a>
     </div>
 </div>
