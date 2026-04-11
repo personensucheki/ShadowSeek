@@ -1,6 +1,5 @@
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, send_file
 from app.models import EinnahmeInfo
-from sqlalchemy import func
 import csv
 from io import StringIO
 
@@ -10,14 +9,17 @@ export_bp = Blueprint("export", __name__)
 def export_csv():
     si = StringIO()
     cw = csv.writer(si)
-    cw.writerow(["Zeitpunkt", "User", "Betrag", "Typ", "Details"])
-    for e in EinnahmeInfo.query.order_by(EinnahmeInfo.zeitpunkt.desc()).all():
+    cw.writerow(["Captured At", "Platform", "Username", "Display Name", "Estimated Revenue", "Currency", "Source", "Confidence"])
+    for e in EinnahmeInfo.query.order_by(EinnahmeInfo.captured_at.desc()).all():
         cw.writerow([
-            e.zeitpunkt.strftime("%d.%m.%Y %H:%M"),
-            e.quelle or "",
-            f"{e.betrag:.2f}",
-            e.typ,
-            e.details or ""
+            e.captured_at.isoformat(),
+            e.platform,
+            e.username,
+            e.display_name or "",
+            f"{e.estimated_revenue:.2f}",
+            e.currency,
+            e.source,
+            e.confidence,
         ])
     output = si.getvalue()
     return send_file(

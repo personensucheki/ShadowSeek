@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import and_
@@ -7,6 +6,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import EinnahmeInfo
 from app.services.pulse_profile_scan import build_query_rows, run_creator_profile_scan
+from app.services.request_validation import ValidationError, parse_date, parse_float, parse_pagination
+from app.services.revenue_events import serialize_revenue_event
 from app.services.search_service import SearchValidationError
 
 
@@ -16,44 +17,39 @@ logger = logging.getLogger("einnahmen_query")
 
 def _collect_revenue_query_rows(data):
     try:
+        limit, offset = parse_pagination(data, default_limit=100, max_limit=500)
         filters = []
         log_filters = {}
 
         if data.get("nutzername"):
-            filters.append(EinnahmeInfo.quelle.ilike(f"%{data['nutzername']}%"))
+            username = str(data["nutzername"]).strip()
+            if not username:
+                raise ValidationError({"nutzername": "Must not be empty."})
+            if len(username) > 64:
+                raise ValidationError({"nutzername": "Must not exceed 64 characters."})
+            filters.append(EinnahmeInfo.username.ilike(f"%{username}%"))
             log_filters["nutzername"] = data["nutzername"]
         if data.get("plattform"):
-            filters.append(EinnahmeInfo.typ.ilike(f"{data['plattform'].lower()}%"))
+            filters.append(EinnahmeInfo.platform == str(data["plattform"]).strip().lower())
             log_filters["plattform"] = data["plattform"]
         if data.get("kategorie"):
-            filters.append(EinnahmeInfo.typ.ilike(f"%{data['kategorie'].lower()}%"))
+            # TODO remove legacy mapping
+            filters.append(EinnahmeInfo.typ.ilike(f"%{str(data['kategorie']).strip().lower()}%"))
             log_filters["kategorie"] = data["kategorie"]
         if data.get("von"):
-            try:
-                dt = datetime.strptime(data["von"], "%Y-%m-%d")
-                filters.append(EinnahmeInfo.zeitpunkt >= dt)
-                log_filters["von"] = data["von"]
-            except Exception:
-                pass
+            dt = parse_date(str(data["von"]).strip(), "von")
+            filters.append(EinnahmeInfo.captured_at >= dt)
+            log_filters["von"] = data["von"]
         if data.get("bis"):
-            try:
-                dt = datetime.strptime(data["bis"], "%Y-%m-%d")
-                filters.append(EinnahmeInfo.zeitpunkt <= dt)
-                log_filters["bis"] = data["bis"]
-            except Exception:
-                pass
+            dt = parse_date(str(data["bis"]).strip(), "bis")
+            filters.append(EinnahmeInfo.captured_at <= dt)
+            log_filters["bis"] = data["bis"]
         if data.get("min"):
-            try:
-                filters.append(EinnahmeInfo.betrag >= float(data["min"]))
-                log_filters["min"] = data["min"]
-            except Exception:
-                pass
+            filters.append(EinnahmeInfo.estimated_revenue >= parse_float(data["min"], "min", minimum=0))
+            log_filters["min"] = data["min"]
         if data.get("max"):
-            try:
-                filters.append(EinnahmeInfo.betrag <= float(data["max"]))
-                log_filters["max"] = data["max"]
-            except Exception:
-                pass
+            filters.append(EinnahmeInfo.estimated_revenue <= parse_float(data["max"], "max", minimum=0))
+            log_filters["max"] = data["max"]
 
         logger.info("Einnahmen-Query: %s", log_filters)
 
@@ -61,17 +57,10 @@ def _collect_revenue_query_rows(data):
         if filters:
             query = query.filter(and_(*filters))
 
-        results = query.order_by(EinnahmeInfo.zeitpunkt.desc()).limit(200).all()
-        return [
-            {
-                "zeitpunkt": entry.zeitpunkt.strftime("%d.%m.%Y %H:%M"),
-                "quelle": entry.quelle,
-                "betrag": entry.betrag,
-                "typ": entry.typ,
-                "details": entry.details,
-            }
-            for entry in results
-        ]
+        results = query.order_by(EinnahmeInfo.captured_at.desc()).offset(offset).limit(limit).all()
+        return [serialize_revenue_event(entry) for entry in results]
+    except ValidationError as error:
+        return {"_validation_error": error.errors}
     except SQLAlchemyError:
         logger.exception("Revenue query unavailable because earnings data could not be loaded.")
         return []
@@ -79,8 +68,13 @@ def _collect_revenue_query_rows(data):
 
 @query_api_bp.route("/api/einnahmen/query", methods=["POST"])
 def einnahmen_query():
-    data = request.get_json(force=True)
-    return jsonify(_collect_revenue_query_rows(data))
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({"success": False, "error": "Invalid JSON body."}), 400
+    rows = _collect_revenue_query_rows(data)
+    if isinstance(rows, dict) and rows.get("_validation_error"):
+        return jsonify({"success": False, "errors": rows["_validation_error"]}), 400
+    return jsonify(rows)
 
 
 @query_api_bp.route("/api/pulse/query", methods=["POST"])
@@ -112,10 +106,18 @@ def pulse_query():
             }
         )
 
+    rows = _collect_revenue_query_rows(data)
+    if isinstance(rows, dict) and rows.get("_validation_error"):
+        return jsonify({"success": False, "errors": rows["_validation_error"]}), 400
     return jsonify(
         {
             "success": True,
             "mode": "revenue",
-            "rows": _collect_revenue_query_rows(data),
+            "rows": rows,
         }
     )
+
+
+@query_api_bp.route("/api/pulse/search", methods=["POST"])
+def pulse_search():
+    return pulse_query()

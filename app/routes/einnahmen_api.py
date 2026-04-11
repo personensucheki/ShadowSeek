@@ -1,37 +1,34 @@
 from flask import Blueprint, jsonify, request
 from app.models import EinnahmeInfo
-from sqlalchemy import func
-from datetime import datetime
+from app.services.request_validation import ValidationError, parse_date, parse_float, parse_pagination
+from app.services.revenue_events import serialize_revenue_event
 
 api_bp = Blueprint("einnahmen_api", __name__)
 
 @api_bp.route("/api/einnahmen/")
 def einnahmen_list():
-    args = request.args
-    query = EinnahmeInfo.query
-    # Filter
-    if args.get("user"):
-        query = query.filter(EinnahmeInfo.quelle == args["user"])
-    if args.get("typ"):
-        query = query.filter(EinnahmeInfo.typ == args["typ"])
-    if args.get("min"):
-        query = query.filter(EinnahmeInfo.betrag >= float(args["min"]))
-    if args.get("max"):
-        query = query.filter(EinnahmeInfo.betrag <= float(args["max"]))
-    if args.get("from"):
-        dt = datetime.strptime(args["from"], "%Y-%m-%d")
-        query = query.filter(EinnahmeInfo.zeitpunkt >= dt)
-    if args.get("to"):
-        dt = datetime.strptime(args["to"], "%Y-%m-%d")
-        query = query.filter(EinnahmeInfo.zeitpunkt <= dt)
-    einnahmen = query.order_by(EinnahmeInfo.zeitpunkt.desc()).limit(100).all()
-    return jsonify([
-        {
-            "zeitpunkt": e.zeitpunkt.strftime("%d.%m.%Y %H:%M"),
-            "quelle": e.quelle,
-            "betrag": e.betrag,
-            "typ": e.typ,
-            "details": e.details,
-        }
-        for e in einnahmen
-    ])
+    try:
+        args = request.args
+        query = EinnahmeInfo.query
+        if args.get("user"):
+            user = args["user"].strip()
+            if not user:
+                raise ValidationError({"user": "Must not be empty."})
+            query = query.filter(EinnahmeInfo.username == user)
+        if args.get("typ"):
+            query = query.filter(EinnahmeInfo.typ == args["typ"].strip().lower())
+        if args.get("platform"):
+            query = query.filter(EinnahmeInfo.platform == args["platform"].strip().lower())
+        if args.get("min"):
+            query = query.filter(EinnahmeInfo.estimated_revenue >= parse_float(args["min"], "min", minimum=0))
+        if args.get("max"):
+            query = query.filter(EinnahmeInfo.estimated_revenue <= parse_float(args["max"], "max", minimum=0))
+        if args.get("from"):
+            query = query.filter(EinnahmeInfo.captured_at >= parse_date(args["from"], "from"))
+        if args.get("to"):
+            query = query.filter(EinnahmeInfo.captured_at <= parse_date(args["to"], "to"))
+        limit, offset = parse_pagination(args, default_limit=100, max_limit=500)
+        einnahmen = query.order_by(EinnahmeInfo.captured_at.desc()).offset(offset).limit(limit).all()
+        return jsonify([serialize_revenue_event(entry) for entry in einnahmen])
+    except ValidationError as error:
+        return jsonify({"success": False, "errors": error.errors}), 400
