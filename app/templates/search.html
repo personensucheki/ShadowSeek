@@ -119,7 +119,7 @@
                 <button type="button" class="tab-btn" data-tab="news">News</button>
                 <button type="button" class="tab-btn" data-tab="community">Communities</button>
             </div>
-            <div id="search-messages"></div>
+            <div id="search-messages" aria-live="polite"></div>
             <div id="reverse-links" class="results-list"></div>
             <div class="results-list" id="results-list">
                 {% if results %}
@@ -137,19 +137,19 @@
     <section class="recon-panel recon-panel--modules">
         <div class="recon-card neon-card" id="screenshot-results">
             <div class="results-title">PROFILE SCREENSHOTS</div>
-            <div id="screenshot-list"></div>
+            <div id="screenshot-list"><div class="empty-state">No data available</div></div>
         </div>
         <div class="recon-card neon-card" id="similarity-results">
             <div class="results-title">USERNAME SIMILARITY</div>
-            <div id="similarity-list"></div>
+            <div id="similarity-list"><div class="empty-state">No data available</div></div>
         </div>
         <div class="recon-card neon-card" id="image-similarity-results">
             <div class="results-title">IMAGE SIMILARITY</div>
-            <div id="image-similarity-list"></div>
+            <div id="image-similarity-list"><div class="empty-state">No data available</div></div>
         </div>
         <div class="recon-card neon-card" id="risk-score-results">
             <div class="results-title">OSINT RISK SCORE</div>
-            <div id="risk-score-box"></div>
+            <div id="risk-score-box"><div class="empty-state">No data available</div></div>
         </div>
     </section>
 </div>

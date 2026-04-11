@@ -123,12 +123,36 @@ class SearchApiTestCase(unittest.TestCase):
         payload = response.get_json()
         self.assertIn("username", payload["errors"])
 
+    @patch("app.routes.search.execute_search", side_effect=RuntimeError("boom"))
+    def test_search_api_unexpected_error_returns_json(self, _execute_search):
+        response = self.client.post("/api/search", data={"username": "shadowseek"})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.mimetype, "application/json")
+        self.assertEqual(
+            response.get_json(),
+            {"success": False, "error": "Internal server error"},
+        )
+
     def test_home_page_renders_search_form(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         # Die neue Startseite hat landing-search-form, nicht mehr search-form
         self.assertIn(b'id="landing-search-form"', response.data)
         self.assertIn(b'action="/search"', response.data)
+
+    def test_search_page_renders_analysis_containers(self):
+        response = self.client.get("/search")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'id="search-form"', response.data)
+        self.assertIn(b'id="search-messages"', response.data)
+        self.assertIn(b'id="results-list"', response.data)
+        self.assertIn(b'id="screenshot-list"', response.data)
+        self.assertIn(b'id="similarity-list"', response.data)
+        self.assertIn(b'id="image-similarity-list"', response.data)
+        self.assertIn(b'id="risk-score-box"', response.data)
+        self.assertIn(b"No data available", response.data)
 
     @patch("app.services.search_service.discover_profiles", return_value=[])
     @patch("app.services.search_service.collect_serper_profiles")

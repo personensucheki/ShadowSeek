@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from flask import Flask, jsonify, request, session
+from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from .extensions import csrf, db, migrate
@@ -70,6 +71,19 @@ def create_app(config_class=None):
         if request.path.startswith("/api/"):
             return jsonify({"error": "Die hochgeladene Datei ist zu gross."}), 413
         return error, 413
+
+    def _is_json_api_request():
+        return request.path.startswith("/api/") or (
+            request.path.startswith("/search/") and request.is_json
+        )
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_api_error(error):
+        if isinstance(error, HTTPException):
+            return error
+        if _is_json_api_request():
+            return jsonify({"success": False, "error": "Internal server error"}), 500
+        raise error
 
 
     from .routes.admin import admin_bp

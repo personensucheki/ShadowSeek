@@ -174,7 +174,7 @@ function renderMessages(payload, container) {
 
     container.innerHTML = "";
 
-    if (payload?.meta?.profile_count) {
+    if (payload?.meta?.profile_count !== undefined && payload.meta.profile_count !== null) {
         container.appendChild(
             createMessage("green", `${payload.meta.profile_count} Profile gefunden`)
         );
@@ -189,6 +189,13 @@ function renderMessages(payload, container) {
             createMessage("pink", `Serper genutzt (${payload.meta.serper_queries} Queries)`)
         );
     }
+}
+
+function appendMessage(container, type, text) {
+    if (!container || !text) {
+        return;
+    }
+    container.appendChild(createMessage(type, text));
 }
 
 function renderReverseImageLinks(links, container) {
@@ -376,6 +383,10 @@ function renderRiskScore(data) {
 
 function renderDeepSearchResponse(response) {
     if (!response || !response.data) {
+        renderScreenshotResults([]);
+        renderSimilarityResults({ matches: [] });
+        renderImageSimilarity({ matches: [] });
+        renderRiskScore(null);
         return;
     }
 
@@ -385,11 +396,81 @@ function renderDeepSearchResponse(response) {
     renderRiskScore(response.data.risk_score);
 }
 
+function resetAnalysisWidgets() {
+    renderDeepSearchResponse(null);
+}
+
+function buildDeepSearchPayload(searchPayload) {
+    const profiles = Array.isArray(searchPayload?.profiles) ? searchPayload.profiles : [];
+    const usernameVariations = Array.isArray(searchPayload?.username_variations)
+        ? searchPayload.username_variations
+        : [];
+    const profileUrls = profiles
+        .map((profile) => profile?.profile_url)
+        .filter(Boolean);
+
+    const maxImageScore = Array.isArray(searchPayload?.image_similarity?.matches)
+        ? Math.max(...searchPayload.image_similarity.matches.map((item) => Number(item?.score) || 0), 0)
+        : 0;
+
+    return {
+        base_username: searchPayload?.query?.username || "",
+        candidates: usernameVariations
+            .map((variation) => variation?.username)
+            .filter(Boolean),
+        profile_urls: profileUrls,
+        reference_image: searchPayload?.reverse_image_links?.asset_url || null,
+        gallery: [],
+        riskdata: {
+            has_real_name: Boolean(searchPayload?.query?.real_name),
+            has_age: Boolean(searchPayload?.query?.age),
+            username_count: usernameVariations.length,
+            platform_count: profiles.length,
+            has_reverse_image: Boolean(searchPayload?.reverse_image_links?.asset_url),
+            image_reuse_score: maxImageScore,
+        },
+        usernames: usernameVariations
+            .map((variation) => variation?.username)
+            .filter(Boolean),
+        profiles,
+        reverse_image: searchPayload?.reverse_image_links || {},
+    };
+}
+
+async function requestDeepSearchAnalysis(searchPayload, csrfToken) {
+    const response = await fetch("/search/deepsearch", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+        },
+        credentials: "same-origin",
+        body: JSON.stringify(buildDeepSearchPayload(searchPayload)),
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    const payload = contentType.includes("application/json")
+        ? await response.json()
+        : { error: "Unexpected server response." };
+
+    if (!response.ok) {
+        throw new Error(payload.error || "DeepSearch fehlgeschlagen.");
+    }
+
+    return payload;
+}
+
 function applyResultFilter(tab) {
     const resultsList = document.getElementById("results-list");
     if (!resultsList) {
         return;
     }
+
+    Array.from(resultsList.querySelectorAll(".empty-state")).forEach((node, index) => {
+        if (index > 0) {
+            node.remove();
+        }
+    });
 
     const cards = Array.from(resultsList.querySelectorAll(".result-card"));
     let visible = 0;
@@ -443,6 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let selectedCategories = readJsonStorage("shadowseek_categories");
     let selectedModifiers = readJsonStorage("shadowseek_modifiers");
     let overlayController = null;
+    let isSubmitting = false;
 
     if (!form) {
         return;
@@ -578,6 +660,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (resultsList) {
             resultsList.innerHTML = '<div class="empty-state">Noch keine Ergebnisse. Starte einen Scan.</div>';
         }
+        resetAnalysisWidgets();
         window.history.replaceState({}, "", window.location.pathname);
     };
 
@@ -625,6 +708,11 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
+        if (isSubmitting) {
+            return;
+        }
+        isSubmitting = true;
+
         const selectedPlatforms = platformCheckboxes()
             .filter((checkbox) => checkbox.checked)
             .map((checkbox) => checkbox.parentElement?.innerText.trim() || checkbox.value);
@@ -644,7 +732,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 signal: controller.signal,
             });
 
-            const payload = await response.json();
+            const contentType = response.headers.get("content-type") || "";
+            const payload = contentType.includes("application/json")
+                ? await response.json()
+                : { error: "Unexpected server response." };
 
             if (!response.ok) {
                 const errors = payload.errors
@@ -656,6 +747,21 @@ document.addEventListener("DOMContentLoaded", () => {
             renderMessages(payload, messageBox);
             renderReverseImageLinks(payload.reverse_image_links, reverseLinks);
             renderProfiles(payload.profiles, resultsList);
+            resetAnalysisWidgets();
+
+            if (deepSearchToggle?.checked) {
+                try {
+                    const deepSearchPayload = await requestDeepSearchAnalysis(payload, csrfToken);
+                    renderDeepSearchResponse(deepSearchPayload);
+                } catch (deepSearchError) {
+                    resetAnalysisWidgets();
+                    appendMessage(
+                        messageBox,
+                        "pink",
+                        deepSearchError.message || "DeepSearch fehlgeschlagen"
+                    );
+                }
+            }
 
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set("query", formData.get("username"));
@@ -670,16 +776,24 @@ document.addEventListener("DOMContentLoaded", () => {
             overlayController.hide();
             overlayController = null;
         } catch (error) {
+            resetAnalysisWidgets();
             if (messageBox) {
                 messageBox.innerHTML = "";
-                messageBox.appendChild(createMessage("pink", error.message || "Suche fehlgeschlagen"));
+                const message = error?.name === "AbortError"
+                    ? "Zeitueberschreitung bei der Anfrage."
+                    : error.message || "Suche fehlgeschlagen";
+                messageBox.appendChild(createMessage("pink", message));
             }
             if (overlayController) {
-                overlayController.error(error.message || "Suche fehlgeschlagen");
+                const overlayMessage = error?.name === "AbortError"
+                    ? "Zeitueberschreitung bei der Anfrage."
+                    : error.message || "Suche fehlgeschlagen";
+                overlayController.error(overlayMessage);
                 overlayController = null;
             }
         } finally {
             window.clearTimeout(timeoutId);
+            isSubmitting = false;
         }
     });
 });
