@@ -1,8 +1,13 @@
 from app.extensions import db
 from datetime import datetime
 
+from sqlalchemy.schema import UniqueConstraint
+
 class RevenueEvent(db.Model):
     __tablename__ = "revenue_events"
+    __table_args__ = (
+        UniqueConstraint("platform", "username", "captured_at", "source", name="uq_revenue_event"),
+    )
     id = db.Column(db.Integer, primary_key=True)
     platform = db.Column(db.String(32), nullable=False)
     username = db.Column(db.String(64), nullable=False)

@@ -1,6 +1,5 @@
 /* --- Compact Revenue Timeline Card & Side Stack --- */
 
-/* Kompakte Timeline Card ohne zusätzliches Padding */
 .pulse-card--timeline,
 .pulse-panel--timeline,
 .revenue-timeline-card {
@@ -10,8 +9,7 @@
     min-height: 390px;
     max-height: 390px;
     overflow: hidden;
-    padding: 0;
-}
+    padding-bottom: 0;
 }
 
 
@@ -36,7 +34,6 @@
 }
 
 
-/* Kompakte Side-Stack Card ohne zusätzliches Padding */
 .pulse-side-stack,
 .pulse-side-panel {
     display: flex;
@@ -45,8 +42,6 @@
     min-height: 390px;
     max-height: 390px;
     overflow: hidden;
-    padding: 0;
-}
 }
 
 
@@ -249,6 +244,13 @@ body {
 .pulse-panel {
     padding: 28px;
     background: linear-gradient(180deg, rgba(18, 18, 26, 0.98), rgba(9, 9, 14, 0.96));
+    overflow: visible;
+}
+
+/* Timeline und Side-Panel ohne Padding für exakte Höhe */
+.pulse-card--timeline,
+.pulse-side-stack {
+    padding: 0 !important;
 }
 
 .pulse-panel-head {

@@ -34,6 +34,7 @@ class DemoRevenueProvider(BaseRevenueProvider):
                 "diamonds": diamonds,
                 "followers": followers,
                 "captured_at": now.isoformat(),
+                # TODO remove legacy mapping: keine alten Feldnamen mehr verwenden
             }
             results.append(row)
         return results

@@ -1,57 +1,46 @@
-# ShadowSeek Code Audit – Stabilization Update (2026-04-11)
+# ShadowSeek Code Audit - Stabilization Update (2026-04-12)
 
-## Umgesetzte Fixes
+## Implemented Fixes
 
-1. **RevenueEvent-Schema vereinheitlicht**
-   - Neues kanonisches API-Schema für Revenue-Responses:
+1. **RevenueEvent schema standardized**
+   - Canonical response shape aligned around:
      - `id, platform, username, display_name, estimated_revenue, currency, captured_at, source, confidence`
-   - Eingeführt über `app/services/revenue_events.py` und in den Revenue-Endpunkten verdrahtet.
+   - Wired through `app/services/revenue_events.py` and the related revenue endpoints.
 
-2. **Collector idempotent + Dedupe**
-   - Collector (`scripts/scraper_job.py`) normalisiert eingehende Legacy-Daten.
-   - Soft-Dedupe im Service vor `db.session.add(...)`.
-   - Doppelte Datensätze werden übersprungen statt erneut gespeichert.
+2. **Collector dedupe and write safety**
+   - Revenue collector paths now normalize legacy input before persistence.
+   - Duplicate rows are skipped instead of being inserted repeatedly.
+   - Logging around collector execution has been tightened.
 
-3. **DB-Constraint für harte Eindeutigkeit**
-   - `UniqueConstraint(platform, username, captured_at, source)` im Modell.
-   - Migration erstellt, inklusive Backfill von Legacy-Spalten.
+3. **Database uniqueness protection**
+   - Unique constraint added for revenue event identity.
+   - Migration added for the revenue uniqueness update.
 
-4. **Input-Validation Layer**
-   - Neue Utility `app/services/request_validation.py`.
-   - Validation und Pagination in:
-     - `/api/einnahmen/`
-     - `/api/einnahmen/query`
-     - `/api/pulse/query`
-     - `/api/pulse/search` (neu alias)
-     - `/api/live/<platform>` und `/api/pulse/live/<platform>`
+4. **Validation and request hardening**
+   - Shared validation helpers are used for revenue and pulse endpoints.
+   - Pagination and bounds handling are now consistently applied across the affected APIs.
 
-5. **CORS Setup**
-   - API-weite CORS-Header per `after_request` integriert.
-   - CORS für `"/api/*"` aktiviert.
+5. **API response stabilization**
+   - Revenue summary and pulse-related responses now use consistent serialized fields.
+   - Dashboard and frontend integration points were aligned with the new response shape.
 
-6. **Pagination vorbereitet**
-   - Unterstützte Query-Parameter: `limit`, `offset`, `page`.
-   - Einheitlich über `parse_pagination(...)`.
+6. **Operational fixes**
+   - Collector bootstrap/factory wiring was corrected.
+   - CORS behavior for API routes is explicitly configured in the Flask app.
 
-7. **Legacy-Hinweise markiert**
-   - `# TODO remove legacy mapping` im Query-Filter (`kategorie -> typ`).
+## Remaining Risks
 
-## Offene Punkte
+1. **Legacy field cleanup**
+   - Legacy revenue fields are still present for compatibility and should be removed only after consumers are migrated.
 
-1. **Legacy-Spaltenabbau**
-   - `betrag/waehrung/typ/quelle/zeitpunkt` sind für Backward-Kompatibilität noch vorhanden.
-   - Geordneter Remove nach Frontend/Export-Komplettumstellung empfohlen.
+2. **Upload route coverage**
+   - Upload-specific routes still need the same validation discipline if more upload APIs are added.
 
-2. **/api/upload/* Endpunkte**
-   - Aktuell keine dedizierten `/api/upload/*`-Routes vorhanden.
-   - Falls Upload-APIs ergänzt werden, Validation Utility direkt wiederverwenden.
+3. **Config completeness**
+   - Production integrations still depend on secrets such as `OPENAI_API_KEY`, `SERPER_API_KEY`, and Telegram bot credentials where those features are enabled.
 
-3. **Historische Datenqualität**
-   - Falls bereits Dubletten mit identischen Unique-Schlüsseln existieren, braucht es ggf. einmaliges Cleanup-Script vor produktiver Migration.
+## Recommended Next Steps
 
-## Empfohlene nächste Refactors
-
-1. Revenue-Model komplett auf kanonische Felder umstellen und Legacy-Felder entfernen.
-2. Frontend (`pulse.js`) um Datum/Confidence-Formatierung erweitern (ISO -> locale).
-3. API-Response-Hülle vereinheitlichen (`{success, data, meta, errors}`).
-4. Serverseitige Max-Limits zentral konfigurieren (Config statt magic numbers).
+1. Remove remaining legacy revenue aliases once frontend and exports are fully migrated.
+2. Consolidate API envelopes where mixed `{success, data, errors}` patterns still exist.
+3. Add targeted integration tests around pulse collector writes and migration expectations.
