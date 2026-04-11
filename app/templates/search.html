@@ -16,7 +16,16 @@
             </div>
         </div>
         <div class="recon-card recon-card--form">
-            <div id="category-bar-search" class="category-bar-search"></div>
+            <div class="active-filters-bar">
+                <div id="category-bar-search" class="category-bar-search"></div>
+                <div class="modifier-bar-search" id="modifier-bar-search">
+                    <button type="button" class="chip chip--green" data-mod="public_sources">Öffentliche Quellen</button>
+                    <button type="button" class="chip chip--pink" data-mod="secure_mode">Sicherer Suchmodus</button>
+                    <button type="button" class="chip chip--cyan" data-mod="ai_rerank">KI-gestützte Bewertung</button>
+                    <button type="button" class="chip chip--gray" data-mod="deepsearch">DeepSearch bereit</button>
+                    <button type="button" class="chip chip--blue" data-mod="precision_mode">Präzise Treffer</button>
+                </div>
+            </div>
             <form id="search-form" method="GET" action="/search" autocomplete="off">
                 <div class="form-fields">
                     <div class="form-row">

@@ -154,6 +154,27 @@ function clearSelectedCategories() {
     localStorage.removeItem("shadowseek_categories");
 }
 
+// --- Modifier/Modus-Logik ---
+const MODIFIERS = [
+    { label: "Öffentliche Quellen", value: "public_sources" },
+    { label: "Geschützte Suche", value: "secure_mode" },
+    { label: "KI-gestützte Bewertung", value: "ai_rerank" },
+    { label: "DeepSearch bereit", value: "deepsearch" },
+    { label: "Präzise Treffer", value: "precision_mode" },
+];
+function getSelectedModifiers() {
+    try {
+        const raw = localStorage.getItem("shadowseek_modifiers");
+        if (!raw) return [];
+        return JSON.parse(raw);
+    } catch {
+        return [];
+    }
+}
+function setSelectedModifiers(arr) {
+    localStorage.setItem("shadowseek_modifiers", JSON.stringify(arr));
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('search-form');
     const resetBtn = document.getElementById('reset-btn');
@@ -165,15 +186,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const deepSearch = document.querySelector('input[name="deep_search"]');
     const storageKey = 'shadowseek_search_inputs';
 
-    // Kategorien aus URL übernehmen
+    // --- Kategorien aus URL/Storage übernehmen ---
     function getCategoriesFromURL() {
         const params = new URLSearchParams(window.location.search);
         const cats = params.get('categories');
         if (!cats) return [];
         return cats.split(',').map(s => s.trim()).filter(Boolean);
     }
-
-    // Render Kategorie-Chips
     let selected = getSelectedCategories();
     const urlCats = getCategoriesFromURL();
     if (urlCats.length > 0) {
@@ -206,6 +225,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     renderChips();
+
+    // --- Modifier/Modus-State aus Query/Storage übernehmen ---
+    function getModifiersFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        return MODIFIERS.map(m => m.value).filter(val => params.get(val) === 'true');
+    }
+    let selectedMods = getSelectedModifiers();
+    const urlMods = getModifiersFromURL();
+    if (urlMods.length > 0) {
+        selectedMods = urlMods;
+        setSelectedModifiers(selectedMods);
+    }
+    // DeepSearch-Checkbox synchronisieren
+    if (deepSearch) {
+        deepSearch.checked = selectedMods.includes('deepsearch');
+    }
+
+    // --- Modifier/Modus-Chips auf Suchseite rendern (optional, falls UI) ---
+    // (Hier: nur State, UI kann in search.html ergänzt werden)
 
     // Restore
     function restoreInputs() {
@@ -264,6 +302,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const platformEls = platformCheckboxes();
         const platforms = platformEls.filter(cb => cb.checked).map(cb => cb.parentElement?.innerText.trim() || cb.value);
         const deepSearchActive = deepSearch && deepSearch.checked;
+        // Modifier-Flags als Query-Parameter übergeben
+        let url = new URL(form.action, window.location.origin);
+        const params = new URLSearchParams(new FormData(form));
+        // Kategorien
+        if (selected.length > 0) {
+            params.set('categories', selected.join(','));
+        }
+        // Modifier
+        if (selectedMods && selectedMods.length > 0) {
+            selectedMods.forEach(mod => {
+                params.set(mod, 'true');
+            });
+        }
+        // DeepSearch synchronisieren
+        if (deepSearchActive && !selectedMods.includes('deepsearch')) {
+            params.set('deepsearch', 'true');
+        }
+        url.search = params.toString();
+        form.action = url.pathname + url.search;
         scanOverlayCtrl = showScanOverlay(platforms, deepSearchActive);
         // Nach 14s Timeout (Fallback)
         setTimeout(() => { if (scanOverlayCtrl) scanOverlayCtrl.error('Zeitüberschreitung – keine Antwort'); }, 14000);
@@ -272,14 +329,26 @@ document.addEventListener('DOMContentLoaded', function () {
     // Reset-Button
     if (resetBtn) {
         resetBtn.addEventListener('click', function () {
+            // Suchfeld und Inputs zurücksetzen
             clearInputs();
+            // Kategorien zurücksetzen
             clearSelectedCategories();
             selected = [];
             renderChips();
+            // Modus-Chips zurücksetzen
+            setSelectedModifiers([]);
+            selectedMods = [];
+            // DeepSearch-Checkbox zurücksetzen
+            if (deepSearch) deepSearch.checked = false;
             // Query-Parameter bereinigen
             const url = new URL(window.location.href);
             url.searchParams.delete('categories');
+            MODIFIERS.forEach(m => url.searchParams.delete(m.value));
             window.history.replaceState({}, '', url.pathname + url.search);
+            // localStorage komplett leeren (nur ShadowSeek-relevante Keys)
+            localStorage.removeItem('shadowseek_categories');
+            localStorage.removeItem('shadowseek_modifiers');
+            localStorage.removeItem('shadowseek_search_inputs');
             // Overlay ausblenden
             const overlay = document.getElementById('scan-overlay');
             if (overlay) { overlay.classList.add('hide'); setTimeout(() => { overlay.style.display = 'none'; }, 400); }

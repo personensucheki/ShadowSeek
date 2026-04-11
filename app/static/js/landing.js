@@ -19,11 +19,34 @@ function setSelectedCategories(arr) {
     localStorage.setItem("shadowseek_categories", JSON.stringify(arr));
 }
 
+// --- Modifier/Modus-Logik ---
+const MODIFIERS = [
+    { label: "Öffentliche Quellen", value: "public_sources" },
+    { label: "Sicherer Suchmodus", value: "secure_mode" },
+    { label: "KI-gestützte Bewertung", value: "ai_rerank" },
+    { label: "DeepSearch bereit", value: "deepsearch" },
+    { label: "Präzise Treffer", value: "precision_mode" },
+];
+function getSelectedModifiers() {
+    try {
+        const raw = localStorage.getItem("shadowseek_modifiers");
+        if (!raw) return [];
+        return JSON.parse(raw);
+    } catch {
+        return [];
+    }
+}
+function setSelectedModifiers(arr) {
+    localStorage.setItem("shadowseek_modifiers", JSON.stringify(arr));
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("landing-search-form");
     const input = form?.querySelector("input[name='query']");
     const catBar = document.getElementById("category-bar");
+    const modBar = document.getElementById("modifier-bar");
     let selected = getSelectedCategories();
+    let selectedMods = getSelectedModifiers();
 
     // Render Kategorie-Chips
     if (catBar) {
@@ -51,12 +74,40 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.toggle("active", selected.includes(val));
         });
     }
+    renderChips();
+
+    // --- Modifier/Modus-Chips ---
+    function renderModifiers() {
+        if (!modBar) return;
+        Array.from(modBar.children).forEach((btn, i) => {
+            const val = MODIFIERS[i].value;
+            btn.classList.toggle("active", selectedMods.includes(val));
+            btn.onclick = () => {
+                if (selectedMods.includes(val)) {
+                    selectedMods = selectedMods.filter(v => v !== val);
+                } else {
+                    selectedMods.push(val);
+                }
+                setSelectedModifiers(selectedMods);
+                renderModifiers();
+                // DeepSearch-Sync
+                if (val === "deepsearch") {
+                    // DeepSearch-Modus toggeln
+                    // (kann später mit Checkbox auf /search synchronisiert werden)
+                }
+            };
+        });
+    }
+    renderModifiers();
 
     // Reset bei Seitenaufruf
     if (!input.value) {
         setSelectedCategories([]);
         selected = [];
         renderChips();
+        setSelectedModifiers([]);
+        selectedMods = [];
+        renderModifiers();
     }
 
     // Suche absenden
@@ -68,10 +119,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 input.focus();
                 return;
             }
-            // Kategorien an /search übergeben
+            // Kategorien und Modifier an /search übergeben
             let url = `/search?query=${encodeURIComponent(query)}`;
             if (selected.length > 0) {
                 url += `&categories=${encodeURIComponent(selected.join(","))}`;
+            }
+            if (selectedMods.length > 0) {
+                selectedMods.forEach(mod => {
+                    url += `&${encodeURIComponent(mod)}=true`;
+                });
             }
             window.location.href = url;
         });
