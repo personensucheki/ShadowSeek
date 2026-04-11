@@ -1,22 +1,38 @@
 import os
 
 
+def _normalize_database_uri(uri):
+    if uri.startswith("postgres://"):
+        return uri.replace("postgres://", "postgresql://", 1)
+    return uri
+
+
 class BaseConfig:
-    # SECRET_KEY muss zwingend als Umgebungsvariable gesetzt werden!
-    SECRET_KEY = os.environ['SECRET_KEY']
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///shadowseek.db')
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    SQLALCHEMY_DATABASE_URI = _normalize_database_uri(
+        os.environ.get("DATABASE_URL", "sqlite:///shadowseek.db")
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SESSION_COOKIE_SECURE = True  # Nur über HTTPS in Produktion
+    SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_PERMANENT = False
-    PERMANENT_SESSION_LIFETIME = 3600  # 1 Stunde
+    PERMANENT_SESSION_LIFETIME = 3600
     WTF_CSRF_ENABLED = True
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 5 * 1024 * 1024))
+    SEARCH_REQUEST_TIMEOUT = float(os.environ.get("SEARCH_REQUEST_TIMEOUT", 3.5))
+    SEARCH_MAX_WORKERS = int(os.environ.get("SEARCH_MAX_WORKERS", 8))
+    REVERSE_IMAGE_MAX_AGE = int(os.environ.get("REVERSE_IMAGE_MAX_AGE", 3600))
+    PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+    UPLOAD_DIRECTORY = os.environ.get("UPLOAD_DIRECTORY")
+
 
 class DevConfig(BaseConfig):
     DEBUG = True
+    SECRET_KEY = BaseConfig.SECRET_KEY or "shadowseek-dev-secret"
     SESSION_COOKIE_SECURE = False
     WTF_CSRF_ENABLED = False
+
 
 class ProdConfig(BaseConfig):
     DEBUG = False

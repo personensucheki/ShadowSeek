@@ -1,8 +1,10 @@
+import os
 
-from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
-import os, re
-from models import db, User
-from werkzeug.security import generate_password_hash
+from app import create_app
 
 
-# Klassische App entfernt/archiviert. Bitte run.py und die App-Factory-Struktur nutzen.
+app = create_app()
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
