@@ -10,6 +10,8 @@ class ChatbotService:
     """
     def __init__(self, openai_api_key: Optional[str] = None):
         self.openai_api_key = openai_api_key
+        self._max_history = 10
+        self._max_results = 10
         self.session_memory = {
             "user_messages": [],
             "assistant_replies": [],
@@ -19,16 +21,24 @@ class ChatbotService:
             "given_hints": set(),
         }
 
+
     def handle_message(self, message: str, context: Optional[Dict[str, Any]] = None) -> str:
         msg = message.strip().lower()
         context = context or {}
+        # Begrenze History
         self.session_memory["user_messages"].append(message)
+        if len(self.session_memory["user_messages"]) > self._max_history:
+            self.session_memory["user_messages"] = self.session_memory["user_messages"][-self._max_history:]
 
-        # Session-Lernen: Kontext merken
+        # Session-Lernen: Kontext merken und begrenzen
         if context.get("query"):
             self.session_memory["last_query"] = context["query"]
         if context.get("results") is not None:
-            self.session_memory["last_results"] = context["results"]
+            # Begrenze gespeicherte Treffer
+            results = context["results"]
+            if isinstance(results, list) and len(results) > self._max_results:
+                results = results[:self._max_results]
+            self.session_memory["last_results"] = results
         if context.get("deepsearch") is not None:
             self.session_memory["last_deepsearch"] = context["deepsearch"]
 
@@ -36,12 +46,16 @@ class ChatbotService:
         if re.search(r"\b(hi|hallo|hello|hey|servus|guten tag|moin)\b", msg):
             reply = "Hallo! Ich bin der ShadowSeek Assistant. Wie kann ich bei der Profilsuche helfen?"
             self.session_memory["assistant_replies"].append(reply)
+            if len(self.session_memory["assistant_replies"]) > self._max_history:
+                self.session_memory["assistant_replies"] = self.session_memory["assistant_replies"][-self._max_history:]
             return reply
 
         # 2. Hilfe/Erklärung
         if "hilfe" in msg or "was kannst" in msg:
             reply = self._help_text(context)
             self.session_memory["assistant_replies"].append(reply)
+            if len(self.session_memory["assistant_replies"]) > self._max_history:
+                self.session_memory["assistant_replies"] = self.session_memory["assistant_replies"][-self._max_history:]
             self.session_memory["given_hints"].add("hilfe")
             return reply
 
@@ -52,6 +66,8 @@ class ChatbotService:
                 "Du kannst DeepSearch aktivieren, wenn du besonders viele oder seltene Treffer brauchst."
             )
             self.session_memory["assistant_replies"].append(reply)
+            if len(self.session_memory["assistant_replies"]) > self._max_history:
+                self.session_memory["assistant_replies"] = self.session_memory["assistant_replies"][-self._max_history:]
             self.session_memory["given_hints"].add("deepsearch")
             return reply
 
@@ -62,17 +78,23 @@ class ChatbotService:
                 "Jetzt beantworte ich deine Fragen regelbasiert – und später auch mit KI, sobald ein API-Key hinterlegt ist."
             )
             self.session_memory["assistant_replies"].append(reply)
+            if len(self.session_memory["assistant_replies"]) > self._max_history:
+                self.session_memory["assistant_replies"] = self.session_memory["assistant_replies"][-self._max_history:]
             return reply
 
         # 5. Suchkontext auswerten
         if context:
             reply = self._contextual_response(msg, context)
             self.session_memory["assistant_replies"].append(reply)
+            if len(self.session_memory["assistant_replies"]) > self._max_history:
+                self.session_memory["assistant_replies"] = self.session_memory["assistant_replies"][-self._max_history:]
             return reply
 
         # 6. Standardantwort
         reply = self._help_text(context)
         self.session_memory["assistant_replies"].append(reply)
+        if len(self.session_memory["assistant_replies"]) > self._max_history:
+            self.session_memory["assistant_replies"] = self.session_memory["assistant_replies"][-self._max_history:]
         return reply
 
     def _help_text(self, context: Optional[Dict[str, Any]] = None) -> str:

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Assistant Feedback Übersicht</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 6px; }
+        th { background: #eee; }
+        .score-1 { background: #e0ffe0; }
+        .score-0 { background: #ffe0e0; }
+        .score--1, .score--2 { background: #fffbe0; }
+    </style>
+</head>
+<body>
+    <h1>Assistant Feedback Übersicht</h1>
+    <form method="get">
+        <label>Score filtern:
+            <select name="score">
+                <option value="">Alle</option>
+                <option value="1">Hilfreich</option>
+                <option value="0">Nicht hilfreich</option>
+                <option value="-1">Nochmal versuchen</option>
+                <option value="-2">Besser erklären</option>
+            </select>
+        </label>
+        <button type="submit">Filtern</button>
+    </form>
+    <table>
+        <tr>
+            <th>Zeitpunkt</th>
+            <th>User-Frage</th>
+            <th>Bot-Antwort</th>
+            <th>Score</th>
+            <th>Intent</th>
+            <th>Kontext</th>
+        </tr>
+        {% for fb in feedbacks %}
+        <tr class="score-{{ fb.feedback_score }}">
+            <td>{{ fb.created_at }}</td>
+            <td>{{ fb.user_message }}</td>
+            <td>{{ fb.assistant_reply }}</td>
+            <td>{{ fb.feedback_score }}</td>
+            <td>{{ fb.intent_label or '' }}</td>
+            <td style="max-width:300px;overflow:auto;">{{ fb.search_context_json or '' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

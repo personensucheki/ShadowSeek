@@ -45,9 +45,14 @@ def create_app(config_class=None):
     if not app.config.get("SECRET_KEY") and not app.config.get("TESTING"):
         raise RuntimeError("SECRET_KEY must be configured for ShadowSeek.")
 
+
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
+
+    # Admin-Feedback-Blueprint registrieren
+    from .routes.admin_feedback import admin_feedback_bp
+    app.register_blueprint(admin_feedback_bp)
 
     @app.context_processor
     def inject_csrf_token():
