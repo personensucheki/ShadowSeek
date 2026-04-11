@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from .extensions import csrf, db, migrate
