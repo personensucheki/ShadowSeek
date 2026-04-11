@@ -982,3 +982,43 @@ def detect_image_type(header):
 
 def chunked(items, chunk_size):
     return [items[index : index + chunk_size] for index in range(0, len(items), chunk_size)]
+
+
+# --- Erweiterung: Ergebnisobjekte & Summary-Generator ---
+def generate_search_summary(results: list, meta: dict) -> dict:
+    if not results:
+        return {
+            'strongest_platform': None,
+            'best_result': None,
+            'confidence_distribution': {'high': 0, 'medium': 0, 'low': 0},
+            'used_variants': meta.get('used_variants', []),
+            'used_providers': meta.get('providers', []),
+            'warnings': ['Keine Treffer gefunden.'],
+        }
+    # Stärkste Plattform (mit bestem Score)
+    best_result = results[0]
+    strongest_platform = best_result.get('platform')
+    # Confidence-Verteilung
+    conf_dist = {'high': 0, 'medium': 0, 'low': 0}
+    for r in results:
+        conf = r.get('confidence', 'low')
+        if conf in conf_dist:
+            conf_dist[conf] += 1
+    # Warnungen
+    warnings = []
+    if conf_dist['high'] == 0:
+        warnings.append('Keine starken Treffer gefunden.')
+    if conf_dist['medium'] == 0 and conf_dist['high'] == 0:
+        warnings.append('Nur schwache Treffer gefunden.')
+    return {
+        'strongest_platform': strongest_platform,
+        'best_result': best_result,
+        'confidence_distribution': conf_dist,
+        'used_variants': meta.get('used_variants', []),
+        'used_providers': meta.get('providers', []),
+        'warnings': warnings,
+    }
+
+# Beispiel-Nutzung:
+# summary = generate_search_summary(result['results'], result['meta'])
+# print(summary)
