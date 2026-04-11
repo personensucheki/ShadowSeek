@@ -2,17 +2,72 @@
 {% block title %}ShadowPulse - ShadowSeek{% endblock %}
 {% block content %}
 <div class="pulse-shell">
-    <section class="pulse-hero">
-        <div class="pulse-brand">ShadowPulse</div>
-        <div class="pulse-sub">Creator Earnings Intelligence</div>
-        <p class="pulse-copy">
-            Eine zentrale Oberflaeche fuer Streamer-Umsaetze, Live-Signale und historische Einnahmen.
-            Verbunden mit Collector-Script, Summary-API, Live-API und Query-Engine.
-        </p>
-        <div class="pulse-chip-row">
-            <span class="pulse-chip pulse-chip--pink">Collector Wired</span>
-            <span class="pulse-chip pulse-chip--green">Live Revenue Feed</span>
-            <span class="pulse-chip pulse-chip--cyan">Query Console</span>
+
+    <!-- Neuer Pulse-Top-Bereich: Creator Search Dashboard -->
+    <section class="pulse-creator-search-panel">
+        <div class="pulse-creator-search-grid">
+            <div class="pulse-creator-search-left">
+                <h1 class="pulse-creator-headline">Creator Revenue Dashboard</h1>
+                <p class="pulse-creator-desc">Suche nach Creatorn und erhalte <span class="pulse-highlight">estimated earnings</span>, Ranking und öffentliche Metriken. Keine echten Einnahmen, nur öffentliche Schätzungen.</p>
+                <form id="creator-search-form" class="pulse-creator-form" autocomplete="off">
+                    <div class="pulse-creator-form-grid">
+                        <label>
+                            Username / Handle
+                            <input type="text" name="username" required placeholder="z.B. niknando" class="pulse-creator-input">
+                        </label>
+                        <label>
+                            Plattform
+                            <select name="platform" required class="pulse-creator-input">
+                                <option value="">Plattform wählen</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="youtube">YouTube</option>
+                                <option value="twitch">Twitch</option>
+                                <option value="twitter">X / Twitter</option>
+                            </select>
+                        </label>
+                        <label>
+                            Echtname (optional)
+                            <input type="text" name="realname" placeholder="optional" class="pulse-creator-input">
+                        </label>
+                        <label style="display:none;">
+                            Land (optional)
+                            <input type="text" name="country" placeholder="optional" class="pulse-creator-input">
+                        </label>
+                        <label style="display:none;">
+                            Deepsearch
+                            <input type="checkbox" name="deepsearch" checked>
+                        </label>
+                    </div>
+                    <div class="pulse-creator-form-actions">
+                        <button type="submit" class="pulse-btn pulse-btn--primary">Search</button>
+                    </div>
+                    <div id="creator-search-status" class="pulse-creator-status pulse-status">Bereit</div>
+                </form>
+            </div>
+            <div class="pulse-creator-search-right">
+                <div class="pulse-creator-kpi-cards">
+                    <div class="pulse-creator-kpi-card">
+                        <div class="pulse-creator-kpi-label">Estimated Earnings Today</div>
+                        <div id="creator-kpi-today" class="pulse-creator-kpi-value">$0</div>
+                    </div>
+                    <div class="pulse-creator-kpi-card">
+                        <div class="pulse-creator-kpi-label">Estimated Earnings Total</div>
+                        <div id="creator-kpi-total" class="pulse-creator-kpi-value">$0</div>
+                    </div>
+                    <div class="pulse-creator-kpi-card">
+                        <div class="pulse-creator-kpi-label">Diamonds / Gifts</div>
+                        <div id="creator-kpi-diamonds" class="pulse-creator-kpi-value">0</div>
+                    </div>
+                    <div class="pulse-creator-kpi-card">
+                        <div class="pulse-creator-kpi-label">Ranking</div>
+                        <div id="creator-kpi-ranking" class="pulse-creator-kpi-value">-</div>
+                    </div>
+                </div>
+                <div class="pulse-creator-meta-box" id="creator-meta-box">
+                    <!-- Creator-Info wird per JS gerendert -->
+                </div>
+            </div>
         </div>
     </section>
 

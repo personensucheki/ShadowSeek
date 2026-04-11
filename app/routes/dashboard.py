@@ -9,7 +9,6 @@ from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import EinnahmeInfo
-from app.services.currency import convert_eur
 from app.services.request_validation import ValidationError, parse_pagination
 from app.services.revenue_events import serialize_revenue_event
 
@@ -44,21 +43,31 @@ def einnahmen_summary():
     days = [today - timedelta(days=index) for index in range(13, -1, -1)]
     labels = [day.strftime("%d.%m.") for day in days]
     try:
-        values: list[float] = []
+        # Zeitraum für die letzten 14 Tage
+        start_dt = datetime.combine(days[0], datetime.min.time())
+        end_dt = datetime.combine(days[-1] + timedelta(days=1), datetime.min.time())
 
-        for day in days:
-            total = (
-                EinnahmeInfo.query.filter(func.date(EinnahmeInfo.captured_at) == day)
-                .with_entities(func.sum(EinnahmeInfo.estimated_revenue))
-                .scalar()
-                or 0
+        # Basis-Query: wird in Tests gepatcht (EinnahmeInfo.query.filter).
+        base_query = EinnahmeInfo.query.filter(
+            EinnahmeInfo.captured_at.between(start_dt, end_dt)
+        )
+
+        daily_rows = (
+            base_query.with_entities(
+                func.date(EinnahmeInfo.captured_at).label("day"),
+                func.sum(EinnahmeInfo.estimated_revenue).label("total"),
             )
-            values.append(float(total))
+            .group_by(func.date(EinnahmeInfo.captured_at))
+            .all()
+        )
+        totals_by_day = {str(row.day): float(row.total or 0.0) for row in daily_rows}
+        values = [totals_by_day.get(day.isoformat(), 0.0) for day in days]
 
         total_revenue = float(
-            EinnahmeInfo.query.with_entities(func.sum(EinnahmeInfo.estimated_revenue)).scalar() or 0
+            EinnahmeInfo.query.with_entities(func.sum(EinnahmeInfo.estimated_revenue)).scalar()
+            or 0.0
         )
-        today_revenue = float(values[-1] if values else 0)
+        today_revenue = float(values[-1] if values else 0.0)
         record_count = int(
             EinnahmeInfo.query.with_entities(func.count(EinnahmeInfo.id)).scalar() or 0
         )
@@ -67,43 +76,51 @@ def einnahmen_summary():
             or 0
         )
 
-        top_gifter_rows = (
-            EinnahmeInfo.query.with_entities(EinnahmeInfo.username, func.sum(EinnahmeInfo.estimated_revenue))
+        top_creator_rows = (
+            EinnahmeInfo.query.with_entities(
+                EinnahmeInfo.username,
+                func.sum(EinnahmeInfo.estimated_revenue).label("total"),
+            )
             .group_by(EinnahmeInfo.username)
             .order_by(func.sum(EinnahmeInfo.estimated_revenue).desc())
             .limit(5)
             .all()
         )
         top_gifter = [
-            {"name": source or "?", "sum": float(total)} for source, total in top_gifter_rows
+            {"name": username or "?", "sum": float(total or 0.0)}
+            for username, total in top_creator_rows
         ]
 
         limit, offset = parse_pagination(request.args, default_limit=12, max_limit=100)
-        latest = EinnahmeInfo.query.order_by(EinnahmeInfo.captured_at.desc()).offset(offset).limit(limit).all()
+        latest_entries = (
+            EinnahmeInfo.query.order_by(EinnahmeInfo.captured_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
         latest_list = []
-        for entry in latest:
+        for entry in latest_entries:
             row = serialize_revenue_event(entry)
-            usd = convert_eur(entry.estimated_revenue, "USD")
-            row["platform"] = entry.platform.title()
-            row["betrag_usd"] = round(usd, 2) if usd else None
+            row["platform"] = (entry.platform or "unknown").title()
+            row["details"] = entry.details or entry.source or ""
+            row["captured_at"] = entry.captured_at.strftime("%d.%m.%Y %H:%M")
             latest_list.append(row)
 
-        grouped_types = (
-            EinnahmeInfo.query.with_entities(EinnahmeInfo.platform, func.sum(EinnahmeInfo.estimated_revenue))
+        grouped_platforms = (
+            EinnahmeInfo.query.with_entities(
+                EinnahmeInfo.platform,
+                func.sum(EinnahmeInfo.estimated_revenue).label("total"),
+            )
             .group_by(EinnahmeInfo.platform)
             .all()
         )
         platform_totals_map: defaultdict[str, float] = defaultdict(float)
-        for platform, total in grouped_types:
-            platform_totals_map[platform] += float(total or 0)
+        for platform, total in grouped_platforms:
+            platform_totals_map[platform or "unknown"] += float(total or 0.0)
 
         platform_totals = [
             {"platform": platform.title(), "total": round(total, 2)}
-            for platform, total in sorted(
-                platform_totals_map.items(),
-                key=lambda item: item[1],
-                reverse=True,
-            )
+            for platform, total in sorted(platform_totals_map.items(), key=lambda item: item[1], reverse=True)
         ]
 
         return jsonify(

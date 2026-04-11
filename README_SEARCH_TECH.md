@@ -46,3 +46,23 @@
 ---
 
 **Status:** Alle Kernmodule sind modular, testbar und dokumentiert. Die Suche ist maximal tief, robust und rechtlich sauber – bereit für weitere Provider und Features.
+
+
+# Revenue Collector & Demo-Seed
+
+**Revenue Collector starten:**
+
+	python scripts/run_revenue_collector.py
+
+**Historische Testdaten erzeugen:**
+
+	python scripts/seed_revenue_history.py
+
+**Konfigurierbare Umgebungsvariablen:**
+
+	REVENUE_COLLECTOR_INTERVAL=60
+	ENABLE_DEMO_PROVIDER=true
+	ENABLE_TIKTOK_PROVIDER=false
+	REVENUE_DEFAULT_CURRENCY=EUR
+	REVENUE_MAX_ROWS_PER_RUN=100
+	REVENUE_WRITE_BATCH_SIZE=25

@@ -20,6 +20,15 @@ function formatNumber(value) {
     return new Intl.NumberFormat("de-DE").format(Number(value) || 0);
 }
 
+function formatUsd(value) {
+    const amount = Number(value) || 0;
+    return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 2,
+    }).format(amount);
+}
+
 async function fetchJson(url, options) {
     const response = await fetch(url, options);
     if (!response.ok) {
@@ -190,11 +199,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof Chart === "undefined") {
             return;
         }
-
         if (revenueChart) {
-            revenueChart.destroy();
+            revenueChart.data.labels = summary.labels;
+            revenueChart.data.datasets[0].data = summary.values;
+            revenueChart.update();
+            return;
         }
-
         revenueChart = new Chart(chartCanvas.getContext("2d"), {
             type: "line",
             data: {
@@ -274,23 +284,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderLatest(rows) {
+        // Mapping: API liefert captured_at, display_name, estimated_revenue
         renderTableRows(latestBody, rows, [
             { key: "captured_at", render: (row) => escapeHtml(row.captured_at || "-") },
             { key: "platform", render: (row) => escapeHtml(row.platform || "-") },
             { key: "username", render: (row) => escapeHtml(row.display_name || row.username || "-") },
             { key: "estimated_revenue", render: (row) => formatEur(row.estimated_revenue), className: "pulse-table-amount" },
-            { key: "source", render: (row) => escapeHtml(row.source || "-") },
+            { key: "details", render: (row) => escapeHtml(row.details || row.source || "-") },
         ]);
     }
 
+    let summaryRequestRunning = false;
     async function loadSummary() {
-        const summary = await fetchJson("/api/einnahmen/summary");
-        renderKpis(summary);
-        renderChart(summary);
-        renderTopCreators(summary.top_gifter);
-        renderPlatformBreakdown(summary.platform_totals);
-        renderLatest(summary.latest);
-        queryStatus.textContent = `Summary geladen: ${formatNumber(summary.record_count)} Records verfuegbar.`;
+        if (summaryRequestRunning) return;
+        summaryRequestRunning = true;
+        try {
+            const summary = await fetchJson("/api/einnahmen/summary", { cache: "no-store" });
+            renderKpis(summary);
+            renderChart(summary);
+            renderTopCreators(summary.top_gifter);
+            renderPlatformBreakdown(summary.platform_totals);
+            renderLatest(summary.latest);
+            queryStatus.textContent = `Summary geladen: ${formatNumber(summary.record_count)} Records verfuegbar.`;
+        } catch (error) {
+            queryStatus.textContent = "Summary konnte nicht geladen werden.";
+        } finally {
+            summaryRequestRunning = false;
+        }
     }
 
     async function loadLive(platform) {
@@ -388,7 +408,88 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    Promise.all([loadSummary(), loadLive("tiktok")]).catch(() => {
+    // Creator Search Panel Logic
+    const creatorForm = document.getElementById("creator-search-form");
+    const creatorStatus = document.getElementById("creator-search-status");
+    const kpiToday = document.getElementById("creator-kpi-today");
+    const kpiTotal = document.getElementById("creator-kpi-total");
+    kpiToday.textContent = "$0";
+    kpiTotal.textContent = "$0";
+    const kpiDiamonds = document.getElementById("creator-kpi-diamonds");
+    const kpiRanking = document.getElementById("creator-kpi-ranking");
+    const metaBox = document.getElementById("creator-meta-box");
+
+    function setCreatorStatus(msg, error = false) {
+        creatorStatus.textContent = msg;
+        creatorStatus.style.color = error ? "#ff00ff" : "#00ff9f";
+    }
+
+    function renderCreatorKpis(metrics) {
+        kpiToday.textContent = formatUsd(metrics.estimated_earnings_today_usd);
+        kpiTotal.textContent = formatUsd(metrics.estimated_earnings_total_usd);
+        kpiDiamonds.textContent = formatNumber(metrics.diamonds_today);
+        kpiRanking.textContent = metrics.ranking_country || "-";
+    }
+
+    function renderCreatorMeta(creator) {
+        if (!creator || !creator.username) {
+            metaBox.innerHTML = "<span style='color:#ff00ff'>Kein Creator gefunden.</span>";
+            return;
+        }
+        metaBox.innerHTML = `
+            <div><b>Name:</b> ${escapeHtml(creator.display_name || "-")}</div>
+            <div><b>Username:</b> ${escapeHtml(creator.username)}</div>
+            <div><b>Plattform:</b> ${escapeHtml(creator.platform)}</div>
+            <div><b>Land:</b> ${escapeHtml(creator.country || "-")}</div>
+            <div><b>Profil-Link:</b> ${creator.profile_url ? `<a href='${escapeHtml(creator.profile_url)}' target='_blank'>Profil</a>` : "-"}</div>
+        `;
+    }
+
+    if (creatorForm) {
+        creatorForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            setCreatorStatus("Suche läuft ...");
+            try {
+                const formData = new FormData(creatorForm);
+                const payload = {
+                    username: formData.get("username"),
+                    platform: formData.get("platform"),
+                    realname: formData.get("realname"),
+                    deepsearch: true
+                };
+                const res = await fetch("/api/pulse/search", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    setCreatorStatus(data.error || "Fehler bei der Suche", true);
+                    renderCreatorKpis({ estimated_earnings_today_usd: 0, estimated_earnings_total_usd: 0, diamonds_today: 0, ranking_country: "-" });
+                    renderCreatorMeta(null);
+                    return;
+                }
+                setCreatorStatus("Treffer geladen");
+                renderCreatorKpis(data.metrics || {});
+                renderCreatorMeta(data.creator || {});
+            } catch (err) {
+                setCreatorStatus("Fehler beim Laden der Daten", true);
+                renderCreatorKpis({ estimated_earnings_today_usd: 0, estimated_earnings_total_usd: 0, diamonds_today: 0, ranking_country: "-" });
+                renderCreatorMeta(null);
+            }
+        });
+    }
+
+    // Stabiles Auto-Refresh für Summary (alle 30s, nur einmalig)
+    let summaryInterval = null;
+    function startSummaryRefresh() {
+        if (summaryInterval) return;
+        summaryInterval = setInterval(loadSummary, 30000);
+    }
+
+    Promise.all([loadSummary(), loadLive("tiktok")]).then(() => {
+        startSummaryRefresh();
+    }).catch(() => {
         liveStatus.textContent = "Initiale Pulse-Daten konnten nicht geladen werden.";
         queryStatus.textContent = "Initiale Pulse-Daten konnten nicht geladen werden.";
     });
