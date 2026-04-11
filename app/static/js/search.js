@@ -176,6 +176,61 @@ function setSelectedModifiers(arr) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+        // === Ergebnis-Tabs: Filter-Logik ===
+        const tabs = document.querySelectorAll('.tab-btn');
+        const resultsList = document.getElementById('results-list');
+        let allResults = [];
+        // Ergebnisse initial aus DOM extrahieren (vereinfachte Demo, Backend sollte nach Kategorien liefern)
+        if (resultsList) {
+            allResults = Array.from(resultsList.children).filter(el => el.classList.contains('result-card'));
+        }
+        // Mapping: Kategorie → Plattform-Slug oder Typ
+        const TAB_CATEGORIES = {
+            social: ['instagram','tiktok','x','twitter','facebook','linkedin','snapchat'],
+            web: ['web','website','domain'],
+            forum: ['forum','board','reddit'],
+            image: ['image','imgur','flickr','pic','photo'],
+            video: ['youtube','twitch','video','vimeo'],
+            news: ['news','zeitung','magazine'],
+            community: ['community','discord','telegram'],
+        };
+        function getResultCategory(resultEl) {
+            // Versucht, die Kategorie aus dem Plattformnamen zu bestimmen
+            const platform = resultEl.querySelector('.result-platform')?.textContent?.toLowerCase() || '';
+            for (const [tab, keys] of Object.entries(TAB_CATEGORIES)) {
+                if (keys.some(k => platform.includes(k))) return tab;
+            }
+            return 'social'; // fallback
+        }
+        function filterResults(tab) {
+            let found = 0;
+            allResults.forEach(el => {
+                const cat = getResultCategory(el);
+                if (cat === tab) {
+                    el.style.display = '';
+                    found++;
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+            // Leere-Zustände
+            const empty = resultsList.querySelector('.empty-state');
+            if (empty) empty.style.display = found === 0 ? '' : 'none';
+        }
+        function setActiveTab(tab) {
+            tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+        }
+        tabs.forEach(btn => {
+            btn.addEventListener('click', function() {
+                setActiveTab(btn.dataset.tab);
+                filterResults(btn.dataset.tab);
+            });
+        });
+        // Standard: Social Media Tab aktiv
+        if (tabs.length) {
+            setActiveTab('social');
+            filterResults('social');
+        }
     const form = document.getElementById('search-form');
     const resetBtn = document.getElementById('reset-btn');
     const catBar = document.getElementById('category-bar-search');
@@ -292,8 +347,32 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.target.name !== 'image') saveInputs();
     });
 
-    // Restore on load
+    // Restore on load (inkl. State-Übernahme von Home)
+    // Query, Kategorien, Modus-Chips aus localStorage/URL übernehmen
+    function restoreStateFromHome() {
+        // Query
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('query') && form.elements['query']) {
+            form.elements['query'].value = params.get('query');
+        }
+        // Kategorien
+        if (params.has('categories')) {
+            const cats = params.get('categories').split(',').map(s => s.trim()).filter(Boolean);
+            setSelectedCategories(cats);
+            selected = cats;
+            renderChips();
+        }
+        // Modus-Chips
+        MODIFIERS.forEach(m => {
+            if (params.get(m.value) === 'true') {
+                if (!selectedMods.includes(m.value)) selectedMods.push(m.value);
+            }
+        });
+        setSelectedModifiers(selectedMods);
+        if (deepSearch) deepSearch.checked = selectedMods.includes('deepsearch');
+    }
     restoreInputs();
+    restoreStateFromHome();
 
     // === Scan Overlay Integration (robust) ===
     let scanOverlayCtrl = null;
@@ -321,6 +400,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         url.search = params.toString();
         form.action = url.pathname + url.search;
+        // DeepSearch-Badge immer sichtbar, wenn aktiv
+        const deepBadge = document.getElementById('scan-deep-badge');
+        if (deepBadge) deepBadge.style.display = deepSearchActive ? '' : 'none';
+        // Scan-Overlay an aktive Tabs koppeln
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab) {
+            const scanStatus = document.getElementById('scan-status-text');
+            if (scanStatus) scanStatus.textContent = 'Scan: ' + activeTab.textContent + (deepSearchActive ? ' (DeepSearch aktiv)' : '');
+        }
         scanOverlayCtrl = showScanOverlay(platforms, deepSearchActive);
         // Nach 14s Timeout (Fallback)
         setTimeout(() => { if (scanOverlayCtrl) scanOverlayCtrl.error('Zeitüberschreitung – keine Antwort'); }, 14000);

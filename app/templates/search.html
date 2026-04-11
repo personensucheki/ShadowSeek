@@ -32,21 +32,29 @@
                         <label>Username
                             <input type="text" name="query" value="{{ request.args.get('query', '') }}" placeholder="Benutzername (Pflichtfeld)" required autofocus>
                         </label>
-                        <label>Echtname
-                            <input type="text" name="real_name" placeholder="Optional">
+                        <label>Name / Anzeigename
+                            <input type="text" name="real_name" placeholder="z.B. Max Mustermann">
                         </label>
                     </div>
                     <div class="form-row">
-                        <label>Clanname
-                            <input type="text" name="clan_name" placeholder="Optional">
+                        <label>Clanname / Alias
+                            <input type="text" name="clan_name" placeholder="z.B. ShadowCrew">
                         </label>
-                        <label>Alter
-                            <input type="number" name="age" min="1" max="120" placeholder="Optional">
+                        <label>Wohnort / Ort
+                            <input type="text" name="location" placeholder="z.B. Berlin">
                         </label>
                     </div>
                     <div class="form-row">
-                        <label>Postleitzahl
-                            <input type="text" name="postal_code" maxlength="10" placeholder="Optional">
+                        <label>Webseite / Domain
+                            <input type="text" name="website" placeholder="z.B. example.com">
+                        </label>
+                        <label>Keywords
+                            <input type="text" name="keywords" placeholder="z.B. OSINT, Recon, Security">
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>E-Mail-Adresse (optional, nur für eigene/öffentliche Quellen)
+                            <input type="email" name="email" placeholder="z.B. max@mustermann.de">
                         </label>
                         <label>Bild-Upload
                             <input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
@@ -90,16 +98,25 @@
     <section class="recon-panel recon-panel--main">
         <div class="recon-card recon-card--results">
             <div class="results-title">Gefundene Profile</div>
-            {% if results %}
-                <div class="results-list">
+            <div class="results-tabs" id="results-tabs">
+                <button type="button" class="tab-btn" data-tab="social">Social Media</button>
+                <button type="button" class="tab-btn" data-tab="web">Webseiten</button>
+                <button type="button" class="tab-btn" data-tab="forum">Foren</button>
+                <button type="button" class="tab-btn" data-tab="image">Bilder</button>
+                <button type="button" class="tab-btn" data-tab="video">Videos</button>
+                <button type="button" class="tab-btn" data-tab="news">News</button>
+                <button type="button" class="tab-btn" data-tab="community">Communities</button>
+            </div>
+            <div class="results-list" id="results-list">
+                {% if results %}
                     {% for result in results %}
                         {% include 'components/result_card.html' %}
                     {% endfor %}
-                </div>
-                {% include 'components/pagination.html' %}
-            {% else %}
-                <div class="empty-state">Keine Ergebnisse gefunden. Bitte verfeinere deine Suche.</div>
-            {% endif %}
+                {% else %}
+                    <div class="empty-state">Keine Ergebnisse gefunden. Bitte verfeinere deine Suche.</div>
+                {% endif %}
+            </div>
+            {% include 'components/pagination.html' %}
         </div>
     </section>
 </div>

@@ -1,19 +1,32 @@
 
 <div class="result-card">
-    <img src="{{ result.profile_pic or url_for('static', filename='img/default_avatar.png') }}" alt="Avatar" class="result-avatar">
+    <img src="{{ url_for('static', filename='img/platforms/' ~ (result.platform_slug or 'default') ~ '.png') if result.platform_slug else url_for('static', filename='img/default_avatar.png') }}" alt="Plattform-Icon" class="result-avatar">
     <div class="result-info">
         <div class="result-platform">{{ result.platform }}</div>
         <div class="result-title">{{ result.username }}</div>
-        {% if result.bio %}<div class="result-bio">{{ result.bio }}</div>{% endif %}
+        {% if result.title %}<div class="result-bio">{{ result.title }}</div>{% elif result.bio %}<div class="result-bio">{{ result.bio }}</div>{% endif %}
+        {% if result.snippet %}<div class="result-bio">{{ result.snippet }}</div>{% endif %}
         <div class="result-meta-row">
-            {% if result.match_score is defined %}
-                <span class="chip chip--pink">Score: {{ result.match_score }}</span>
+            {% if result.confidence %}
+                {% if result.confidence == 'high' %}
+                    <span class="chip chip--green">Confidence: Hoch</span>
+                {% elif result.confidence == 'medium' %}
+                    <span class="chip chip--cyan">Confidence: Mittel</span>
+                {% else %}
+                    <span class="chip chip--pink">Confidence: Niedrig</span>
+                {% endif %}
             {% endif %}
-            {% if result.verification %}
-                <span class="chip chip--green">{{ result.verification|capitalize }}</span>
+            {% if result.match_score is defined %}
+                <span class="chip chip--variation">Score: {{ result.match_score }}</span>
+            {% endif %}
+            {% if result.match_reasons %}
+                <span class="chip chip--green">{{ result.match_reasons|join(', ') }}</span>
             {% endif %}
             {% if result.source %}
-                <span class="chip chip--cyan">{{ result.source|capitalize }}</span>
+                <span class="chip chip--cyan">Quelle: {{ result.source|capitalize }}</span>
+            {% endif %}
+            {% if result.provider %}
+                <span class="chip chip--pink">Provider: {{ result.provider|capitalize }}</span>
             {% endif %}
         </div>
         <a href="{{ result.profile_url }}" target="_blank" class="result-link">Profil öffnen</a>
