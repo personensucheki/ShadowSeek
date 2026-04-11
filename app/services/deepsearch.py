@@ -1,4 +1,5 @@
 from .image_similarity import compare_uploaded_against_gallery
+from ..plugins.registry import run_plugins
 from .risk_score import calculate_osint_risk
 from .screenshot_engine import capture_profile_screenshot
 from .username_similarity import find_similar_usernames
@@ -26,6 +27,7 @@ def run_deepsearch(query, profiles=None, images=None, riskdata=None):
         "usernames": _safe_list(query.get("usernames")),
         "profiles": _safe_list(query.get("profiles")),
         "reverse_image": _safe_dict(query.get("reverse_image")),
+        "plugin_results": {},
     }
 
     if query.get("base_username") and isinstance(query.get("candidates"), list):
@@ -72,5 +74,18 @@ def run_deepsearch(query, profiles=None, images=None, riskdata=None):
                 }
         except Exception:
             result["risk_score"] = {"score": 0, "level": "low", "factors": []}
+
+    plugin_payload = {
+        "username": query.get("base_username") or query.get("username"),
+        "base_username": query.get("base_username"),
+        "candidates": _safe_list(query.get("candidates")),
+        "riskdata": _safe_dict(query.get("riskdata")),
+        "website": query.get("website"),
+        "email": query.get("email"),
+        "profiles": result["profiles"],
+        "usernames": result["usernames"],
+        "reverse_image": result["reverse_image"],
+    }
+    result["plugin_results"] = run_plugins(plugin_payload)
 
     return result

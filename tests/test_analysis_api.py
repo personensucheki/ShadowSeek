@@ -94,6 +94,7 @@ class AnalysisApiTestCase(unittest.TestCase):
         self.assertEqual(payload["usernames"], [])
         self.assertEqual(payload["profiles"], [])
         self.assertEqual(payload["reverse_image"], {})
+        self.assertIn("plugin_results", payload)
 
     @patch("app.routes.analysis.run_deepsearch", side_effect=RuntimeError("boom"))
     def test_analysis_route_unexpected_error_returns_json(self, _mocked_run):
