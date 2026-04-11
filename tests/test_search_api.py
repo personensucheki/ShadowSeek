@@ -1,6 +1,7 @@
 import importlib
 import io
 import os
+import re
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -16,6 +17,13 @@ PNG_BYTES = (
     b"\x00\x00\x00\x0cIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfeA\xd9\x8f\xe1"
     b"\x00\x00\x00\x00IEND\xaeB`\x82"
 )
+
+
+def extract_csrf_token(html):
+    match = re.search(r'name="csrf-token" content="([^"]+)"', html)
+    if not match:
+        raise AssertionError("CSRF token meta tag not found.")
+    return match.group(1)
 
 
 class SearchApiTestCase(unittest.TestCase):
@@ -224,6 +232,78 @@ class SearchApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         payload = response.get_json()
         self.assertIn("Assistant", payload["error"])
+
+    def test_prod_search_accepts_csrf_token(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            prod_config = type(
+                "ProdTestConfig",
+                (),
+                {
+                    "TESTING": True,
+                    "SECRET_KEY": "prod-secret",
+                    "SQLALCHEMY_DATABASE_URI": "sqlite://",
+                    "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+                    "WTF_CSRF_ENABLED": True,
+                    "SESSION_COOKIE_SECURE": False,
+                    "MAX_CONTENT_LENGTH": 5 * 1024 * 1024,
+                    "SEARCH_REQUEST_TIMEOUT": 0.1,
+                    "SEARCH_MAX_WORKERS": 1,
+                    "REVERSE_IMAGE_MAX_AGE": 3600,
+                    "PUBLIC_BASE_URL": "https://shadowseek.example",
+                    "UPLOAD_DIRECTORY": tempdir,
+                    "SERPER_API_KEY": None,
+                    "OPENAI_API_KEY": None,
+                    "OPENAI_MAX_RERANK_CANDIDATES": 12,
+                },
+            )
+            app = create_app(prod_config)
+            client = app.test_client()
+            home_response = client.get("/")
+            token = extract_csrf_token(home_response.get_data(as_text=True))
+
+            response = client.post(
+                "/api/search",
+                data={"username": "shadowseek", "csrf_token": token},
+                headers={"X-CSRFToken": token},
+            )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_prod_chatbot_accepts_csrf_header(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            prod_config = type(
+                "ProdChatbotConfig",
+                (),
+                {
+                    "TESTING": True,
+                    "SECRET_KEY": "prod-secret",
+                    "SQLALCHEMY_DATABASE_URI": "sqlite://",
+                    "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+                    "WTF_CSRF_ENABLED": True,
+                    "SESSION_COOKIE_SECURE": False,
+                    "MAX_CONTENT_LENGTH": 5 * 1024 * 1024,
+                    "SEARCH_REQUEST_TIMEOUT": 0.1,
+                    "SEARCH_MAX_WORKERS": 1,
+                    "REVERSE_IMAGE_MAX_AGE": 3600,
+                    "PUBLIC_BASE_URL": "https://shadowseek.example",
+                    "UPLOAD_DIRECTORY": tempdir,
+                    "SERPER_API_KEY": None,
+                    "OPENAI_API_KEY": None,
+                    "OPENAI_MAX_RERANK_CANDIDATES": 12,
+                },
+            )
+            app = create_app(prod_config)
+            client = app.test_client()
+            home_response = client.get("/")
+            token = extract_csrf_token(home_response.get_data(as_text=True))
+
+            response = client.post(
+                "/api/chatbot",
+                json={"message": "status"},
+                headers={"X-CSRFToken": token},
+            )
+
+        self.assertEqual(response.status_code, 503)
 
     def test_create_app_uses_prod_config_on_render(self):
         with patch.dict(

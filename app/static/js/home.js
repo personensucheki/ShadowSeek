@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const csrfToken =
+        document.querySelector("meta[name='csrf-token']")?.getAttribute("content") || "";
     const form = document.getElementById("search-form");
     const submitButton = document.getElementById("search-submit");
     const formErrors = document.getElementById("form-errors");
@@ -204,6 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const response = await fetch(form.action || "/api/search", {
                 method: "POST",
+                headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},
                 body: new FormData(form),
             });
             const payload = await response.json().catch(() => ({}));

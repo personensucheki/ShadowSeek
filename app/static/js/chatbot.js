@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", function() {
+    const csrfToken =
+        document.querySelector("meta[name='csrf-token']")?.getAttribute("content") || "";
     const widget = document.getElementById("chatbot-widget");
     const fab = document.getElementById("chat-toggle");
     const minimizeButton = document.getElementById("chatbot-minimize");
@@ -92,7 +94,10 @@ document.addEventListener("DOMContentLoaded", function() {
             try {
                 const response = await fetch(endpoint, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+                    },
                     body: JSON.stringify({ message: text }),
                 });
                 const payload = await response.json().catch(function() {
