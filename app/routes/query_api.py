@@ -3,6 +3,7 @@ from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import and_
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import EinnahmeInfo
 from app.services.pulse_profile_scan import build_query_rows, run_creator_profile_scan
@@ -14,62 +15,66 @@ logger = logging.getLogger("einnahmen_query")
 
 
 def _collect_revenue_query_rows(data):
-    filters = []
-    log_filters = {}
+    try:
+        filters = []
+        log_filters = {}
 
-    if data.get("nutzername"):
-        filters.append(EinnahmeInfo.quelle.ilike(f"%{data['nutzername']}%"))
-        log_filters["nutzername"] = data["nutzername"]
-    if data.get("plattform"):
-        filters.append(EinnahmeInfo.typ.ilike(f"{data['plattform'].lower()}%"))
-        log_filters["plattform"] = data["plattform"]
-    if data.get("kategorie"):
-        filters.append(EinnahmeInfo.typ.ilike(f"%{data['kategorie'].lower()}%"))
-        log_filters["kategorie"] = data["kategorie"]
-    if data.get("von"):
-        try:
-            dt = datetime.strptime(data["von"], "%Y-%m-%d")
-            filters.append(EinnahmeInfo.zeitpunkt >= dt)
-            log_filters["von"] = data["von"]
-        except Exception:
-            pass
-    if data.get("bis"):
-        try:
-            dt = datetime.strptime(data["bis"], "%Y-%m-%d")
-            filters.append(EinnahmeInfo.zeitpunkt <= dt)
-            log_filters["bis"] = data["bis"]
-        except Exception:
-            pass
-    if data.get("min"):
-        try:
-            filters.append(EinnahmeInfo.betrag >= float(data["min"]))
-            log_filters["min"] = data["min"]
-        except Exception:
-            pass
-    if data.get("max"):
-        try:
-            filters.append(EinnahmeInfo.betrag <= float(data["max"]))
-            log_filters["max"] = data["max"]
-        except Exception:
-            pass
+        if data.get("nutzername"):
+            filters.append(EinnahmeInfo.quelle.ilike(f"%{data['nutzername']}%"))
+            log_filters["nutzername"] = data["nutzername"]
+        if data.get("plattform"):
+            filters.append(EinnahmeInfo.typ.ilike(f"{data['plattform'].lower()}%"))
+            log_filters["plattform"] = data["plattform"]
+        if data.get("kategorie"):
+            filters.append(EinnahmeInfo.typ.ilike(f"%{data['kategorie'].lower()}%"))
+            log_filters["kategorie"] = data["kategorie"]
+        if data.get("von"):
+            try:
+                dt = datetime.strptime(data["von"], "%Y-%m-%d")
+                filters.append(EinnahmeInfo.zeitpunkt >= dt)
+                log_filters["von"] = data["von"]
+            except Exception:
+                pass
+        if data.get("bis"):
+            try:
+                dt = datetime.strptime(data["bis"], "%Y-%m-%d")
+                filters.append(EinnahmeInfo.zeitpunkt <= dt)
+                log_filters["bis"] = data["bis"]
+            except Exception:
+                pass
+        if data.get("min"):
+            try:
+                filters.append(EinnahmeInfo.betrag >= float(data["min"]))
+                log_filters["min"] = data["min"]
+            except Exception:
+                pass
+        if data.get("max"):
+            try:
+                filters.append(EinnahmeInfo.betrag <= float(data["max"]))
+                log_filters["max"] = data["max"]
+            except Exception:
+                pass
 
-    logger.info("Einnahmen-Query: %s", log_filters)
+        logger.info("Einnahmen-Query: %s", log_filters)
 
-    query = EinnahmeInfo.query
-    if filters:
-        query = query.filter(and_(*filters))
+        query = EinnahmeInfo.query
+        if filters:
+            query = query.filter(and_(*filters))
 
-    results = query.order_by(EinnahmeInfo.zeitpunkt.desc()).limit(200).all()
-    return [
-        {
-            "zeitpunkt": entry.zeitpunkt.strftime("%d.%m.%Y %H:%M"),
-            "quelle": entry.quelle,
-            "betrag": entry.betrag,
-            "typ": entry.typ,
-            "details": entry.details,
-        }
-        for entry in results
-    ]
+        results = query.order_by(EinnahmeInfo.zeitpunkt.desc()).limit(200).all()
+        return [
+            {
+                "zeitpunkt": entry.zeitpunkt.strftime("%d.%m.%Y %H:%M"),
+                "quelle": entry.quelle,
+                "betrag": entry.betrag,
+                "typ": entry.typ,
+                "details": entry.details,
+            }
+            for entry in results
+        ]
+    except SQLAlchemyError:
+        logger.exception("Revenue query unavailable because earnings data could not be loaded.")
+        return []
 
 
 @query_api_bp.route("/api/einnahmen/query", methods=["POST"])

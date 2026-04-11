@@ -52,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const queryForm = document.getElementById("pulse-query-form");
     const resetButton = document.getElementById("pulse-query-reset");
     const platformTabs = Array.from(document.querySelectorAll(".pulse-tab"));
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
     if (
         !chartCanvas ||
@@ -322,7 +323,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const payload = Object.fromEntries(formData.entries());
         const response = await fetchJson("/api/pulse/query", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+            },
+            credentials: "same-origin",
             body: JSON.stringify(payload),
         });
         const rows = Array.isArray(response.rows) ? response.rows : [];

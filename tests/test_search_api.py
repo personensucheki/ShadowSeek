@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from app import create_app
+from sqlalchemy.exc import SQLAlchemyError
 
 
 PNG_BYTES = (
@@ -381,6 +382,78 @@ class SearchApiTestCase(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
+
+    def test_prod_pulse_query_accepts_csrf_header(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            prod_config = type(
+                "ProdPulseConfig",
+                (),
+                {
+                    "TESTING": True,
+                    "SECRET_KEY": "prod-secret",
+                    "SQLALCHEMY_DATABASE_URI": "sqlite://",
+                    "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+                    "WTF_CSRF_ENABLED": True,
+                    "SESSION_COOKIE_SECURE": False,
+                    "MAX_CONTENT_LENGTH": 5 * 1024 * 1024,
+                    "SEARCH_REQUEST_TIMEOUT": 0.1,
+                    "SEARCH_MAX_WORKERS": 1,
+                    "REVERSE_IMAGE_MAX_AGE": 3600,
+                    "PUBLIC_BASE_URL": "https://shadowseek.example",
+                    "UPLOAD_DIRECTORY": tempdir,
+                    "SERPER_API_KEY": None,
+                    "OPENAI_API_KEY": None,
+                    "OPENAI_MAX_RERANK_CANDIDATES": 12,
+                },
+            )
+            app = create_app(prod_config)
+            client = app.test_client()
+            home_response = client.get("/")
+            token = extract_csrf_token(home_response.get_data(as_text=True))
+
+            with patch("app.routes.query_api.run_creator_profile_scan") as mocked_scan:
+                mocked_scan.return_value = {
+                    "query": {"username": "nixando", "platforms": ["twitch"]},
+                    "summary": {"total_hits": 1},
+                    "meta": {"generated_at": "2026-04-11T20:00:00+00:00"},
+                    "profiles": [
+                        {
+                            "platform": "Twitch",
+                            "platform_slug": "twitch",
+                            "username": "nixando",
+                            "profile_url": "https://www.twitch.tv/nixando",
+                            "match_score": 91,
+                            "confidence": "high",
+                            "verification": "confirmed",
+                            "match_reason": "Direkter Username",
+                            "source": "direct",
+                        }
+                    ],
+                }
+
+                response = client.post(
+                    "/api/pulse/query",
+                    json={"nutzername": "Nixando", "plattform": "twitch"},
+                    headers={"X-CSRFToken": token},
+                )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["mode"], "profile_scan")
+        self.assertEqual(payload["rows"][0]["platform"], "Twitch")
+
+    @patch("app.routes.dashboard.EinnahmeInfo")
+    def test_summary_endpoint_falls_back_when_revenue_data_is_unavailable(self, mocked_einnahme):
+        mocked_einnahme.query.filter.side_effect = SQLAlchemyError("boom")
+
+        response = self.client.get("/api/einnahmen/summary")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["collector_status"], "unavailable")
+        self.assertEqual(payload["record_count"], 0)
+        self.assertEqual(payload["latest"], [])
 
     def test_prod_chatbot_accepts_csrf_header(self):
         with tempfile.TemporaryDirectory() as tempdir:

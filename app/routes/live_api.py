@@ -1,6 +1,8 @@
+import logging
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import EinnahmeInfo
 from app.services.pulse_profile_scan import build_live_rows, run_creator_profile_scan
@@ -8,25 +10,30 @@ from app.services.search_service import SearchValidationError
 
 
 live_api_bp = Blueprint("live_api", __name__)
+logger = logging.getLogger("pulse_live")
 
 
 def _collect_live_rows(platform):
-    query = EinnahmeInfo.query.filter(EinnahmeInfo.typ.ilike(f"{platform}_%"))
-    if request.args.get("since"):
-        dt = datetime.strptime(request.args["since"], "%Y-%m-%d %H:%M")
-        query = query.filter(EinnahmeInfo.zeitpunkt >= dt)
+    try:
+        query = EinnahmeInfo.query.filter(EinnahmeInfo.typ.ilike(f"{platform}_%"))
+        if request.args.get("since"):
+            dt = datetime.strptime(request.args["since"], "%Y-%m-%d %H:%M")
+            query = query.filter(EinnahmeInfo.zeitpunkt >= dt)
 
-    einnahmen = query.order_by(EinnahmeInfo.zeitpunkt.desc()).limit(100).all()
-    return [
-        {
-            "zeitpunkt": entry.zeitpunkt.strftime("%d.%m.%Y %H:%M"),
-            "quelle": entry.quelle,
-            "betrag": entry.betrag,
-            "typ": entry.typ,
-            "details": entry.details,
-        }
-        for entry in einnahmen
-    ]
+        einnahmen = query.order_by(EinnahmeInfo.zeitpunkt.desc()).limit(100).all()
+        return [
+            {
+                "zeitpunkt": entry.zeitpunkt.strftime("%d.%m.%Y %H:%M"),
+                "quelle": entry.quelle,
+                "betrag": entry.betrag,
+                "typ": entry.typ,
+                "details": entry.details,
+            }
+            for entry in einnahmen
+        ]
+    except SQLAlchemyError:
+        logger.exception("Pulse live revenue feed unavailable for platform %s.", platform)
+        return []
 
 
 @live_api_bp.route("/api/live/<platform>")
