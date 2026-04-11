@@ -28,7 +28,8 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     };
 
-    const appendMessage = function(sender, text) {
+
+    const appendMessage = function(sender, text, opts = {}) {
         if (!messages) {
             return;
         }
@@ -38,7 +39,52 @@ document.addEventListener("DOMContentLoaded", function() {
         message.textContent = text;
         messages.appendChild(message);
         messages.scrollTop = messages.scrollHeight;
+
+        // Feedback-Buttons nur für Bot-Antworten
+        if (sender === "bot" && opts.enableFeedback) {
+            const feedbackDiv = document.createElement("div");
+            feedbackDiv.className = "chatbot-feedback-btns";
+
+            const feedbackOptions = [
+                { label: "Hilfreich", score: 1 },
+                { label: "Nicht hilfreich", score: 0 },
+                { label: "Nochmal versuchen", score: -1 },
+                { label: "Besser erklären", score: -2 },
+            ];
+            feedbackOptions.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = opt.label;
+                btn.className = "chatbot-feedback-btn";
+                btn.onclick = async function() {
+                    btn.disabled = true;
+                    await sendFeedback(text, opt.score);
+                    feedbackDiv.textContent = "Danke für dein Feedback!";
+                };
+                feedbackDiv.appendChild(btn);
+            });
+            message.appendChild(feedbackDiv);
+        }
     };
+
+    async function sendFeedback(assistantReply, feedbackScore) {
+        // Hole letzte User-Nachricht
+        const userMessages = Array.from(messages.querySelectorAll('.chatbot-msg-user'));
+        const lastUserMsg = userMessages.length > 0 ? userMessages[userMessages.length - 1].textContent : "";
+        await fetch("/api/chatbot/feedback", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+            },
+            body: JSON.stringify({
+                user_message: lastUserMsg,
+                assistant_reply: assistantReply,
+                feedback_score: feedbackScore,
+                // Kontext kann später ergänzt werden
+            }),
+        });
+    }
 
     const seedWelcomeMessage = function() {
         if (!messages || messages.childElementCount > 0) {
@@ -112,7 +158,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     return;
                 }
 
-                appendMessage("bot", payload.reply || "Keine Antwort verfuegbar.");
+                appendMessage("bot", payload.reply || "Keine Antwort verfuegbar.", { enableFeedback: true });
             } catch (error) {
                 appendMessage("bot", "Assistant derzeit nicht erreichbar.");
             } finally {
