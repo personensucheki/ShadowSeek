@@ -2,7 +2,10 @@
     <a class="navbar-logo" href="/" aria-label="Zur ShadowSeek-Startseite">
         ShadowSeek
     </a>
-    <div class="navbar-center">
+    <button class="navbar-hamburger" id="navbar-hamburger" aria-label="Menü öffnen" aria-controls="navbar-menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="navbar-center" id="navbar-menu">
         <a href="/">Home</a>
         <a href="/search">Suche</a>
         <a href="/pulse">Pulse</a>
@@ -20,3 +23,17 @@
         {% endif %}
     </div>
 </nav>
+<script>
+// Hamburger Toggle
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('navbar-hamburger');
+  const menu = document.getElementById('navbar-menu');
+  if (btn && menu) {
+    btn.addEventListener('click', function() {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', !expanded);
+      menu.classList.toggle('navbar-menu-open');
+    });
+  }
+});
+</script>

@@ -73,7 +73,7 @@
                     <div class="platform-grid">
                         {% for platform in platforms %}
                             <label class="platform-tile">
-                                <input type="checkbox" name="platforms" value="{{ platform.slug }}" checked>
+                                <input type="checkbox" name="platforms" value="{{ platform.slug }}" checked data-platform="{{ platform.slug }}">
                                 <span>{{ platform.name }}</span>
                             </label>
                         {% endfor %}
@@ -120,7 +120,9 @@
                 <button type="button" class="tab-btn" data-tab="community">Communities</button>
             </div>
             <div id="search-messages" aria-live="polite"></div>
+            {% raw %}
             <div id="reverse-links" class="results-list"></div>
+            {% endraw %}
             <div class="results-list" id="results-list">
                 {% if results %}
                     {% for result in results %}

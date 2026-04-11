@@ -13,8 +13,7 @@
    - Logging around collector execution has been tightened.
 
 3. **Database uniqueness protection**
-   - Unique constraint added for revenue event identity.
-   - Migration added for the revenue uniqueness update.
+   - Unique constraints and related migration updates are now part of the revenue write path.
 
 4. **Validation and request hardening**
    - Shared validation helpers are used for revenue and pulse endpoints.
@@ -24,23 +23,34 @@
    - Revenue summary and pulse-related responses now use consistent serialized fields.
    - Dashboard and frontend integration points were aligned with the new response shape.
 
-6. **Operational fixes**
+6. **Billing and feature gating**
+   - Stripe billing flow, feature gating, subscription UI, and the related backend wiring were added.
+   - Search access checks and frontend gating are now tied to subscription-related capabilities.
+
+7. **Operational fixes**
    - Collector bootstrap/factory wiring was corrected.
    - CORS behavior for API routes is explicitly configured in the Flask app.
 
+## Files Added or Extended
+
+- `app.py` for billing and platform integration entrypoint work
+- `app/templates/subscription.html` for the subscription flow
+- `app/static/js/billing_gating.js` for frontend feature gating
+- `.env.example` and deployment docs for runtime setup
+
 ## Remaining Risks
 
-1. **Legacy field cleanup**
+1. **Config completeness**
+   - Production integrations still depend on secrets such as Stripe, OpenAI, Serper, and Telegram credentials where those features are enabled.
+
+2. **Legacy field cleanup**
    - Legacy revenue fields are still present for compatibility and should be removed only after consumers are migrated.
 
-2. **Upload route coverage**
+3. **Upload route coverage**
    - Upload-specific routes still need the same validation discipline if more upload APIs are added.
-
-3. **Config completeness**
-   - Production integrations still depend on secrets such as `OPENAI_API_KEY`, `SERPER_API_KEY`, and Telegram bot credentials where those features are enabled.
 
 ## Recommended Next Steps
 
 1. Remove remaining legacy revenue aliases once frontend and exports are fully migrated.
 2. Consolidate API envelopes where mixed `{success, data, errors}` patterns still exist.
-3. Add targeted integration tests around pulse collector writes and migration expectations.
+3. Add targeted integration tests around pulse collector writes, billing flows, and migration expectations.

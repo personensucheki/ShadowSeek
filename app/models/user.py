@@ -17,6 +17,13 @@ class User(db.Model):
     avatar = db.Column(db.String(255), nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Billing/Subscription
+    stripe_customer_id = db.Column(db.String(64), nullable=True, index=True)
+    stripe_subscription_id = db.Column(db.String(64), nullable=True, index=True)
+    plan_code = db.Column(db.String(32), nullable=True, index=True)
+    subscription_status = db.Column(db.String(32), nullable=True)
+    subscription_period_end = db.Column(db.DateTime, nullable=True)
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 

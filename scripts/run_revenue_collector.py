@@ -1,6 +1,11 @@
-import logging
+
+import sys
 import os
+import logging
 import time
+
+# Sicherstellen, dass das Projektverzeichnis im sys.path ist
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
 from app.extensions import db

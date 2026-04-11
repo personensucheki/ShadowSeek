@@ -1,4 +1,5 @@
 Flask
+stripe
 Flask-SQLAlchemy
 Werkzeug
 python-dotenv

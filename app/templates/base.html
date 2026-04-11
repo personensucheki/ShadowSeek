@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}ShadowSeek{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
@@ -16,7 +16,8 @@
     </main>
     {% include 'components/chatbot.html' %}
     <button
-        id="chat-toggle"
+           <a href="/" class="nav-logo">ShadowSeek</a>
+           <a href="/admin/subscription" class="nav-link">Abo & Subscription</a>
         type="button"
         aria-label="ShadowSeek Assistant oeffnen"
         aria-controls="chatbot-widget"
@@ -35,5 +36,6 @@
     <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
     {% block extra_js %}{% endblock %}
     <script src="{{ url_for('static', filename='js/agent.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/billing_gating.js') }}"></script>
 </body>
 </html>

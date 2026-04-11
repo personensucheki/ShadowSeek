@@ -1,5 +1,5 @@
 import logging
-from services.revenue_provider_registry import get_revenue_providers
+from app.services.revenue_provider_registry import get_revenue_providers
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -58,6 +58,14 @@ class RevenueLiveCollector:
             if not username or not platform or not captured_at:
                 logger.info("Row übersprungen: Pflichtfeld fehlt: %s", row)
                 return False
+            # captured_at ggf. parsen
+            from datetime import datetime
+            if isinstance(captured_at, str):
+                try:
+                    captured_at = datetime.fromisoformat(captured_at)
+                except Exception:
+                    logger.info("Row übersprungen: captured_at nicht parsbar: %s", row)
+                    return False
             # Deduplizierung: Existiert bereits?
             exists = self.db_session.query(RevenueEvent).filter_by(
                 platform=platform,
