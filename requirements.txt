@@ -8,3 +8,4 @@ flask_sqlalchemy
 requests
 Flask-Limiter
 Flask-Talisman
+flask_cors
