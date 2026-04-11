@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request
-from models import db, PublicProfile
+from models import db, PublicProfile, User
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import requests
@@ -175,12 +175,6 @@ def search():
                            email=email)
 
 
-# --- User Model (if not present in models.py) ---
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
 
 # --- Auth Routes for Modal Forms ---
 from flask import redirect, url_for, flash
