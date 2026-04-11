@@ -199,6 +199,11 @@ def register():
     email = request.form.get('email')
     password = request.form.get('password')
 
+    # Passwort-Validierung
+    if not password or len(password) < 8:
+        return "Passwort muss mindestens 8 Zeichen lang sein", 400
+    if not any(c.isdigit() for c in password) or not any(c.isalpha() for c in password):
+        return "Passwort muss Buchstaben und Zahlen enthalten", 400
     if User.query.filter_by(username=username).first():
         return "Username existiert bereits", 400
     if User.query.filter_by(email=email).first():
