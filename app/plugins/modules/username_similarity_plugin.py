@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 from app.plugins.base import BasePlugin
 from app.services.username_similarity import find_similar_usernames
 
@@ -5,15 +9,29 @@ from app.services.username_similarity import find_similar_usernames
 class UsernameSimilarityPlugin(BasePlugin):
     name = "username_similarity"
     description = "Compute similarity matches for username candidates."
+    version = "1.0.0"
+    produces = ["matches"]
 
-    def run(self, data: dict) -> dict:
-        base_username = (data.get("username") or data.get("base_username") or "").strip()
-        candidates = data.get("candidates")
+    def run(self, context: dict[str, Any]) -> dict[str, Any]:
+        username = str(context.get("username") or "").strip()
+        if not username:
+            return {"success": True, "data": {"matches": []}}
 
-        if not base_username or not isinstance(candidates, list):
-            return {"success": True, "matches": []}
-
+        candidates = [
+            candidate
+            for candidate in {
+                username,
+                f"{username}_",
+                f"{username}.official",
+                f"{username}tv",
+                f"{username}live",
+                f"real{username}",
+                f"{username}01",
+                f"{username}2024",
+            }
+            if candidate
+        ]
         return {
             "success": True,
-            "matches": find_similar_usernames(base_username, candidates),
+            "data": {"matches": find_similar_usernames(username, candidates)},
         }

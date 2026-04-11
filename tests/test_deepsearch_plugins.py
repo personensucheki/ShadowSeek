@@ -9,31 +9,59 @@ class DeepSearchPluginsTestCase(unittest.TestCase):
         result = run_deepsearch(
             {
                 "base_username": "shadowseek",
-                "candidates": ["shadowseek2024", "shadow_seek"],
-                "riskdata": {"has_real_name": True},
-                "website": "https://shadowseek.example",
-                "email": "ops@shadowseek.example",
+                "real_name": "Shadow Seek",
+                "age": 28,
+                "postal_code": "10115",
+                "reference_image": "/tmp/shadowseek.png",
             }
         )
 
         self.assertIn("plugin_results", result)
-        self.assertIn("username_similarity", result["plugin_results"])
-        self.assertIn("risk_score", result["plugin_results"])
-        self.assertIn("username_patterns", result["plugin_results"])
-        self.assertIn("domain_osint", result["plugin_results"])
-        self.assertTrue(result["plugin_results"]["username_similarity"]["success"])
-        self.assertIn("matches", result["plugin_results"]["username_similarity"])
-        self.assertIn("score", result["plugin_results"]["risk_score"])
-        self.assertIn("style", result["plugin_results"]["username_patterns"])
-        self.assertIn("domains", result["plugin_results"]["domain_osint"])
+        self.assertEqual(
+            list(result["plugin_results"].keys()),
+            ["username_similarity", "username_patterns", "domain_osint", "risk_score"],
+        )
 
-    @patch("app.services.deepsearch.run_plugins", return_value={"broken": {"success": False, "error": "Plugin execution failed."}})
+        for plugin_result in result["plugin_results"].values():
+            self.assertIn("success", plugin_result)
+            self.assertIn("enabled", plugin_result)
+            self.assertIn("duration_ms", plugin_result)
+            self.assertIn("data", plugin_result)
+            self.assertIn("errors", plugin_result)
+            self.assertIsInstance(plugin_result["data"], dict)
+            self.assertIsInstance(plugin_result["errors"], list)
+
+        self.assertIn("matches", result["plugin_results"]["username_similarity"]["data"])
+        self.assertIn("score", result["plugin_results"]["risk_score"]["data"])
+        self.assertIn("style", result["plugin_results"]["username_patterns"]["data"])
+        self.assertIn("domains", result["plugin_results"]["domain_osint"]["data"])
+
+    @patch(
+        "app.services.deepsearch.run_plugins",
+        return_value={
+            "broken": {
+                "success": False,
+                "enabled": True,
+                "duration_ms": 1,
+                "data": {},
+                "errors": ["Plugin execution failed."],
+            }
+        },
+    )
     def test_deepsearch_survives_plugin_failures(self, mocked_run_plugins):
         result = run_deepsearch({"base_username": "shadowseek"})
 
         self.assertEqual(
             result["plugin_results"],
-            {"broken": {"success": False, "error": "Plugin execution failed."}},
+            {
+                "broken": {
+                    "success": False,
+                    "enabled": True,
+                    "duration_ms": 1,
+                    "data": {},
+                    "errors": ["Plugin execution failed."],
+                }
+            },
         )
         mocked_run_plugins.assert_called_once()
 
@@ -44,6 +72,7 @@ class DeepSearchPluginsTestCase(unittest.TestCase):
         self.assertEqual(result["screenshots"], [])
         self.assertEqual(result["image_similarity"], {"matches": []})
         self.assertEqual(result["risk_score"], {"score": 0, "level": "low", "factors": []})
+        self.assertEqual(result["images"], [])
         self.assertIn("plugin_results", result)
         self.assertEqual(
             sorted(result["plugin_results"].keys()),

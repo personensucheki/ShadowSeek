@@ -9,21 +9,21 @@ class DisabledPlugin(BasePlugin):
     name = "disabled"
     enabled = False
 
-    def run(self, data: dict) -> dict:
-        return {"success": True}
+    def run(self, context: dict) -> dict:
+        return {"success": True, "data": {"should_not_run": True}}
 
 
 class WorkingPlugin(BasePlugin):
     name = "working"
 
-    def run(self, data: dict) -> dict:
-        return {"success": True, "value": data.get("value")}
+    def run(self, context: dict) -> dict:
+        return {"success": True, "data": {"value": context.get("username")}}
 
 
 class FailingPlugin(BasePlugin):
     name = "failing"
 
-    def run(self, data: dict) -> dict:
+    def run(self, context: dict) -> dict:
         raise RuntimeError("boom")
 
 
@@ -40,15 +40,40 @@ class PluginRegistryTestCase(unittest.TestCase):
 
         self.assertEqual([plugin.name for plugin in plugins], ["working"])
 
+    @patch("app.plugins.registry.PLUGIN_CLASSES", (DisabledPlugin, WorkingPlugin))
+    def test_run_plugins_marks_disabled_plugins_without_running_them(self):
+        results = run_plugins({"username": "shadowseek"})
+
+        self.assertEqual(results["disabled"]["enabled"], False)
+        self.assertEqual(results["disabled"]["duration_ms"], 0)
+        self.assertEqual(results["disabled"]["data"], {})
+        self.assertEqual(results["disabled"]["errors"], [])
+        self.assertTrue(results["working"]["enabled"])
+
     @patch("app.plugins.registry.PLUGIN_CLASSES", (WorkingPlugin, FailingPlugin))
     def test_run_plugins_isolates_plugin_errors(self):
-        results = run_plugins({"value": 7})
+        results = run_plugins({"username": "shadowseek"})
 
-        self.assertEqual(results["working"], {"success": True, "value": 7})
-        self.assertEqual(
-            results["failing"],
-            {"success": False, "error": "Plugin execution failed."},
-        )
+        self.assertEqual(results["working"]["data"], {"value": "shadowseek"})
+        self.assertTrue(results["working"]["success"])
+        self.assertFalse(results["failing"]["success"])
+        self.assertTrue(results["failing"]["enabled"])
+        self.assertEqual(results["failing"]["data"], {})
+        self.assertEqual(results["failing"]["errors"], ["Plugin execution failed."])
+
+    @patch("app.plugins.registry.PLUGIN_CLASSES", (WorkingPlugin,))
+    def test_run_plugins_includes_duration_ms(self):
+        results = run_plugins({"username": "shadowseek"})
+
+        self.assertIn("duration_ms", results["working"])
+        self.assertIsInstance(results["working"]["duration_ms"], int)
+
+    @patch("app.plugins.registry.PLUGIN_CLASSES", (WorkingPlugin,))
+    def test_run_plugins_with_empty_input_does_not_crash(self):
+        results = run_plugins({})
+
+        self.assertEqual(results["working"]["data"], {"value": None})
+        self.assertEqual(results["working"]["errors"], [])
 
 
 if __name__ == "__main__":
