@@ -181,6 +181,7 @@
             <span class="modal-close" onclick="closeModal('login-modal')">×</span>
             <h2>Anmelden</h2>
             <form id="login-form" autocomplete="off">
+                {{ csrf_token() }}
                 <input type="text" id="login-username" name="username" placeholder="Benutzername" required autofocus>
                 <input type="password" id="login-password" name="password" placeholder="Passwort" required>
                 <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Login</button>
@@ -195,6 +196,7 @@
             <span class="modal-close" onclick="closeModal('register-modal')">×</span>
             <h2>Registrieren</h2>
             <form id="register-form" autocomplete="off">
+                {{ csrf_token() }}
                 <input type="text" id="reg-username" name="username" placeholder="Benutzername" required autofocus>
                 <input type="email" id="reg-email" name="email" placeholder="E-Mail" required>
                 <input type="password" id="reg-password" name="password" placeholder="Passwort" required>
@@ -208,6 +210,7 @@
             <span class="modal-close" onclick="closeModal('forgot-modal')">×</span>
             <h2>Passwort zurücksetzen</h2>
             <form id="forgot-form" autocomplete="off">
+                {{ csrf_token() }}
                 <input type="email" id="forgot-email" name="email" placeholder="E-Mail" required autofocus>
                 <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Link senden</button>
             </form>
@@ -254,62 +257,7 @@
         });
     </script>
 <script>
-function login() {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-
-    if (!username || !password) return alert("Bitte alles ausfüllen");
-
-    fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-    })
-    .then(r => r.text())
-    .then(text => {
-        if (text.includes("erfolgreich")) {
-            alert("✅ Erfolgreich eingeloggt!");
-            hideLoginModal();
-        } else {
-            alert("❌ " + text);
-        }
-    })
-    .catch(() => alert("Verbindungsfehler"));
-}
-
-function register() {
-    const username = document.getElementById('reg-username').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value.trim();
-
-    if (!username || !email || !password) return alert("Bitte alles ausfüllen");
-
-    fetch('/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
-    })
-    .then(r => r.text())
-    .then(text => {
-        alert(text);
-        if (text.includes("erfolgreich")) hideRegisterModal();
-    })
-    .catch(() => alert("Verbindungsfehler"));
-}
-
-function sendResetLink() {
-    const email = document.getElementById('forgot-email').value.trim();
-    if (!email) return alert("Bitte E-Mail eingeben");
-
-    fetch('/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `email=${encodeURIComponent(email)}`
-    })
-    .then(r => r.text())
-    .then(text => alert(text))
-    .catch(() => alert("Verbindungsfehler"));
-}
+// ...existing code...
 </script>
 </body>
         <div class="navbar-logo">ShadowSeek</div>

@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request
+from flask_wtf import CSRFProtect
 from models import db, PublicProfile, User
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
@@ -9,6 +10,7 @@ from openai import OpenAI
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.secret_key = os.environ.get('SECRET_KEY', 'devsecret')
+csrf = CSRFProtect(app)
 
 # Flask-Login Setup
 login_manager = LoginManager()

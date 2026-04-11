@@ -45,6 +45,7 @@
 
 <div class="search-hero">
 	<form method="POST" action="/search" id="search-form">
+		{{ csrf_token() }}
 		<div class="search-fields">
 			<input type="text" name="username" placeholder="Username" required>
 			<input type="text" name="firstname" placeholder="Vorname">
