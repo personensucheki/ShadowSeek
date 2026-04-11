@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}ShadowPulse - ShadowSeek{% endblock %}
+{% block content %}
+<div class="pulse-shell">
+    <section class="pulse-hero">
+        <div class="pulse-brand">ShadowPulse</div>
+        <div class="pulse-sub">Creator Earnings Intelligence</div>
+        <p class="pulse-copy">
+            Eine zentrale Oberflaeche fuer Streamer-Umsaetze, Live-Signale und historische Einnahmen.
+            Verbunden mit Collector-Script, Summary-API, Live-API und Query-Engine.
+        </p>
+        <div class="pulse-chip-row">
+            <span class="pulse-chip pulse-chip--pink">Collector Wired</span>
+            <span class="pulse-chip pulse-chip--green">Live Revenue Feed</span>
+            <span class="pulse-chip pulse-chip--cyan">Query Console</span>
+        </div>
+    </section>
+
+    <section class="pulse-kpi-grid">
+        <article class="pulse-kpi-card">
+            <div class="pulse-kpi-label">Tracked Revenue</div>
+            <div id="pulse-total-revenue" class="pulse-kpi-value">EUR 0.00</div>
+            <div class="pulse-kpi-meta">Gesamt ueber alle gespeicherten Einnahmen</div>
+        </article>
+        <article class="pulse-kpi-card">
+            <div class="pulse-kpi-label">Today</div>
+            <div id="pulse-today-revenue" class="pulse-kpi-value">EUR 0.00</div>
+            <div class="pulse-kpi-meta">Letzte 24 Stunden</div>
+        </article>
+        <article class="pulse-kpi-card">
+            <div class="pulse-kpi-label">Creators</div>
+            <div id="pulse-active-creators" class="pulse-kpi-value">0</div>
+            <div class="pulse-kpi-meta">Unterschiedliche Quellen im Feed</div>
+        </article>
+        <article class="pulse-kpi-card">
+            <div class="pulse-kpi-label">Records</div>
+            <div id="pulse-record-count" class="pulse-kpi-value">0</div>
+            <div id="pulse-collector-status" class="pulse-kpi-meta">Collector wartet auf Daten</div>
+        </article>
+    </section>
+
+    <section class="pulse-grid pulse-grid--top">
+        <article class="pulse-panel pulse-panel--chart">
+            <div class="pulse-panel-head">
+                <div>
+                    <h2>Revenue Timeline</h2>
+                    <p>14-Tage-Ansicht aus der Summary-API</p>
+                </div>
+            </div>
+            <canvas id="pulse-chart" height="120"></canvas>
+        </article>
+
+        <article class="pulse-panel pulse-panel--leaders">
+            <div class="pulse-panel-head">
+                <div>
+                    <h2>Top Creator Flow</h2>
+                    <p>Hoerstes kumuliertes Volumen im aktuellen Datensatz</p>
+                </div>
+            </div>
+            <div id="pulse-top-list" class="pulse-ranking-list">
+                <div class="pulse-empty">Noch keine Einnahmen geladen.</div>
+            </div>
+            <div class="pulse-divider"></div>
+            <div class="pulse-panel-head pulse-panel-head--tight">
+                <div>
+                    <h3>Platform Mix</h3>
+                    <p>Aggregation nach Plattform-Prefix im Typ-Feld</p>
+                </div>
+            </div>
+            <div id="pulse-platform-breakdown" class="pulse-breakdown-list">
+                <div class="pulse-empty">Warte auf Summary-Daten.</div>
+            </div>
+        </article>
+    </section>
+
+    <section class="pulse-grid pulse-grid--middle">
+        <article class="pulse-panel pulse-panel--filters">
+            <div class="pulse-panel-head">
+                <div>
+                    <h2>Query Console</h2>
+                    <p>Greift direkt auf die vorhandene `/api/einnahmen/query`-Pipeline zu</p>
+                </div>
+            </div>
+            <form id="pulse-query-form" class="pulse-query-form" autocomplete="off">
+                <div class="pulse-form-grid">
+                    <label>
+                        Creator
+                        <input type="text" name="nutzername" placeholder="z.B. nikitando">
+                    </label>
+                    <label>
+                        Plattform
+                        <select name="plattform">
+                            <option value="">Alle Plattformen</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="twitch">Twitch</option>
+                            <option value="youtube">YouTube</option>
+                        </select>
+                    </label>
+                    <label>
+                        Kategorie
+                        <select name="kategorie">
+                            <option value="">Alle Kategorien</option>
+                            <option value="live">Live</option>
+                            <option value="gift">Gift</option>
+                            <option value="diamond">Diamond</option>
+                            <option value="sub">Sub</option>
+                            <option value="donation">Donation</option>
+                        </select>
+                    </label>
+                    <label>
+                        Von
+                        <input type="date" name="von">
+                    </label>
+                    <label>
+                        Bis
+                        <input type="date" name="bis">
+                    </label>
+                    <label>
+                        Minimum
+                        <input type="number" name="min" min="0" step="0.01" placeholder="0.00">
+                    </label>
+                    <label>
+                        Maximum
+                        <input type="number" name="max" min="0" step="0.01" placeholder="9999.99">
+                    </label>
+                </div>
+                <div class="pulse-form-actions">
+                    <button type="submit" class="pulse-btn pulse-btn--primary">Analyse starten</button>
+                    <button type="button" id="pulse-query-reset" class="pulse-btn pulse-btn--ghost">Reset</button>
+                </div>
+            </form>
+        </article>
+
+        <article class="pulse-panel pulse-panel--live">
+            <div class="pulse-panel-head">
+                <div>
+                    <h2>Live Platform Radar</h2>
+                    <p>Bestehende Live-API fuer TikTok, Twitch und YouTube</p>
+                </div>
+            </div>
+            <div class="pulse-tab-row" id="pulse-platform-tabs">
+                <button type="button" class="pulse-tab is-active" data-platform="tiktok">TikTok</button>
+                <button type="button" class="pulse-tab" data-platform="twitch">Twitch</button>
+                <button type="button" class="pulse-tab" data-platform="youtube">YouTube</button>
+            </div>
+            <div id="pulse-live-status" class="pulse-status">Lade TikTok Feed...</div>
+            <div class="pulse-table-wrap">
+                <table class="pulse-table">
+                    <thead>
+                        <tr>
+                            <th>Zeit</th>
+                            <th>Creator</th>
+                            <th>Typ</th>
+                            <th>Betrag</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pulse-live-body">
+                        <tr><td colspan="4">Keine Daten.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </section>
+
+    <section class="pulse-grid pulse-grid--bottom">
+        <article class="pulse-panel pulse-panel--latest">
+            <div class="pulse-panel-head">
+                <div>
+                    <h2>Latest Drops</h2>
+                    <p>Letzte gespeicherte Einnahmen aus der Summary-API</p>
+                </div>
+            </div>
+            <div class="pulse-table-wrap">
+                <table class="pulse-table">
+                    <thead>
+                        <tr>
+                            <th>Zeit</th>
+                            <th>Platform</th>
+                            <th>Creator</th>
+                            <th>Betrag</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pulse-latest-body">
+                        <tr><td colspan="5">Noch keine Daten geladen.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="pulse-panel pulse-panel--results">
+            <div class="pulse-panel-head">
+                <div>
+                    <h2>Query Results</h2>
+                    <p>Gefilterte Ergebnisse aus der vorhandenen Query-API</p>
+                </div>
+            </div>
+            <div id="pulse-query-status" class="pulse-status">Nutze die Query Console fuer einen Drilldown.</div>
+            <div class="pulse-table-wrap">
+                <table class="pulse-table">
+                    <thead>
+                        <tr>
+                            <th>Zeit</th>
+                            <th>Creator</th>
+                            <th>Typ</th>
+                            <th>Betrag</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pulse-query-body">
+                        <tr><td colspan="5">Noch keine Query ausgefuehrt.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </section>
+</div>
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pulse.css') }}">{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/pulse.js') }}"></script>
+{% endblock %}

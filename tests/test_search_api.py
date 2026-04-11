@@ -140,6 +140,22 @@ class SearchApiTestCase(unittest.TestCase):
         # Die neue Startseite hat landing-search-form, nicht mehr search-form
         self.assertIn(b'id="landing-search-form"', response.data)
         self.assertIn(b'action="/"', response.data)
+        self.assertIn(b'href="/pulse"', response.data)
+
+    def test_pulse_page_renders_connected_dashboard(self):
+        response = self.client.get("/pulse")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"ShadowPulse", response.data)
+        self.assertIn(b'id="pulse-query-form"', response.data)
+        self.assertIn(b'id="pulse-live-body"', response.data)
+        self.assertIn(b'id="pulse-chart"', response.data)
+
+    def test_dashboard_alias_renders_pulse_page(self):
+        response = self.client.get("/dashboard")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"ShadowPulse", response.data)
 
     def test_search_page_renders_analysis_containers(self):
         response = self.client.get("/search")
