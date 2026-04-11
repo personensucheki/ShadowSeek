@@ -8,7 +8,7 @@ def _normalize_database_uri(uri):
 
 
 class BaseConfig:
-    SECRET_KEY = os.environ.get("SECRET_KEY")
+    SECRET_KEY: str | None = os.environ.get("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = _normalize_database_uri(
         os.environ.get("DATABASE_URL", "sqlite:///shadowseek.db")
     )
@@ -23,7 +23,7 @@ class BaseConfig:
     SEARCH_REQUEST_TIMEOUT = float(os.environ.get("SEARCH_REQUEST_TIMEOUT", 3.5))
     SEARCH_MAX_WORKERS = int(os.environ.get("SEARCH_MAX_WORKERS", 8))
     REVERSE_IMAGE_MAX_AGE = int(os.environ.get("REVERSE_IMAGE_MAX_AGE", 3600))
-    PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+    PUBLIC_BASE_URL: str = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
     UPLOAD_DIRECTORY = os.environ.get("UPLOAD_DIRECTORY")
     SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
     SERPER_API_URL = os.environ.get("SERPER_API_URL", "https://google.serper.dev/search")
