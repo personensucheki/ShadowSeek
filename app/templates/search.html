@@ -16,6 +16,7 @@
             </div>
         </div>
         <div class="recon-card recon-card--form">
+            <div id="category-bar-search" class="category-bar-search"></div>
             <form id="search-form" method="GET" action="/search" autocomplete="off">
                 <div class="form-fields">
                     <div class="form-row">
@@ -65,6 +66,18 @@
             </form>
         </div>
     </section>
+    <div id="scan-overlay" class="scan-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Scan-Status">
+        <div class="scan-box">
+            <div class="scan-title">
+                ShadowSeek AI Scan aktiv
+                <span id="scan-deep-badge" class="scan-deep-badge" style="display:none;">DeepSearch aktiv</span>
+            </div>
+            <div class="scan-status" id="scan-status-text">Plattformen werden geprüft...</div>
+            <div class="scan-platforms" id="scan-platform-list"></div>
+            <div class="scan-progress-bar"><div id="scan-progress-inner"></div></div>
+            <button id="scan-cancel-btn" class="scan-cancel-btn" style="display:none;" tabindex="-1" aria-disabled="true">Suche abbrechen</button>
+        </div>
+    </div>
     <section class="recon-panel recon-panel--main">
         <div class="recon-card recon-card--results">
             <div class="results-title">Gefundene Profile</div>
