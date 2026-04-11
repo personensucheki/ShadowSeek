@@ -25,7 +25,7 @@ class BaseConfig:
     REVERSE_IMAGE_MAX_AGE = int(os.environ.get("REVERSE_IMAGE_MAX_AGE", 3600))
     PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
     UPLOAD_DIRECTORY = os.environ.get("UPLOAD_DIRECTORY")
-    SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
+    SERPER_API_KEY = os.environ.get("SERPER_API_KEY") or "74c62f4b27a20f0b31df8557b403c2d18f4a7931"
     SERPER_API_URL = os.environ.get("SERPER_API_URL", "https://google.serper.dev/search")
     SERPER_RESULTS_PER_QUERY = int(os.environ.get("SERPER_RESULTS_PER_QUERY", 8))
     SERPER_GL = os.environ.get("SERPER_GL", "de")

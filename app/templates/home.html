@@ -1,12 +1,16 @@
 {% extends "base.html" %}
 {% block title %}ShadowSeek – Geschützte Suche{% endblock %}
 {% block content %}
-<div class="google-home-bg">
-    <div class="google-home-center">
-        <div class="google-home-logo">ShadowSeek</div>
-        <form id="landing-search-form" class="google-home-search-form" method="GET" action="/search" autocomplete="off">
-            <input type="text" name="query" class="google-home-search-input" placeholder="Suche im Web oder nach Profilen..." autofocus required>
-            <button type="submit" class="google-home-search-btn">Suche</button>
+<div class="search-landing">
+    <div class="search-landing-inner">
+        <div class="search-branding">ShadowSeek</div>
+        <div class="search-claim">
+            <span class="claim-main">Finde alles. Sofort.</span>
+            <span class="claim-sub">Web & Profile – wie Google, nur besser.</span>
+        </div>
+        <form id="landing-search-form" class="landing-search-form" method="GET" action="/search" autocomplete="off">
+            <input type="text" name="query" class="landing-search-input" placeholder="Suche im Web oder nach Profilen..." autofocus required>
+            <button type="submit" class="landing-search-btn">Suche</button>
         </form>
     </div>
 </div>
