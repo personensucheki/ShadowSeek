@@ -147,12 +147,16 @@ body {
     gap: 18px;
 }
 .recon-logo {
-    font-size: clamp(2.8rem, 7vw, 4.8rem);
+    font-size: clamp(2.1rem, 4vw, 3.2rem);
     font-weight: 900;
     letter-spacing: -0.04em;
     color: var(--recon-text);
     text-shadow: 0 0 24px var(--recon-pink), 0 0 44px var(--recon-green);
     margin-bottom: 0.2em;
+    max-width: 100%;
+    overflow: visible;
+    line-height: 1.08;
+    text-align: center;
 }
 .recon-sub {
     font-size: 1.12rem;
