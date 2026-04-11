@@ -17,7 +17,6 @@
     </p>
     
     <form method="POST" action="/search" style="width:100%; max-width:760px;">
-        {{ csrf_token() }}
         <div style="background:#1f2937; border-radius:50px; padding:8px; display:flex; box-shadow:0 8px 30px rgba(0,0,0,0.6);">
             <input type="text" name="username" placeholder="Wonach suchst du?" 
                    style="flex:1; padding:22px 32px; font-size:1.35rem; background:transparent; border:none; color:white; outline:none;" required>
