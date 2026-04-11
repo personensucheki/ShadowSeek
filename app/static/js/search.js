@@ -1,27 +1,17 @@
-// === Scan Overlay Animation ===
+// === Scan Overlay Animation (Feinschliff) ===
 const SCAN_STATUS_TEXTS = [
+    "Query wird vorbereitet...",
+    "Eingaben werden normalisiert...",
     "Plattformen werden geprüft...",
-    "Username wird normalisiert...",
-    "Varianten werden erzeugt...",
-    "Öffentliche Quellen werden geprüft...",
-    "Ergebnisse werden bewertet...",
-    "Scoring wird berechnet..."
+    "Signale werden zusammengeführt...",
+    "Ergebnisse werden bewertet..."
 ];
 const SCAN_STATUS_TEXTS_DEEP = [
-    // === Scan Overlay Animation (Feinschliff) ===
-    const SCAN_STATUS_TEXTS = [
-        "Query wird vorbereitet...",
-        "Eingaben werden normalisiert...",
-        "Plattformen werden geprüft...",
-        "Signale werden zusammengeführt...",
-        "Ergebnisse werden bewertet..."
-    ];
-    const SCAN_STATUS_TEXTS_DEEP = [
-        "DeepSearch aktiv...",
-        "Erweiterte Analyse läuft..."
-    ];
+    "DeepSearch aktiv...",
+    "Erweiterte Analyse läuft..."
+];
 
-    function showScanOverlay(platforms, deepSearch) {
+function showScanOverlay(platforms, deepSearch) {
         const overlay = document.getElementById('scan-overlay');
         const statusText = document.getElementById('scan-status-text');
         const platformList = document.getElementById('scan-platform-list');
