@@ -157,6 +157,79 @@ class SearchApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"ShadowPulse", response.data)
 
+    @patch("app.routes.query_api.run_creator_profile_scan")
+    def test_pulse_query_endpoint_returns_profile_scan_payload(self, mocked_scan):
+        mocked_scan.return_value = {
+            "query": {
+                "username": "nicknando",
+                "creator_text": "Nick Nando",
+                "platforms": ["tiktok"],
+            },
+            "summary": {"total_hits": 1, "verified_hits": 1, "average_score": 92.0},
+            "meta": {"generated_at": "2026-04-11T20:00:00+00:00"},
+            "profiles": [
+                {
+                    "platform": "TikTok",
+                    "platform_slug": "tiktok",
+                    "username": "nicknando",
+                    "profile_url": "https://www.tiktok.com/@nicknando",
+                    "match_score": 92,
+                    "confidence": "high",
+                    "verification": "confirmed",
+                    "match_reason": "Direkter Username",
+                    "source": "direct",
+                    "title": "Nick Nando",
+                    "snippet": "Creator Profil",
+                }
+            ],
+        }
+
+        response = self.client.post(
+            "/api/pulse/query",
+            json={"nutzername": "Nick Nando", "plattform": "tiktok"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["mode"], "profile_scan")
+        self.assertEqual(payload["rows"][0]["platform"], "TikTok")
+        self.assertEqual(payload["rows"][0]["score"], 92)
+
+    @patch("app.routes.live_api.run_creator_profile_scan")
+    def test_pulse_live_endpoint_returns_platform_scan_payload(self, mocked_scan):
+        mocked_scan.return_value = {
+            "query": {
+                "username": "nicknando",
+                "creator_text": "Nick Nando",
+                "platforms": ["youtube"],
+            },
+            "summary": {"total_hits": 1, "verified_hits": 1, "average_score": 88.0},
+            "meta": {"generated_at": "2026-04-11T20:00:00+00:00"},
+            "profiles": [
+                {
+                    "platform": "YouTube",
+                    "platform_slug": "youtube",
+                    "username": "nicknando",
+                    "profile_url": "https://www.youtube.com/@nicknando",
+                    "match_score": 88,
+                    "confidence": "medium",
+                    "verification": "search",
+                    "match_reason": "Vor- und Nachname kombiniert via Bing RSS",
+                    "source": "bing_rss",
+                }
+            ],
+        }
+
+        response = self.client.get("/api/pulse/live/youtube?creator=Nick+Nando")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["mode"], "profile_scan")
+        self.assertEqual(payload["rows"][0]["platform"], "YouTube")
+        self.assertEqual(payload["rows"][0]["score"], 88)
+
     def test_search_page_renders_analysis_containers(self):
         response = self.client.get("/search")
 

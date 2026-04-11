@@ -30,6 +30,12 @@ class BaseConfig:
     SERPER_RESULTS_PER_QUERY = int(os.environ.get("SERPER_RESULTS_PER_QUERY", 8))
     SERPER_GL = os.environ.get("SERPER_GL", "de")
     SERPER_HL = os.environ.get("SERPER_HL", "de")
+    PUBLIC_SEARCH_FALLBACK_ENABLED = os.environ.get(
+        "PUBLIC_SEARCH_FALLBACK_ENABLED",
+        "true",
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    BING_SEARCH_URL = os.environ.get("BING_SEARCH_URL", "https://www.bing.com/search")
+    BING_RESULTS_PER_QUERY = int(os.environ.get("BING_RESULTS_PER_QUERY", 8))
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     OPENAI_RERANK_MODEL = os.environ.get("OPENAI_RERANK_MODEL", "gpt-5-mini")
     OPENAI_TIMEOUT = float(os.environ.get("OPENAI_TIMEOUT", 12))

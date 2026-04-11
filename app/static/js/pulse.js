@@ -23,7 +23,14 @@ function formatNumber(value) {
 async function fetchJson(url, options) {
     const response = await fetch(url, options);
     if (!response.ok) {
-        throw new Error(`Request failed for ${url}`);
+        let message = `Request failed for ${url}`;
+        try {
+            const payload = await response.json();
+            message = payload.error || Object.values(payload.errors || {})[0] || message;
+        } catch {
+            // ignore JSON parsing errors and use default message
+        }
+        throw new Error(message);
     }
     return response.json();
 }
@@ -67,6 +74,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     let revenueChart = null;
+    let currentCreatorQuery = "";
+
+    function setTableHeaders(target, labels) {
+        const headerCells = target?.closest("table")?.querySelectorAll("thead th");
+        if (!headerCells || headerCells.length !== labels.length) {
+            return;
+        }
+        labels.forEach((label, index) => {
+            headerCells[index].textContent = label;
+        });
+    }
 
     function renderTableRows(target, rows, columns) {
         if (!Array.isArray(rows) || rows.length === 0) {
@@ -86,6 +104,74 @@ document.addEventListener("DOMContentLoaded", () => {
                 return `<tr>${cells}</tr>`;
             })
             .join("");
+    }
+
+    function renderLinkedCreator(row, fallback) {
+        const label = escapeHtml(fallback || row.quelle || "-");
+        if (!row.profile_url) {
+            return label;
+        }
+        return `<a href="${escapeHtml(row.profile_url)}" target="_blank" rel="noopener">${label}</a>`;
+    }
+
+    function renderConfidence(row) {
+        const confidence = String(row.confidence || row.typ || "-").toUpperCase();
+        return escapeHtml(confidence);
+    }
+
+    function renderProfileQueryRows(rows) {
+        setTableHeaders(queryBody, ["Zeit", "Plattform", "Creator", "Score", "Analyse"]);
+        renderTableRows(queryBody, rows, [
+            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt || "-") },
+            { key: "platform", render: (row) => escapeHtml(row.platform || "-") },
+            { key: "quelle", render: (row) => renderLinkedCreator(row, row.quelle) },
+            { key: "score", render: (row) => escapeHtml(row.score ?? "-") },
+            {
+                key: "details",
+                render: (row) => {
+                    const details = [renderConfidence(row)];
+                    if (row.details) {
+                        details.push(escapeHtml(row.details));
+                    }
+                    return details.join(" • ");
+                },
+            },
+        ]);
+    }
+
+    function renderProfileLiveRows(rows) {
+        setTableHeaders(liveBody, ["Zeit", "Creator", "Verifikation", "Score"]);
+        renderTableRows(liveBody, rows, [
+            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt || "-") },
+            { key: "quelle", render: (row) => renderLinkedCreator(row, row.quelle) },
+            { key: "typ", render: (row) => renderConfidence(row) },
+            { key: "score", render: (row) => escapeHtml(row.score ?? "-") },
+        ]);
+    }
+
+    function renderRevenueQueryRows(rows) {
+        setTableHeaders(queryBody, ["Zeit", "Creator", "Typ", "Betrag", "Details"]);
+        renderTableRows(queryBody, rows, [
+            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt) },
+            { key: "quelle", render: (row) => escapeHtml(row.quelle || "-") },
+            { key: "typ", render: (row) => escapeHtml(row.typ || "-") },
+            { key: "betrag", render: (row) => formatEur(row.betrag), className: "pulse-table-amount" },
+            { key: "details", render: (row) => escapeHtml(row.details || "-") },
+        ]);
+    }
+
+    function renderRevenueLiveRows(rows) {
+        setTableHeaders(liveBody, ["Zeit", "Creator", "Typ", "Betrag"]);
+        renderTableRows(liveBody, rows, [
+            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt) },
+            { key: "quelle", render: (row) => escapeHtml(row.quelle || "-") },
+            { key: "typ", render: (row) => escapeHtml(row.typ || "-") },
+            { key: "betrag", render: (row) => formatEur(row.betrag), className: "pulse-table-amount" },
+        ]);
+    }
+
+    function getActivePlatform() {
+        return platformTabs.find((tab) => tab.classList.contains("is-active"))?.dataset.platform || "tiktok";
     }
 
     function renderKpis(summary) {
@@ -208,13 +294,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadLive(platform) {
         liveStatus.textContent = `Lade ${platform} Feed...`;
-        const rows = await fetchJson(`/api/live/${platform}`);
-        renderTableRows(liveBody, rows, [
-            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt) },
-            { key: "quelle", render: (row) => escapeHtml(row.quelle || "-") },
-            { key: "typ", render: (row) => escapeHtml(row.typ || "-") },
-            { key: "betrag", render: (row) => formatEur(row.betrag), className: "pulse-table-amount" },
-        ]);
+        const url = new URL(`/api/pulse/live/${platform}`, window.location.origin);
+        if (currentCreatorQuery) {
+            url.searchParams.set("creator", currentCreatorQuery);
+        }
+
+        const payload = await fetchJson(url.pathname + url.search);
+        const rows = Array.isArray(payload.rows) ? payload.rows : [];
+
+        if (payload.mode === "profile_scan") {
+            renderProfileLiveRows(rows);
+            liveStatus.textContent = rows.length
+                ? `${rows.length} Profiltreffer auf ${platform} gefunden.`
+                : `Keine Profiltreffer auf ${platform} gefunden.`;
+            return;
+        }
+
+        renderRevenueLiveRows(rows);
         liveStatus.textContent = rows.length
             ? `${rows.length} Eintraege fuer ${platform} geladen.`
             : `Keine Eintraege fuer ${platform} gefunden.`;
@@ -224,21 +320,30 @@ document.addEventListener("DOMContentLoaded", () => {
         queryStatus.textContent = "Query laeuft...";
         const formData = new FormData(queryForm);
         const payload = Object.fromEntries(formData.entries());
-
-        const rows = await fetchJson("/api/einnahmen/query", {
+        const response = await fetchJson("/api/pulse/query", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
+        const rows = Array.isArray(response.rows) ? response.rows : [];
 
-        renderTableRows(queryBody, rows, [
-            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt) },
-            { key: "quelle", render: (row) => escapeHtml(row.quelle || "-") },
-            { key: "typ", render: (row) => escapeHtml(row.typ || "-") },
-            { key: "betrag", render: (row) => formatEur(row.betrag), className: "pulse-table-amount" },
-            { key: "details", render: (row) => escapeHtml(row.details || "-") },
-        ]);
+        if (response.mode === "profile_scan") {
+            currentCreatorQuery = payload.nutzername || "";
+            if (payload.plattform) {
+                platformTabs.forEach((tab) => {
+                    tab.classList.toggle("is-active", tab.dataset.platform === payload.plattform);
+                });
+            }
+            renderProfileQueryRows(rows);
+            queryStatus.textContent = rows.length
+                ? `${rows.length} Profiltreffer fuer ${currentCreatorQuery} geladen.`
+                : `Keine oeffentlichen Profiltreffer fuer ${currentCreatorQuery} gefunden.`;
+            await loadLive(getActivePlatform());
+            return;
+        }
 
+        currentCreatorQuery = "";
+        renderRevenueQueryRows(rows);
         queryStatus.textContent = rows.length
             ? `${rows.length} Query-Treffer geladen.`
             : "Keine Treffer fuer die aktuelle Query.";
@@ -266,10 +371,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resetButton.addEventListener("click", async () => {
         queryForm.reset();
+        currentCreatorQuery = "";
         queryBody.innerHTML = '<tr><td colspan="5">Noch keine Query ausgefuehrt.</td></tr>';
+        setTableHeaders(queryBody, ["Zeit", "Creator", "Typ", "Betrag", "Details"]);
         queryStatus.textContent = "Filter zurueckgesetzt.";
         try {
             await loadSummary();
+            await loadLive(getActivePlatform());
         } catch {
             queryStatus.textContent = "Summary konnte nach Reset nicht geladen werden.";
         }

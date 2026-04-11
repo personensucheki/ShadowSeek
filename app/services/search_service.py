@@ -6,9 +6,11 @@ import re
 import threading
 import unicodedata
 import uuid
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from html import unescape
 from pathlib import Path
 from urllib.parse import quote, urlencode, urlparse
 
@@ -32,6 +34,7 @@ PREVIEW_BYTES = 4096
 IMAGE_HEADER_BYTES = 32
 UPLOAD_TOKEN_SALT = "shadowseek-reverse-image"
 SERPER_SOURCE = "serper"
+BING_SOURCE = "bing_rss"
 DIRECT_SOURCE = "direct"
 _thread_local = threading.local()
 _openai_lock = threading.Lock()
@@ -260,13 +263,16 @@ def generate_username_variations(payload):
 def execute_search(payload, request_base_url, image_file=None):
     username_variations = generate_username_variations(payload)
     reverse_image_links = {}
-    serper_meta = {"used": False, "queries": 0}
+    search_meta = {"used": False, "queries": 0, "provider": None}
     ai_reranking_applied = False
     profiles = []
 
     if has_serper_api_key():
-        serper_profiles, serper_meta = collect_serper_profiles(payload, username_variations)
-        profiles.extend(serper_profiles)
+        search_profiles, search_meta = collect_serper_profiles(payload, username_variations)
+        profiles.extend(search_profiles)
+    elif has_public_search_fallback():
+        search_profiles, search_meta = collect_bing_profiles(payload, username_variations)
+        profiles.extend(search_profiles)
 
     covered_slugs = {profile["platform_slug"] for profile in profiles}
     missing_slugs = [slug for slug in payload.platforms if slug not in covered_slugs]
@@ -284,6 +290,12 @@ def execute_search(payload, request_base_url, image_file=None):
 
     if image_file and image_file.filename:
         reverse_image_links = create_reverse_image_links(image_file, request_base_url)
+
+    search_provider = search_meta.get("provider")
+    search_queries = int(search_meta.get("queries") or 0)
+    search_used = bool(search_meta.get("used"))
+    if not search_provider and search_used and has_serper_api_key():
+        search_provider = SERPER_SOURCE
 
     return {
         "query": {
@@ -310,8 +322,11 @@ def execute_search(payload, request_base_url, image_file=None):
             "platform_count": len(payload.platforms),
             "profile_count": len(profiles),
             "ai_reranking_applied": ai_reranking_applied,
-            "serper_used": serper_meta["used"],
-            "serper_queries": serper_meta["queries"],
+            "serper_used": search_provider == SERPER_SOURCE and search_used,
+            "serper_queries": search_queries if search_provider == SERPER_SOURCE else 0,
+            "search_engine_used": search_used,
+            "search_engine_provider": search_provider,
+            "search_engine_queries": search_queries,
         },
     }
 
@@ -319,7 +334,7 @@ def execute_search(payload, request_base_url, image_file=None):
 def collect_serper_profiles(payload, username_variations):
     queries = build_serper_queries(payload, username_variations)
     if not queries:
-        return [], {"used": False, "queries": 0}
+        return [], {"used": False, "queries": 0, "provider": None}
 
     max_workers = min(len(queries), max(1, min(current_app.config["SEARCH_MAX_WORKERS"], 4)))
     serper_config = {
@@ -350,6 +365,42 @@ def collect_serper_profiles(payload, username_variations):
     return dedupe_and_limit_profiles(parsed_profiles, payload.deep_search), {
         "used": bool(parsed_profiles),
         "queries": len(queries),
+        "provider": SERPER_SOURCE,
+    }
+
+
+def collect_bing_profiles(payload, username_variations):
+    queries = build_serper_queries(payload, username_variations)
+    if not queries:
+        return [], {"used": False, "queries": 0, "provider": None}
+
+    max_workers = min(len(queries), max(1, min(current_app.config["SEARCH_MAX_WORKERS"], 3)))
+    bing_config = {
+        "search_url": current_app.config.get("BING_SEARCH_URL", "https://www.bing.com/search"),
+        "timeout": current_app.config["SEARCH_REQUEST_TIMEOUT"] + 2,
+        "results_per_query": current_app.config.get("BING_RESULTS_PER_QUERY", 8),
+    }
+    parsed_profiles = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(run_bing_query, query, bing_config): query
+            for query in queries
+        }
+        for future in as_completed(future_map):
+            query = future_map[future]
+            try:
+                response_data = future.result()
+            except (requests.RequestException, ET.ParseError):
+                continue
+            parsed_profiles.extend(
+                parse_search_profiles(payload, username_variations, response_data, query, BING_SOURCE)
+            )
+
+    return dedupe_and_limit_profiles(parsed_profiles, payload.deep_search), {
+        "used": bool(parsed_profiles),
+        "queries": len(queries),
+        "provider": BING_SOURCE,
     }
 
 
@@ -404,19 +455,59 @@ def run_serper_query(query, serper_config):
     return response.json()
 
 
+def run_bing_query(query, bing_config):
+    response = get_http_session().get(
+        bing_config["search_url"],
+        params={"format": "rss", "q": query},
+        timeout=bing_config["timeout"],
+        allow_redirects=True,
+    )
+    response.raise_for_status()
+    return parse_bing_rss_feed(response.text, bing_config["results_per_query"])
+
+
+def parse_bing_rss_feed(feed_text, limit):
+    root = ET.fromstring(feed_text)
+    organic_results = []
+
+    for position, item in enumerate(root.findall("./channel/item"), start=1):
+        organic_results.append(
+            {
+                "title": item.findtext("title") or "",
+                "link": item.findtext("link") or "",
+                "snippet": unescape(item.findtext("description") or ""),
+                "position": position,
+            }
+        )
+        if len(organic_results) >= limit:
+            break
+
+    return {"organic": organic_results}
+
+
 def parse_serper_profiles(payload, username_variations, response_data, query):
+    return parse_search_profiles(
+        payload,
+        username_variations,
+        response_data,
+        query,
+        SERPER_SOURCE,
+    )
+
+
+def parse_search_profiles(payload, username_variations, response_data, query, source):
     organic_results = response_data.get("organic") or []
     candidates = []
 
     for result in organic_results:
-        profile = build_serper_candidate(payload, username_variations, result, query)
+        profile = build_search_candidate(payload, username_variations, result, query, source)
         if profile:
             candidates.append(profile)
 
     return verify_serper_candidates(candidates)
 
 
-def build_serper_candidate(payload, username_variations, result, query):
+def build_search_candidate(payload, username_variations, result, query, source):
     link = normalize_result_url(result.get("link"))
     if not link:
         return None
@@ -424,13 +515,12 @@ def build_serper_candidate(payload, username_variations, result, query):
     platform = resolve_platform_from_url(link)
     if not platform or platform.slug not in payload.platforms:
         return None
-
-    extracted_username = extract_username_from_url(platform, link)
-    if not extracted_username:
+    if not is_profile_like_url(platform, link):
         return None
 
     title = result.get("title") or ""
     snippet = result.get("snippet") or ""
+    extracted_username = extract_username_from_url(platform, link)
     matched_variation = select_best_variation(
         username_variations,
         extracted_username,
@@ -442,23 +532,30 @@ def build_serper_candidate(payload, username_variations, result, query):
         return None
 
     position = int(result.get("position") or 10)
-    score = compute_serper_score(matched_variation, extracted_username, title, snippet, position)
+    resolved_username = extracted_username or matched_variation.username
+    score = compute_serper_score(matched_variation, resolved_username, title, snippet, position)
 
     return {
         "platform": platform.name,
         "platform_slug": platform.slug,
         "category": platform.category,
-        "username": extracted_username,
+        "username": resolved_username,
         "profile_url": link,
         "match_score": score,
         "verification": "search",
-        "match_reason": f"{matched_variation.reason} via Google/Serper",
+        "match_reason": build_search_match_reason(matched_variation.reason, source),
         "http_status": "SERP",
-        "source": SERPER_SOURCE,
+        "source": source,
         "query": query,
         "title": title,
         "snippet": snippet,
     }
+
+
+def build_search_match_reason(reason, source):
+    if source == BING_SOURCE:
+        return f"{reason} via Bing RSS"
+    return f"{reason} via Google/Serper"
 
 
 def compute_serper_score(variation, extracted_username, title, snippet, position):
@@ -512,15 +609,18 @@ def verify_candidate_url(platform, candidate, timeout):
             return None
 
         preview = read_response_preview(response)
+        preview_lower = preview.lower()
         final_url = normalize_result_url(response.url)
         if not final_url:
+            return None
+        if not is_profile_like_url(platform, final_url):
             return None
 
         final_username = extract_username_from_url(platform, final_url)
         if not final_username:
             return None
 
-        if any(marker in preview or marker in final_url.lower() for marker in platform.not_found_markers):
+        if any(marker in preview_lower or marker in final_url.lower() for marker in platform.not_found_markers):
             return None
 
         profile = dict(candidate)
@@ -528,6 +628,8 @@ def verify_candidate_url(platform, candidate, timeout):
         profile["username"] = final_username
         profile["verification"] = "confirmed"
         profile["http_status"] = status_code
+        profile["title"] = profile.get("title") or extract_html_title(preview)
+        profile["snippet"] = profile.get("snippet") or extract_meta_description(preview)
         return profile
     except requests.RequestException:
         return None
@@ -594,16 +696,21 @@ def probe_profile(platform, variation, timeout):
             return None
 
         preview = read_response_preview(response)
+        preview_lower = preview.lower()
         final_url = normalize_result_url(response.url)
+        if not final_url or not is_profile_like_url(platform, final_url):
+            return None
         lower_username = variation.username.lower()
+        title = extract_html_title(preview)
+        snippet = extract_meta_description(preview)
 
-        if any(marker in final_url.lower() or marker in preview for marker in platform.not_found_markers):
+        if any(marker in final_url.lower() or marker in preview_lower for marker in platform.not_found_markers):
             return None
 
         verification = "confirmed"
         score = variation.score
 
-        if lower_username not in final_url.lower() and lower_username not in preview:
+        if lower_username not in final_url.lower() and lower_username not in preview_lower:
             score -= 7
             verification = "likely"
 
@@ -622,8 +729,8 @@ def probe_profile(platform, variation, timeout):
             "match_reason": variation.reason,
             "http_status": status_code,
             "source": DIRECT_SOURCE,
-            "title": "",
-            "snippet": "",
+            "title": title,
+            "snippet": snippet,
         }
     except requests.RequestException:
         return None
@@ -805,6 +912,7 @@ def get_http_session():
     if session is None:
         session = requests.Session()
         session.headers.update(DEFAULT_HEADERS)
+        session.cookies.set("PREF", "tz=Europe.Berlin", domain=".youtube.com")
         _thread_local.session = session
     return session
 
@@ -821,6 +929,10 @@ def get_openai_client():
 
 def has_serper_api_key():
     return bool(current_app.config.get("SERPER_API_KEY"))
+
+
+def has_public_search_fallback():
+    return bool(current_app.config.get("PUBLIC_SEARCH_FALLBACK_ENABLED"))
 
 
 def should_ai_rerank(payload, profiles):
@@ -862,7 +974,7 @@ def read_response_preview(response):
         content.extend(chunk)
         if len(content) >= PREVIEW_BYTES:
             break
-    return content.decode(response.encoding or "utf-8", errors="ignore").lower()
+    return content.decode(response.encoding or "utf-8", errors="ignore")
 
 
 def normalize_handle(value):
@@ -907,6 +1019,27 @@ def resolve_platform_from_url(url):
         if any(hostname == domain or hostname.endswith(f".{domain}") for domain in platform.domains):
             return platform
     return None
+
+
+def is_profile_like_url(platform, url):
+    parsed = urlparse(url)
+    segments = [segment for segment in parsed.path.split("/") if segment]
+    if not segments:
+        return False
+
+    if platform.slug == "tiktok":
+        return segments[0].startswith("@")
+
+    if platform.slug == "youtube":
+        return segments[0].startswith("@") or (
+            len(segments) >= 2 and segments[0] in {"channel", "c", "user"}
+        )
+
+    if platform.slug == "reddit":
+        return len(segments) >= 2 and segments[0] in {"user", "u"}
+
+    first_segment = segments[0].lstrip("@").lower()
+    return first_segment not in platform.excluded_segments
 
 
 def extract_username_from_url(platform, url):
@@ -978,6 +1111,29 @@ def detect_image_type(header):
     if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
         return ".webp", "image/webp"
     return None, None
+
+
+def extract_html_title(html_text):
+    match = re.search(r"<title[^>]*>(.*?)</title>", html_text, re.IGNORECASE | re.DOTALL)
+    if not match:
+        return ""
+    return collapse_whitespace(unescape(match.group(1)))
+
+
+def extract_meta_description(html_text):
+    patterns = (
+        r'<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\']',
+        r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\']',
+    )
+    for pattern in patterns:
+        match = re.search(pattern, html_text, re.IGNORECASE | re.DOTALL)
+        if match:
+            return collapse_whitespace(unescape(match.group(1)))
+    return ""
+
+
+def collapse_whitespace(value):
+    return re.sub(r"\s+", " ", value or "").strip()
 
 
 def chunked(items, chunk_size):
