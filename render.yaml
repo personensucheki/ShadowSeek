@@ -1,6 +1,20 @@
+databases:
+  - name: shadowseek-db
+    plan: basic-256mb
+
 services:
   - type: web
     name: shadowseek
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn run:app
+    healthCheckPath: /health
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PUBLIC_BASE_URL
+        value: https://shadowseek.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: shadowseek-db
+          property: connectionString
