@@ -1,3 +1,78 @@
+// --- Autocomplete Vorschläge (Dummy, kann durch API ersetzt werden) ---
+const SUGGESTIONS = [
+    "tiktok username finden", "instagram email lookup", "snapchat user suchen", "twitch live einnahmen", "youtube superchat analyse", "osint tools", "personen finden", "reverse image search", "deep web suche", "telegram nutzer identifizieren"
+];
+
+function autocomplete(inp, arr) {
+    let currentFocus;
+    inp.addEventListener("input", function(e) {
+        let a, b, i, val = this.value;
+        closeAllLists();
+        if (!val) { return false; }
+        currentFocus = -1;
+        a = document.createElement("DIV");
+        a.setAttribute("id", this.id + "-autocomplete-list");
+        a.setAttribute("class", "autocomplete-items");
+        this.parentNode.appendChild(a);
+        for (i = 0; i < arr.length; i++) {
+            if (arr[i].toLowerCase().includes(val.toLowerCase())) {
+                b = document.createElement("DIV");
+                b.innerHTML = arr[i].replace(new RegExp(val, "gi"), match => `<strong>${match}</strong>`);
+                b.addEventListener("click", function(e) {
+                    inp.value = this.textContent;
+                    closeAllLists();
+                });
+                a.appendChild(b);
+            }
+        }
+    });
+    inp.addEventListener("keydown", function(e) {
+        let x = document.getElementById(this.id + "-autocomplete-list");
+        if (x) x = x.getElementsByTagName("div");
+        if (e.keyCode == 40) {
+            currentFocus++;
+            addActive(x);
+        } else if (e.keyCode == 38) {
+            currentFocus--;
+            addActive(x);
+        } else if (e.keyCode == 13) {
+            e.preventDefault();
+            if (currentFocus > -1 && x) {
+                x[currentFocus].click();
+            }
+        }
+    });
+    function addActive(x) {
+        if (!x) return false;
+        removeActive(x);
+        if (currentFocus >= x.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = (x.length - 1);
+        x[currentFocus].classList.add("autocomplete-active");
+    }
+    function removeActive(x) {
+        for (let i = 0; i < x.length; i++) {
+            x[i].classList.remove("autocomplete-active");
+        }
+    }
+    function closeAllLists(elmnt) {
+        const items = document.getElementsByClassName("autocomplete-items");
+        for (let i = 0; i < items.length; i++) {
+            if (elmnt != items[i] && elmnt != inp) {
+                items[i].parentNode.removeChild(items[i]);
+            }
+        }
+    }
+    document.addEventListener("click", function (e) {
+        closeAllLists(e.target);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // ...existing code...
+    const acInput = document.getElementById("search-autocomplete");
+    if (acInput) autocomplete(acInput, SUGGESTIONS);
+    // ...existing code...
+});
 // Kategorie-Buttons: State und Übergabe an /search
 const CATEGORIES = [
     { label: "Social Media", value: "social" },

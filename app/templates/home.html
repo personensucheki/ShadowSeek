@@ -9,7 +9,16 @@
             <span class="claim-sub">Web & Profile – wie Google, nur besser.</span>
         </div>
         <form id="landing-search-form" class="landing-search-form" method="GET" action="/search" autocomplete="off">
-            <input type="text" name="query" class="landing-search-input" placeholder="Suche im Web oder nach Profilen..." autofocus required>
+            <div class="searchbar-wrapper">
+                <select id="engine-select" class="engine-select" name="engine">
+                    <option value="shadowseek">ShadowSeek</option>
+                    <option value="google">Google</option>
+                    <option value="bing">Bing</option>
+                    <option value="duckduckgo">DuckDuckGo</option>
+                </select>
+                <input type="text" name="query" class="landing-search-input" id="search-autocomplete" placeholder="Suche im Web oder nach Profilen..." autocomplete="off" autofocus required>
+                <div id="autocomplete-list" class="autocomplete-items"></div>
+            </div>
             <button type="submit" class="landing-search-btn">Suche</button>
         </form>
     </div>

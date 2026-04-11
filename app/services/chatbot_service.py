@@ -1,5 +1,8 @@
+
 import re
 from typing import Optional, Dict, Any
+import os
+import requests
 
 
 class ChatbotService:
@@ -23,6 +26,54 @@ class ChatbotService:
 
 
     def handle_message(self, message: str, context: Optional[Dict[str, Any]] = None) -> str:
+        # Wenn OpenAI-API-Key gesetzt: GPT-4-Antwort
+
+        import logging
+        api_key = self.openai_api_key or os.environ.get("OPENAI_API_KEY")
+        if api_key:
+            try:
+                prompt = self._build_prompt(message, context)
+                logging.info(f"[GPT-4] Prompt: {prompt}")
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                data = {
+                    "model": "gpt-4o",
+                    "messages": [
+                        {"role": "system", "content": "Du bist ShadowSeek Assistant. Antworte natürlich, hilfreich, freundlich und menschlich auf Deutsch. Sei kreativ, aber bleibe sachlich und hilfreich. Wenn es um Profilsuche, Social Media, OSINT oder Websuche geht, gib konkrete Tipps. Sonst antworte wie ein echter Mensch."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "max_tokens": 400,
+                    "temperature": 0.8
+                }
+                resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=18)
+                logging.info(f"[GPT-4] Status: {resp.status_code}, Antwort: {resp.text[:300]}")
+                resp.raise_for_status()
+                answer = resp.json()["choices"][0]["message"]["content"].strip()
+                self.session_memory["assistant_replies"].append(answer)
+                if len(self.session_memory["assistant_replies"]) > self._max_history:
+                    self.session_memory["assistant_replies"] = self.session_memory["assistant_replies"][-self._max_history:]
+                return answer
+            except Exception as e:
+                logging.error(f"[GPT-4] Fehler: {e}")
+                self.session_memory["assistant_replies"].append(f"[GPT-Fehler: {e}] Ich antworte regelbasiert...")
+                if len(self.session_memory["assistant_replies"]) > self._max_history:
+                    self.session_memory["assistant_replies"] = self.session_memory["assistant_replies"][-self._max_history:]
+                # Weiter mit Regel-basiert
+
+        # ...bestehende Regel-basierte Logik...
+            def _build_prompt(self, message: str, context: Optional[Dict[str, Any]] = None) -> str:
+                # Kontext für GPT-4: Letzte Nutzerfragen, ggf. letzte Suche
+                prompt = message.strip()
+                if context:
+                    if context.get("query"):
+                        prompt += f"\nLetzte Suche: {context['query']}"
+                    if context.get("results"):
+                        prompt += f"\nLetzte Treffer: {context['results']}"
+                    if context.get("deepsearch"):
+                        prompt += f"\nDeepSearch: {context['deepsearch']}"
+                return prompt
         msg = message.strip().lower()
         context = context or {}
         # Begrenze History

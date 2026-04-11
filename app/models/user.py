@@ -4,6 +4,7 @@ from ..extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
+    is_verified = db.Column(db.Boolean, default=False, nullable=False)
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
@@ -11,6 +12,10 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     role = db.Column(db.String(32), nullable=False, default='user', index=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+    display_name = db.Column(db.String(80), unique=False, nullable=True)
+    bio = db.Column(db.String(500), nullable=True)
+    avatar = db.Column(db.String(255), nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -33,3 +38,16 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.username} ({self.role})>'
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "display_name": self.display_name,
+            "bio": self.bio,
+            "avatar": self.avatar,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "is_active": self.is_active,
+        }
