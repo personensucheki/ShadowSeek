@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Suche – ShadowSeek{% endblock %}
+{% block title %}Suche - ShadowSeek{% endblock %}
 {% block content %}
 <div class="recon-dashboard">
     <section class="recon-panel recon-panel--main recon-panel--head">
@@ -7,7 +7,9 @@
             <div class="recon-branding">
                 <div class="recon-logo">ShadowSeek</div>
                 <div class="recon-sub">Cyber Recon Surface</div>
-                <div class="recon-desc">Professionelle, username-basierte Profilsuche mit direktem Reverse-Image und KI-Reranking. Für echte Black Ops und Open Source Intelligence.</div>
+                <div class="recon-desc">
+                    Professionelle Username-Suche mit Reverse Image Search und optionalem KI-Reranking.
+                </div>
                 <div class="recon-chips">
                     <span class="chip chip--pink">Neon Recon</span>
                     <span class="chip chip--green">Live Platform Scan</span>
@@ -19,42 +21,47 @@
             <div class="active-filters-bar">
                 <div id="category-bar-search" class="category-bar-search"></div>
                 <div class="modifier-bar-search" id="modifier-bar-search">
-                    <button type="button" class="chip chip--green" data-mod="public_sources">Öffentliche Quellen</button>
+                    <button type="button" class="chip chip--green" data-mod="public_sources">Oeffentliche Quellen</button>
                     <button type="button" class="chip chip--pink" data-mod="secure_mode">Sicherer Suchmodus</button>
-                    <button type="button" class="chip chip--cyan" data-mod="ai_rerank">KI-gestützte Bewertung</button>
+                    <button type="button" class="chip chip--cyan" data-mod="ai_rerank">KI-gestuetzte Bewertung</button>
                     <button type="button" class="chip chip--gray" data-mod="deepsearch">DeepSearch bereit</button>
-                    <button type="button" class="chip chip--blue" data-mod="precision_mode">Präzise Treffer</button>
+                    <button type="button" class="chip chip--blue" data-mod="precision_mode">Praezise Treffer</button>
                 </div>
             </div>
-            <form id="search-form" method="GET" action="/search" autocomplete="off">
+            <form
+                id="search-form"
+                method="POST"
+                action="/api/search"
+                enctype="multipart/form-data"
+                autocomplete="off"
+            >
                 <div class="form-fields">
                     <div class="form-row">
                         <label>Username
-                            <input type="text" name="query" value="{{ request.args.get('query', '') }}" placeholder="Benutzername (Pflichtfeld)" required autofocus>
+                            <input
+                                type="text"
+                                name="username"
+                                value="{{ request.args.get('username', request.args.get('query', query or '')) }}"
+                                placeholder="Benutzername (Pflichtfeld)"
+                                required
+                                autofocus
+                            >
                         </label>
-                        <label>Name / Anzeigename
+                        <label>Echtname (optional)
                             <input type="text" name="real_name" placeholder="z.B. Max Mustermann">
                         </label>
                     </div>
                     <div class="form-row">
-                        <label>Clanname / Alias
+                        <label>Clanname (optional)
                             <input type="text" name="clan_name" placeholder="z.B. ShadowCrew">
                         </label>
-                        <label>Wohnort / Ort
-                            <input type="text" name="location" placeholder="z.B. Berlin">
+                        <label>Alter (optional)
+                            <input type="number" name="age" min="1" max="120" placeholder="z.B. 24">
                         </label>
                     </div>
                     <div class="form-row">
-                        <label>Webseite / Domain
-                            <input type="text" name="website" placeholder="z.B. example.com">
-                        </label>
-                        <label>Keywords
-                            <input type="text" name="keywords" placeholder="z.B. OSINT, Recon, Security">
-                        </label>
-                    </div>
-                    <div class="form-row">
-                        <label>E-Mail-Adresse (optional, nur für eigene/öffentliche Quellen)
-                            <input type="email" name="email" placeholder="z.B. max@mustermann.de">
+                        <label>Postleitzahl (optional)
+                            <input type="text" name="postal_code" inputmode="numeric" placeholder="z.B. 10115">
                         </label>
                         <label>Bild-Upload
                             <input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
@@ -75,26 +82,28 @@
                 <div class="form-actions">
                     <label class="toggle">
                         <input type="checkbox" name="deep_search">
-                        <span>DeepSearch + KI-Reranking</span>
+                        <span>DeepSearch + KI-Reranking aktivieren</span>
                     </label>
                     <button class="btn-scan" type="submit">Scan starten</button>
-                    <button class="btn-reset" type="button" id="reset-btn">Zurücksetzen</button>
+                    <button class="btn-reset" type="button" id="reset-btn">Zuruecksetzen</button>
                 </div>
             </form>
         </div>
     </section>
+
     <div id="scan-overlay" class="scan-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Scan-Status">
         <div class="scan-box">
             <div class="scan-title">
                 ShadowSeek AI Scan aktiv
                 <span id="scan-deep-badge" class="scan-deep-badge" style="display:none;">DeepSearch aktiv</span>
             </div>
-            <div class="scan-status" id="scan-status-text">Plattformen werden geprüft...</div>
+            <div class="scan-status" id="scan-status-text">Plattformen werden geprueft...</div>
             <div class="scan-platforms" id="scan-platform-list"></div>
             <div class="scan-progress-bar"><div id="scan-progress-inner"></div></div>
             <button id="scan-cancel-btn" class="scan-cancel-btn" style="display:none;" tabindex="-1" aria-disabled="true">Suche abbrechen</button>
         </div>
     </div>
+
     <section class="recon-panel recon-panel--main">
         <div class="recon-card recon-card--results">
             <div class="results-title">Gefundene Profile</div>
@@ -102,7 +111,7 @@
                 <button type="button" class="tab-btn" data-tab="social">Social Media</button>
                 <button type="button" class="tab-btn" data-tab="dating">Dating</button>
                 <button type="button" class="tab-btn" data-tab="adult">Adult</button>
-                <button type="button" class="tab-btn" data-tab="porn">Porno</button>
+                <button type="button" class="tab-btn" data-tab="porn">Porn</button>
                 <button type="button" class="tab-btn" data-tab="web">Webseiten</button>
                 <button type="button" class="tab-btn" data-tab="forum">Foren</button>
                 <button type="button" class="tab-btn" data-tab="image">Bilder</button>
@@ -110,16 +119,37 @@
                 <button type="button" class="tab-btn" data-tab="news">News</button>
                 <button type="button" class="tab-btn" data-tab="community">Communities</button>
             </div>
+            <div id="search-messages"></div>
+            <div id="reverse-links" class="results-list"></div>
             <div class="results-list" id="results-list">
                 {% if results %}
                     {% for result in results %}
                         {% include 'components/result_card.html' %}
                     {% endfor %}
                 {% else %}
-                    <div class="empty-state">Keine Ergebnisse gefunden. Bitte verfeinere deine Suche.</div>
+                    <div class="empty-state">Noch keine Ergebnisse. Starte einen Scan.</div>
                 {% endif %}
             </div>
             {% include 'components/pagination.html' %}
+        </div>
+    </section>
+
+    <section class="recon-panel recon-panel--modules">
+        <div class="recon-card neon-card" id="screenshot-results">
+            <div class="results-title">PROFILE SCREENSHOTS</div>
+            <div id="screenshot-list"></div>
+        </div>
+        <div class="recon-card neon-card" id="similarity-results">
+            <div class="results-title">USERNAME SIMILARITY</div>
+            <div id="similarity-list"></div>
+        </div>
+        <div class="recon-card neon-card" id="image-similarity-results">
+            <div class="results-title">IMAGE SIMILARITY</div>
+            <div id="image-similarity-list"></div>
+        </div>
+        <div class="recon-card neon-card" id="risk-score-results">
+            <div class="results-title">OSINT RISK SCORE</div>
+            <div id="risk-score-box"></div>
         </div>
     </section>
 </div>

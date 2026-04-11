@@ -19,7 +19,14 @@ def home():
 
 @search_bp.route("/search", methods=["GET"])
 def search():
-    return render_template("home.html", platforms=PLATFORM_INDEX.values())
+    return render_template(
+        "search.html",
+        platforms=PLATFORM_INDEX.values(),
+        results=[],
+        page=1,
+        total_pages=None,
+        query=request.args.get("query", "").strip(),
+    )
 
 
 @search_bp.route("/api/search", methods=["POST"])

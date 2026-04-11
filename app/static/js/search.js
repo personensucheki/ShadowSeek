@@ -1,467 +1,691 @@
-// === Scan Overlay Animation (Feinschliff) ===
+const CATEGORIES = [
+    { label: "Social Media", value: "social" },
+    { label: "Dating", value: "dating" },
+    { label: "Adult", value: "adult" },
+    { label: "Porn", value: "porn" },
+];
+
+const MODIFIERS = [
+    { label: "Oeffentliche Quellen", value: "public_sources" },
+    { label: "Sicherer Suchmodus", value: "secure_mode" },
+    { label: "KI-gestuetzte Bewertung", value: "ai_rerank" },
+    { label: "DeepSearch bereit", value: "deepsearch" },
+    { label: "Praezise Treffer", value: "precision_mode" },
+];
+
+const TAB_CATEGORIES = {
+    social: ["social", "instagram", "tiktok", "x", "twitter", "facebook", "linkedin", "snapchat", "clapper"],
+    dating: ["dating", "lovoo", "badoo", "knuddels"],
+    adult: ["adult", "stripchat", "onlyfans", "dirtyhobby", "subscription"],
+    porn: ["porn", "xhamster", "pornhub", "xnxx"],
+    web: ["web", "website", "domain", "developer", "github"],
+    forum: ["forum", "board", "reddit"],
+    image: ["image", "imgur", "flickr", "photo"],
+    video: ["video", "youtube", "twitch", "vimeo", "streaming"],
+    news: ["news", "zeitung", "magazine"],
+    community: ["community", "discord", "telegram", "messaging"],
+};
+
 const SCAN_STATUS_TEXTS = [
     "Query wird vorbereitet...",
-    "Eingaben werden normalisiert...",
-    "Plattformen werden geprüft...",
-    "Signale werden zusammengeführt...",
-    "Ergebnisse werden bewertet..."
+    "Username-Varianten werden erzeugt...",
+    "Plattformen werden geprueft...",
+    "Signale werden zusammengefuehrt...",
+    "Ergebnisse werden bewertet...",
 ];
+
 const SCAN_STATUS_TEXTS_DEEP = [
     "DeepSearch aktiv...",
-    "Erweiterte Analyse läuft..."
+    "Erweiterte Analyse laeuft...",
 ];
+
+function readJsonStorage(key, fallback = []) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function writeJsonStorage(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+function normalizeTabValue(result) {
+    const slug = String(result.platform_slug || "").toLowerCase();
+    const category = String(result.category || "").toLowerCase();
+
+    for (const [tab, values] of Object.entries(TAB_CATEGORIES)) {
+        if (values.includes(slug) || values.includes(category)) {
+            return tab;
+        }
+    }
+
+    return "social";
+}
+
+function renderPlatforms(platforms, container) {
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = "";
+    platforms.forEach((platform) => {
+        const chip = document.createElement("div");
+        chip.className = "scan-platform-chip";
+        chip.innerHTML = `<span class="scan-platform-dot"></span>${escapeHtml(platform)}`;
+        container.appendChild(chip);
+    });
+}
 
 function showScanOverlay(platforms, deepSearch) {
-        const overlay = document.getElementById('scan-overlay');
-        const statusText = document.getElementById('scan-status-text');
-        const platformList = document.getElementById('scan-platform-list');
-        const progressInner = document.getElementById('scan-progress-inner');
-        const deepBadge = document.getElementById('scan-deep-badge');
-        const cancelBtn = document.getElementById('scan-cancel-btn');
-        if (!overlay || !statusText || !platformList || !progressInner) return;
-        overlay.style.display = '';
-        overlay.classList.remove('hide', 'error');
-        // Reset
-        platformList.innerHTML = '';
-        progressInner.style.width = '0%';
-        statusText.textContent = '';
-        if (deepBadge) deepBadge.style.display = deepSearch ? '' : 'none';
-        if (cancelBtn) cancelBtn.style.display = 'none'; // vorbereitet
+    const overlay = document.getElementById("scan-overlay");
+    const statusText = document.getElementById("scan-status-text");
+    const progressInner = document.getElementById("scan-progress-inner");
+    const deepBadge = document.getElementById("scan-deep-badge");
+    const platformList = document.getElementById("scan-platform-list");
 
-        // prefers-reduced-motion
-        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!overlay || !statusText || !progressInner || !platformList) {
+        return { hide() {}, error() {} };
+    }
 
-        // Plattformen rendern
-        let platformStates = platforms.map(() => 'waiting'); // waiting, scanning, done, error, skipped
-        function renderPlatforms(activeIdx = -1, doneIdxs = [], failIdxs = [], skipIdxs = []) {
-            platformList.innerHTML = '';
-            platforms.forEach((name, i) => {
-                const chip = document.createElement('div');
-                chip.className = 'scan-platform-chip';
-                if (doneIdxs.includes(i) || platformStates[i] === 'done') chip.classList.add('done');
-                else if (failIdxs.includes(i) || platformStates[i] === 'error') chip.classList.add('fail');
-                else if (skipIdxs.includes(i) || platformStates[i] === 'skipped') chip.classList.add('skip');
-                else if (i === activeIdx || platformStates[i] === 'scanning') chip.classList.add('active');
-                const dot = document.createElement('span');
-                dot.className = 'scan-platform-dot';
-                chip.appendChild(dot);
-                chip.appendChild(document.createTextNode(name));
-                platformList.appendChild(chip);
-            });
+    const statusTexts = deepSearch
+        ? [...SCAN_STATUS_TEXTS_DEEP, ...SCAN_STATUS_TEXTS]
+        : [...SCAN_STATUS_TEXTS];
+    let timerId = null;
+    let progressId = null;
+    let index = 0;
+    let active = 0;
+
+    overlay.style.display = "";
+    overlay.classList.remove("hide", "error");
+    progressInner.style.width = "0%";
+    if (deepBadge) {
+        deepBadge.style.display = deepSearch ? "" : "none";
+    }
+
+    renderPlatforms(platforms, platformList);
+
+    const rotateStatus = () => {
+        statusText.textContent = statusTexts[index % statusTexts.length];
+        index += 1;
+        timerId = window.setTimeout(rotateStatus, 1200);
+    };
+
+    const animateProgress = () => {
+        const children = Array.from(platformList.children);
+        children.forEach((child, childIndex) => {
+            child.classList.toggle("active", childIndex === active);
+            child.classList.toggle("done", childIndex < active);
+        });
+        if (children.length > 0) {
+            progressInner.style.width = `${Math.min((active / children.length) * 100, 95)}%`;
         }
+        active = Math.min(active + 1, Math.max(children.length, 1));
+        progressId = window.setTimeout(animateProgress, 500);
+    };
 
-        // Status-Text-Rotation
-        let statusIdx = 0;
-        let statusTimer = null;
-        let statusTexts = [...SCAN_STATUS_TEXTS];
-        if (deepSearch) statusTexts = SCAN_STATUS_TEXTS_DEEP.concat(statusTexts);
-        function rotateStatus() {
-            statusText.textContent = statusTexts[statusIdx % statusTexts.length];
-            statusIdx++;
-            statusTimer = setTimeout(rotateStatus, reducedMotion ? 2600 : 1400);
-        }
-        rotateStatus();
+    rotateStatus();
+    animateProgress();
 
-        // Plattformen nacheinander animieren
-        let idx = 0;
-        let doneIdxs = [];
-        let failIdxs = [];
-        let skipIdxs = [];
-        let stepTimer = null;
-        function step() {
-            if (idx > 0) doneIdxs.push(idx - 1);
-            renderPlatforms(idx, doneIdxs, failIdxs, skipIdxs);
-            progressInner.style.width = ((idx) / platforms.length * 100) + '%';
-            if (idx < platforms.length && !reducedMotion) {
-                stepTimer = setTimeout(step, 600);
-                idx++;
-            } else if (idx < platforms.length && reducedMotion) {
-                stepTimer = setTimeout(step, 1200);
-                idx++;
-            }
-        }
-        if (!reducedMotion) step();
-        else renderPlatforms();
-
-        // Mindest-Sichtbarkeitsdauer
-        const minVisible = 800;
-        const startTime = Date.now();
-        let hideRequested = false;
-        let hideTimeout = null;
-        let errorTimeout = null;
-
-        // Fehlerstatus
-        function showError(msg) {
-            overlay.classList.add('error');
-            statusText.textContent = msg || 'Suche fehlgeschlagen';
-            if (deepBadge) deepBadge.style.display = 'none';
-            clearTimeout(statusTimer);
-            clearTimeout(stepTimer);
-            // Plattformen auf error
-            platformStates = platformStates.map(() => 'error');
-            renderPlatforms();
-            // Nach 1.2s ausblenden
-            errorTimeout = setTimeout(() => {
-                hideScanOverlay(true);
+    return {
+        hide() {
+            window.clearTimeout(timerId);
+            window.clearTimeout(progressId);
+            progressInner.style.width = "100%";
+            overlay.classList.add("hide");
+            window.setTimeout(() => {
+                overlay.style.display = "none";
+            }, 300);
+        },
+        error(message) {
+            window.clearTimeout(timerId);
+            window.clearTimeout(progressId);
+            overlay.classList.add("error");
+            statusText.textContent = message || "Suche fehlgeschlagen";
+            window.setTimeout(() => {
+                overlay.style.display = "none";
             }, 1200);
-        }
+        },
+    };
+}
 
-        // Hide-Funktion
-        function hideScanOverlay(force) {
-            if (hideRequested) return;
-            hideRequested = true;
-            clearTimeout(statusTimer);
-            clearTimeout(stepTimer);
-            clearTimeout(errorTimeout);
-            const elapsed = Date.now() - startTime;
-            const doHide = () => {
-                overlay.classList.add('hide');
-                setTimeout(() => { overlay.style.display = 'none'; }, 400);
-            };
-            if (force || elapsed >= minVisible) {
-                doHide();
-            } else {
-                hideTimeout = setTimeout(doHide, minVisible - elapsed);
+function createMessage(type, text) {
+    const message = document.createElement("div");
+    message.className = `chip chip--${type}`;
+    message.textContent = text;
+    return message;
+}
+
+function renderMessages(payload, container) {
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = "";
+
+    if (payload?.meta?.profile_count) {
+        container.appendChild(
+            createMessage("green", `${payload.meta.profile_count} Profile gefunden`)
+        );
+    }
+
+    if (payload?.meta?.ai_reranking_applied) {
+        container.appendChild(createMessage("cyan", "KI-Reranking aktiv"));
+    }
+
+    if (payload?.meta?.serper_used) {
+        container.appendChild(
+            createMessage("pink", `Serper genutzt (${payload.meta.serper_queries} Queries)`)
+        );
+    }
+}
+
+function renderReverseImageLinks(links, container) {
+    if (!container) {
+        return;
+    }
+
+    if (!links || !links.asset_url) {
+        container.innerHTML = "";
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="result-card">
+            <div class="result-info">
+                <div class="result-platform">Reverse Image Search</div>
+                <div class="result-title">Direkte Bild-Checks</div>
+                <div class="result-meta-row">
+                    <a href="${escapeHtml(links.google_lens)}" target="_blank" rel="noopener" class="result-link">Google Lens</a>
+                    <a href="${escapeHtml(links.tineye)}" target="_blank" rel="noopener" class="result-link">TinEye</a>
+                    <a href="${escapeHtml(links.yandex)}" target="_blank" rel="noopener" class="result-link">Yandex</a>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderProfiles(profiles, container) {
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(profiles) || profiles.length === 0) {
+        container.innerHTML = '<div class="empty-state">Keine Ergebnisse gefunden. Bitte verfeinere deine Suche.</div>';
+        return;
+    }
+
+    container.innerHTML = profiles
+        .map((result) => {
+            const tab = normalizeTabValue(result);
+            const confidenceChip = result.confidence
+                ? `<span class="chip chip--${result.confidence === "high" ? "green" : result.confidence === "medium" ? "cyan" : "pink"}">Confidence: ${escapeHtml(result.confidence)}</span>`
+                : "";
+            const sourceChip = result.source
+                ? `<span class="chip chip--cyan">Quelle: ${escapeHtml(result.source)}</span>`
+                : "";
+            const scoreChip = result.match_score !== undefined && result.match_score !== null
+                ? `<span class="chip chip--variation">Score: ${escapeHtml(result.match_score)}</span>`
+                : "";
+            const reason = result.match_reason || result.match_reasons?.join(", ") || "";
+            const title = result.title || result.bio || result.snippet || "";
+
+            return `
+                <div class="result-card" data-tab="${escapeHtml(tab)}" data-platform="${escapeHtml(result.platform_slug || "")}">
+                    <div class="result-info">
+                        <div class="result-platform">${escapeHtml(result.platform || "Unbekannt")}</div>
+                        <div class="result-title">${escapeHtml(result.username || "")}</div>
+                        ${title ? `<div class="result-bio">${escapeHtml(title)}</div>` : ""}
+                        <div class="result-meta-row">
+                            ${confidenceChip}
+                            ${scoreChip}
+                            ${sourceChip}
+                            ${reason ? `<span class="chip chip--green">${escapeHtml(reason)}</span>` : ""}
+                        </div>
+                        <a href="${escapeHtml(result.profile_url || "#")}" target="_blank" rel="noopener" class="result-link">Profil oeffnen</a>
+                    </div>
+                </div>
+            `;
+        })
+        .join("");
+}
+
+function renderSimilarityResults(data) {
+    const list = document.getElementById("similarity-list");
+    if (!list) {
+        return;
+    }
+
+    if (!data || !Array.isArray(data.matches) || data.matches.length === 0) {
+        list.innerHTML = '<div class="empty-state">No data available</div>';
+        return;
+    }
+
+    list.innerHTML = data.matches
+        .map((item) => {
+            let badge = "weak";
+            if (item.score >= 90) {
+                badge = "very-close";
+            } else if (item.score >= 75) {
+                badge = "close";
+            } else if (item.score >= 60) {
+                badge = "possible";
             }
-        }
+            return `
+                <div class="similarity-item">
+                    <span class="sim-candidate">${escapeHtml(item.candidate)}</span>
+                    <span class="sim-score">${escapeHtml(item.score)}</span>
+                    <span class="sim-badge sim-badge--${badge}">${badge.replace("-", " ")}</span>
+                </div>
+            `;
+        })
+        .join("");
+}
 
-        // Für späteren Cancel-Button vorbereitet
-        if (cancelBtn) {
-            cancelBtn.onclick = () => {
-                // Noch nicht implementiert
-            };
-        }
-
-        // Rückgabe: Funktionen
-        return {
-            hide: hideScanOverlay,
-            error: showError
-        };
+function renderScreenshotResults(data) {
+    const list = document.getElementById("screenshot-list");
+    if (!list) {
+        return;
     }
-function getSelectedCategories() {
-    try {
-        const raw = localStorage.getItem("shadowseek_categories");
-        if (!raw) return [];
-        return JSON.parse(raw);
-    } catch {
-        return [];
+
+    if (!Array.isArray(data) || data.length === 0) {
+        list.innerHTML = '<div class="empty-state">No data available</div>';
+        return;
     }
-}
-function setSelectedCategories(arr) {
-    localStorage.setItem("shadowseek_categories", JSON.stringify(arr));
-}
-function clearSelectedCategories() {
-    localStorage.removeItem("shadowseek_categories");
+
+    list.innerHTML = data
+        .map(
+            (item) => `
+                <div class="screenshot-item">
+                    <div class="screenshot-url">${escapeHtml(item.url)}</div>
+                    <img src="${escapeHtml(item.path)}" alt="Screenshot" style="max-width:320px;border-radius:8px;box-shadow:0 0 12px #00FF9F55,0 0 8px #FF00FF33;">
+                </div>
+            `
+        )
+        .join("");
 }
 
-// --- Modifier/Modus-Logik ---
-const MODIFIERS = [
-    { label: "Öffentliche Quellen", value: "public_sources" },
-    { label: "Geschützte Suche", value: "secure_mode" },
-    { label: "KI-gestützte Bewertung", value: "ai_rerank" },
-    { label: "DeepSearch bereit", value: "deepsearch" },
-    { label: "Präzise Treffer", value: "precision_mode" },
-];
-function getSelectedModifiers() {
-    try {
-        const raw = localStorage.getItem("shadowseek_modifiers");
-        if (!raw) return [];
-        return JSON.parse(raw);
-    } catch {
-        return [];
+function renderImageSimilarity(data) {
+    const list = document.getElementById("image-similarity-list");
+    if (!list) {
+        return;
     }
-}
-function setSelectedModifiers(arr) {
-    localStorage.setItem("shadowseek_modifiers", JSON.stringify(arr));
+
+    if (!data || !Array.isArray(data.matches) || data.matches.length === 0) {
+        list.innerHTML = '<div class="empty-state">No data available</div>';
+        return;
+    }
+
+    list.innerHTML = data.matches
+        .map(
+            (item) => `
+                <div class="image-match-item">
+                    <img src="${escapeHtml(item.file)}" alt="Match" style="max-width:80px;border-radius:6px;margin-right:10px;vertical-align:middle;">
+                    <span class="img-score">${escapeHtml(item.score)}</span>
+                </div>
+            `
+        )
+        .join("");
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-        // === Ergebnis-Tabs: Filter-Logik ===
-        const tabs = document.querySelectorAll('.tab-btn');
-        const resultsList = document.getElementById('results-list');
-        let allResults = [];
-        // Ergebnisse initial aus DOM extrahieren (vereinfachte Demo, Backend sollte nach Kategorien liefern)
-        if (resultsList) {
-            allResults = Array.from(resultsList.children).filter(el => el.classList.contains('result-card'));
+function renderRiskScore(data) {
+    const box = document.getElementById("risk-score-box");
+    if (!box) {
+        return;
+    }
+
+    if (!data || typeof data.score !== "number") {
+        box.innerHTML = '<div class="empty-state">No data available</div>';
+        return;
+    }
+
+    let color = "#00FF9F";
+    if (data.level === "critical") {
+        color = "#FF00FF";
+    } else if (data.level === "high") {
+        color = "#FF6B6B";
+    } else if (data.level === "moderate") {
+        color = "#FFD600";
+    }
+
+    box.innerHTML = `
+        <div class="risk-score-main" style="font-size:2.2em;font-weight:700;color:${color};margin-bottom:0.3em;">
+            ${escapeHtml(data.score)} <span style="font-size:0.5em;">/ 100</span>
+        </div>
+        <div class="risk-score-level" style="font-weight:600;color:${color};margin-bottom:0.7em;">
+            ${escapeHtml(String(data.level || "").toUpperCase())}
+        </div>
+        ${
+            Array.isArray(data.factors) && data.factors.length > 0
+                ? `<ul class="risk-factors">${data.factors.map((factor) => `<li>${escapeHtml(factor)}</li>`).join("")}</ul>`
+                : ""
         }
-        // Mapping: Kategorie → Plattform-Slug oder Typ
-        const TAB_CATEGORIES = {
-            social: ['instagram','tiktok','x','twitter','facebook','linkedin','snapchat','clapper'],
-            dating: ['lovoo','badoo','knuddels'],
-            adult: ['stripchat','onlyfans','dirtyhobby'],
-            porn: ['xhamster','pornhub','xnxx'],
-            web: ['web','website','domain'],
-            forum: ['forum','board','reddit'],
-            image: ['image','imgur','flickr','pic','photo'],
-            video: ['youtube','twitch','video','vimeo'],
-            news: ['news','zeitung','magazine'],
-            community: ['community','discord','telegram'],
-        };
-        function getResultCategory(resultEl) {
-            // Versucht, die Kategorie aus dem Plattformnamen zu bestimmen
-            const platform = resultEl.querySelector('.result-platform')?.textContent?.toLowerCase() || '';
-            for (const [tab, keys] of Object.entries(TAB_CATEGORIES)) {
-                if (keys.some(k => platform.includes(k))) return tab;
-            }
-            return 'social'; // fallback
+    `;
+}
+
+function renderDeepSearchResponse(response) {
+    if (!response || !response.data) {
+        return;
+    }
+
+    renderScreenshotResults(response.data.screenshots);
+    renderSimilarityResults(response.data.similarity);
+    renderImageSimilarity(response.data.image_similarity);
+    renderRiskScore(response.data.risk_score);
+}
+
+function applyResultFilter(tab) {
+    const resultsList = document.getElementById("results-list");
+    if (!resultsList) {
+        return;
+    }
+
+    const cards = Array.from(resultsList.querySelectorAll(".result-card"));
+    let visible = 0;
+
+    cards.forEach((card) => {
+        const shouldShow = card.dataset.tab === tab;
+        card.style.display = shouldShow ? "" : "none";
+        if (shouldShow) {
+            visible += 1;
         }
-        function filterResults(tab) {
-            let found = 0;
-            allResults.forEach(el => {
-                const cat = getResultCategory(el);
-                if (cat === tab) {
-                    el.style.display = '';
-                    found++;
+    });
+
+    const emptyState = resultsList.querySelector(".empty-state");
+    if (emptyState) {
+        emptyState.style.display = visible === 0 ? "" : "none";
+    } else if (visible === 0) {
+        resultsList.insertAdjacentHTML(
+            "beforeend",
+            '<div class="empty-state">Keine Ergebnisse in dieser Kategorie.</div>'
+        );
+    }
+}
+
+function setActiveTab(tab) {
+    document.querySelectorAll(".tab-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tab);
+    });
+    applyResultFilter(tab);
+}
+
+function findPreferredTab(profiles) {
+    if (!Array.isArray(profiles) || profiles.length === 0) {
+        return "social";
+    }
+
+    const availableTabs = new Set(profiles.map((profile) => normalizeTabValue(profile)));
+    return availableTabs.has("social") ? "social" : profiles.map((profile) => normalizeTabValue(profile))[0];
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("search-form");
+    const resultsList = document.getElementById("results-list");
+    const reverseLinks = document.getElementById("reverse-links");
+    const messageBox = document.getElementById("search-messages");
+    const resetButton = document.getElementById("reset-btn");
+    const categoryBar = document.getElementById("category-bar-search");
+    const modifierBar = document.getElementById("modifier-bar-search");
+    const deepSearchToggle = form?.querySelector('input[name="deep_search"]');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+    const storageKey = "shadowseek_search_inputs";
+    let selectedCategories = readJsonStorage("shadowseek_categories");
+    let selectedModifiers = readJsonStorage("shadowseek_modifiers");
+    let overlayController = null;
+
+    if (!form) {
+        return;
+    }
+
+    const fieldNames = ["username", "real_name", "clan_name", "age", "postal_code"];
+    const platformCheckboxes = () => Array.from(form.querySelectorAll('input[name="platforms"]'));
+
+    const renderCategoryChips = () => {
+        if (!categoryBar) {
+            return;
+        }
+
+        categoryBar.innerHTML = "";
+        CATEGORIES.forEach((category) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `category-chip-search${selectedCategories.includes(category.value) ? " active" : ""}`;
+            button.textContent = category.label;
+            button.addEventListener("click", () => {
+                if (selectedCategories.includes(category.value)) {
+                    selectedCategories = selectedCategories.filter((value) => value !== category.value);
                 } else {
-                    el.style.display = 'none';
+                    selectedCategories = [...selectedCategories, category.value];
                 }
+                writeJsonStorage("shadowseek_categories", selectedCategories);
+                renderCategoryChips();
             });
-            // Leere-Zustände
-            const empty = resultsList.querySelector('.empty-state');
-            if (empty) empty.style.display = found === 0 ? '' : 'none';
-        }
-        function setActiveTab(tab) {
-            tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-        }
-        tabs.forEach(btn => {
-            btn.addEventListener('click', function() {
-                setActiveTab(btn.dataset.tab);
-                filterResults(btn.dataset.tab);
-            });
+            categoryBar.appendChild(button);
         });
-        // Standard: Social Media Tab aktiv
-        if (tabs.length) {
-            setActiveTab('social');
-            filterResults('social');
-        }
-    const form = document.getElementById('search-form');
-    const resetBtn = document.getElementById('reset-btn');
-    const catBar = document.getElementById('category-bar-search');
-    const fields = [
-        'query', 'real_name', 'clan_name', 'age', 'postal_code'
-    ];
-    const platformCheckboxes = () => Array.from(document.querySelectorAll('input[name="platforms"]'));
-    const deepSearch = document.querySelector('input[name="deep_search"]');
-    const storageKey = 'shadowseek_search_inputs';
+    };
 
-    // --- Kategorien aus URL/Storage übernehmen ---
-    function getCategoriesFromURL() {
-        const params = new URLSearchParams(window.location.search);
-        const cats = params.get('categories');
-        if (!cats) return [];
-        return cats.split(',').map(s => s.trim()).filter(Boolean);
-    }
-    let selected = getSelectedCategories();
-    const urlCats = getCategoriesFromURL();
-    if (urlCats.length > 0) {
-        selected = urlCats;
-        setSelectedCategories(selected);
-    }
-    if (catBar) {
-        catBar.innerHTML = "";
-        CATEGORIES.forEach(cat => {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "category-chip-search" + (selected.includes(cat.value) ? " active" : "");
-            btn.textContent = cat.label;
-            btn.onclick = () => {
-                if (selected.includes(cat.value)) {
-                    selected = selected.filter(v => v !== cat.value);
+    const renderModifierChips = () => {
+        if (!modifierBar) {
+            return;
+        }
+
+        Array.from(modifierBar.querySelectorAll("[data-mod]")).forEach((button) => {
+            const value = button.dataset.mod;
+            button.classList.toggle("active", selectedModifiers.includes(value));
+            button.onclick = () => {
+                if (selectedModifiers.includes(value)) {
+                    selectedModifiers = selectedModifiers.filter((item) => item !== value);
                 } else {
-                    selected.push(cat.value);
+                    selectedModifiers = [...selectedModifiers, value];
                 }
-                setSelectedCategories(selected);
-                renderChips();
+                if (value === "deepsearch" && deepSearchToggle) {
+                    deepSearchToggle.checked = selectedModifiers.includes("deepsearch");
+                }
+                writeJsonStorage("shadowseek_modifiers", selectedModifiers);
+                renderModifierChips();
             };
-            catBar.appendChild(btn);
         });
-    }
-    function renderChips() {
-        Array.from(catBar.children).forEach((btn, i) => {
-            const val = CATEGORIES[i].value;
-            btn.classList.toggle("active", selected.includes(val));
-        });
-    }
-    renderChips();
+    };
 
-    // --- Modifier/Modus-State aus Query/Storage übernehmen ---
-    function getModifiersFromURL() {
+    const restoreInputs = () => {
+        const stored = readJsonStorage(storageKey, {});
         const params = new URLSearchParams(window.location.search);
-        return MODIFIERS.map(m => m.value).filter(val => params.get(val) === 'true');
-    }
-    let selectedMods = getSelectedModifiers();
-    const urlMods = getModifiersFromURL();
-    if (urlMods.length > 0) {
-        selectedMods = urlMods;
-        setSelectedModifiers(selectedMods);
-    }
-    // DeepSearch-Checkbox synchronisieren
-    if (deepSearch) {
-        deepSearch.checked = selectedMods.includes('deepsearch');
-    }
 
-    // --- Modifier/Modus-Chips auf Suchseite rendern (optional, falls UI) ---
-    // (Hier: nur State, UI kann in search.html ergänzt werden)
+        if (params.get("categories")) {
+            selectedCategories = params
+                .get("categories")
+                .split(",")
+                .map((value) => value.trim())
+                .filter(Boolean);
+        }
 
-    // Restore
-    function restoreInputs() {
-        const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
-        fields.forEach(f => {
-            if (data[f] !== undefined && form.elements[f]) {
-                form.elements[f].value = data[f];
+        fieldNames.forEach((name) => {
+            const element = form.elements[name];
+            if (!element) {
+                return;
+            }
+            const fromUrl = params.get(name) || (name === "username" ? params.get("query") : null);
+            if (fromUrl) {
+                element.value = fromUrl;
+            } else if (stored[name] !== undefined) {
+                element.value = stored[name];
             }
         });
-        if (Array.isArray(data.platforms)) {
-            platformCheckboxes().forEach(cb => {
-                cb.checked = data.platforms.includes(cb.value);
+
+        if (Array.isArray(stored.platforms)) {
+            platformCheckboxes().forEach((checkbox) => {
+                checkbox.checked = stored.platforms.includes(checkbox.value);
             });
         }
-        if (typeof data.deep_search === 'boolean') {
-            deepSearch.checked = data.deep_search;
-        }
-    }
 
-    // Save
-    function saveInputs() {
+        if (typeof stored.deep_search === "boolean" && deepSearchToggle) {
+            deepSearchToggle.checked = stored.deep_search;
+        }
+
+        MODIFIERS.forEach((modifier) => {
+            if (params.get(modifier.value) === "true" && !selectedModifiers.includes(modifier.value)) {
+                selectedModifiers = [...selectedModifiers, modifier.value];
+            }
+        });
+
+        if (deepSearchToggle?.checked && !selectedModifiers.includes("deepsearch")) {
+            selectedModifiers = [...selectedModifiers, "deepsearch"];
+        }
+    };
+
+    const saveInputs = () => {
         const data = {};
-        fields.forEach(f => {
-            data[f] = form.elements[f]?.value || '';
+        fieldNames.forEach((name) => {
+            data[name] = form.elements[name]?.value || "";
         });
-        data.platforms = platformCheckboxes().filter(cb => cb.checked).map(cb => cb.value);
-        data.deep_search = deepSearch.checked;
-        localStorage.setItem(storageKey, JSON.stringify(data));
-    }
+        data.platforms = platformCheckboxes().filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value);
+        data.deep_search = Boolean(deepSearchToggle?.checked);
+        writeJsonStorage(storageKey, data);
+    };
 
-    // Clear
-    function clearInputs() {
+    const resetState = () => {
         localStorage.removeItem(storageKey);
-        fields.forEach(f => {
-            if (form.elements[f]) form.elements[f].value = '';
-        });
-        platformCheckboxes().forEach(cb => { cb.checked = true; });
-        deepSearch.checked = false;
-    }
+        localStorage.removeItem("shadowseek_categories");
+        localStorage.removeItem("shadowseek_modifiers");
 
-    // Save on change
-    form.addEventListener('input', function (e) {
-        if (e.target.name !== 'image') saveInputs();
-    });
-    form.addEventListener('change', function (e) {
-        if (e.target.name !== 'image') saveInputs();
-    });
-
-    // Restore on load (inkl. State-Übernahme von Home)
-    // Query, Kategorien, Modus-Chips aus localStorage/URL übernehmen
-    function restoreStateFromHome() {
-        // Query
-        const params = new URLSearchParams(window.location.search);
-        if (params.has('query') && form.elements['query']) {
-            form.elements['query'].value = params.get('query');
-        }
-        // Kategorien
-        if (params.has('categories')) {
-            const cats = params.get('categories').split(',').map(s => s.trim()).filter(Boolean);
-            setSelectedCategories(cats);
-            selected = cats;
-            renderChips();
-        }
-        // Modus-Chips
-        MODIFIERS.forEach(m => {
-            if (params.get(m.value) === 'true') {
-                if (!selectedMods.includes(m.value)) selectedMods.push(m.value);
-            }
+        form.reset();
+        platformCheckboxes().forEach((checkbox) => {
+            checkbox.checked = true;
         });
-        setSelectedModifiers(selectedMods);
-        if (deepSearch) deepSearch.checked = selectedMods.includes('deepsearch');
-    }
+
+        selectedCategories = [];
+        selectedModifiers = [];
+        renderCategoryChips();
+        renderModifierChips();
+
+        if (messageBox) {
+            messageBox.innerHTML = "";
+        }
+        if (reverseLinks) {
+            reverseLinks.innerHTML = "";
+        }
+        if (resultsList) {
+            resultsList.innerHTML = '<div class="empty-state">Noch keine Ergebnisse. Starte einen Scan.</div>';
+        }
+        window.history.replaceState({}, "", window.location.pathname);
+    };
+
     restoreInputs();
-    restoreStateFromHome();
+    renderCategoryChips();
+    renderModifierChips();
 
-    // === Scan Overlay Integration (robust) ===
-    let scanOverlayCtrl = null;
-    form.addEventListener('submit', function (e) {
-        // Plattformen auslesen
-        const platformEls = platformCheckboxes();
-        const platforms = platformEls.filter(cb => cb.checked).map(cb => cb.parentElement?.innerText.trim() || cb.value);
-        const deepSearchActive = deepSearch && deepSearch.checked;
-        // Modifier-Flags als Query-Parameter übergeben
-        let url = new URL(form.action, window.location.origin);
-        const params = new URLSearchParams(new FormData(form));
-        // Kategorien
-        if (selected.length > 0) {
-            params.set('categories', selected.join(','));
+    if (deepSearchToggle) {
+        deepSearchToggle.addEventListener("change", () => {
+            if (deepSearchToggle.checked && !selectedModifiers.includes("deepsearch")) {
+                selectedModifiers = [...selectedModifiers, "deepsearch"];
+            }
+            if (!deepSearchToggle.checked) {
+                selectedModifiers = selectedModifiers.filter((item) => item !== "deepsearch");
+            }
+            writeJsonStorage("shadowseek_modifiers", selectedModifiers);
+            renderModifierChips();
+            saveInputs();
+        });
+    }
+
+    form.addEventListener("input", (event) => {
+        if (event.target.name !== "image") {
+            saveInputs();
         }
-        // Modifier
-        if (selectedMods && selectedMods.length > 0) {
-            selectedMods.forEach(mod => {
-                params.set(mod, 'true');
-            });
-        }
-        // DeepSearch synchronisieren
-        if (deepSearchActive && !selectedMods.includes('deepsearch')) {
-            params.set('deepsearch', 'true');
-        }
-        url.search = params.toString();
-        form.action = url.pathname + url.search;
-        // DeepSearch-Badge immer sichtbar, wenn aktiv
-        const deepBadge = document.getElementById('scan-deep-badge');
-        if (deepBadge) deepBadge.style.display = deepSearchActive ? '' : 'none';
-        // Scan-Overlay an aktive Tabs koppeln
-        const activeTab = document.querySelector('.tab-btn.active');
-        if (activeTab) {
-            const scanStatus = document.getElementById('scan-status-text');
-            if (scanStatus) scanStatus.textContent = 'Scan: ' + activeTab.textContent + (deepSearchActive ? ' (DeepSearch aktiv)' : '');
-        }
-        scanOverlayCtrl = showScanOverlay(platforms, deepSearchActive);
-        // Nach 14s Timeout (Fallback)
-        setTimeout(() => { if (scanOverlayCtrl) scanOverlayCtrl.error('Zeitüberschreitung – keine Antwort'); }, 14000);
     });
 
-    // Reset-Button
-    if (resetBtn) {
-        resetBtn.addEventListener('click', function () {
-            // Suchfeld und Inputs zurücksetzen
-            clearInputs();
-            // Kategorien zurücksetzen
-            clearSelectedCategories();
-            selected = [];
-            renderChips();
-            // Modus-Chips zurücksetzen
-            setSelectedModifiers([]);
-            selectedMods = [];
-            // DeepSearch-Checkbox zurücksetzen
-            if (deepSearch) deepSearch.checked = false;
-            // Query-Parameter bereinigen
-            const url = new URL(window.location.href);
-            url.searchParams.delete('categories');
-            MODIFIERS.forEach(m => url.searchParams.delete(m.value));
-            window.history.replaceState({}, '', url.pathname + url.search);
-            // localStorage komplett leeren (nur ShadowSeek-relevante Keys)
-            localStorage.removeItem('shadowseek_categories');
-            localStorage.removeItem('shadowseek_modifiers');
-            localStorage.removeItem('shadowseek_search_inputs');
-            // Overlay ausblenden
-            const overlay = document.getElementById('scan-overlay');
-            if (overlay) { overlay.classList.add('hide'); setTimeout(() => { overlay.style.display = 'none'; }, 400); }
+    form.addEventListener("change", (event) => {
+        if (event.target.name !== "image") {
+            saveInputs();
+        }
+    });
+
+    document.querySelectorAll(".tab-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+            setActiveTab(button.dataset.tab);
         });
+    });
+    setActiveTab("social");
+
+    if (resetButton) {
+        resetButton.addEventListener("click", resetState);
     }
 
-    // Ergebnisse/Fehler: Overlay ausblenden
-    function hideScanOverlayIfVisible() {
-        if (scanOverlayCtrl) { scanOverlayCtrl.hide(); scanOverlayCtrl = null; }
-    }
-    function showScanOverlayError(msg) {
-        if (scanOverlayCtrl) { scanOverlayCtrl.error(msg); scanOverlayCtrl = null; }
-    }
-    // MutationObserver auf Ergebnisse
-    const resultsCard = document.querySelector('.recon-card--results');
-    if (resultsCard) {
-        const observer = new MutationObserver(() => {
-            hideScanOverlayIfVisible();
-        });
-        observer.observe(resultsCard, { childList: true, subtree: true });
-    }
-    // Fehlerfall: globales Error-Event
-    window.addEventListener('error', () => showScanOverlayError('Suche fehlgeschlagen'));
-    window.addEventListener('unhandledrejection', () => showScanOverlayError('Suche fehlgeschlagen'));
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const selectedPlatforms = platformCheckboxes()
+            .filter((checkbox) => checkbox.checked)
+            .map((checkbox) => checkbox.parentElement?.innerText.trim() || checkbox.value);
+
+        overlayController = showScanOverlay(selectedPlatforms, Boolean(deepSearchToggle?.checked));
+
+        const formData = new FormData(form);
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: formData,
+                headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},
+                credentials: "same-origin",
+                signal: controller.signal,
+            });
+
+            const payload = await response.json();
+
+            if (!response.ok) {
+                const errors = payload.errors
+                    ? Object.values(payload.errors).join(" ")
+                    : payload.error || "Suche fehlgeschlagen.";
+                throw new Error(errors);
+            }
+
+            renderMessages(payload, messageBox);
+            renderReverseImageLinks(payload.reverse_image_links, reverseLinks);
+            renderProfiles(payload.profiles, resultsList);
+
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set("query", formData.get("username"));
+            selectedModifiers.forEach((modifier) => newUrl.searchParams.set(modifier, "true"));
+            if (selectedCategories.length > 0) {
+                newUrl.searchParams.set("categories", selectedCategories.join(","));
+            }
+            window.history.replaceState({}, "", newUrl.pathname + newUrl.search);
+
+            setActiveTab(findPreferredTab(payload.profiles));
+            saveInputs();
+            overlayController.hide();
+            overlayController = null;
+        } catch (error) {
+            if (messageBox) {
+                messageBox.innerHTML = "";
+                messageBox.appendChild(createMessage("pink", error.message || "Suche fehlgeschlagen"));
+            }
+            if (overlayController) {
+                overlayController.error(error.message || "Suche fehlgeschlagen");
+                overlayController = null;
+            }
+        } finally {
+            window.clearTimeout(timeoutId);
+        }
+    });
 });
+
+window.renderScreenshotResults = renderScreenshotResults;
+window.renderSimilarityResults = renderSimilarityResults;
+window.renderImageSimilarity = renderImageSimilarity;
+window.renderRiskScore = renderRiskScore;
+window.renderDeepSearchResponse = renderDeepSearchResponse;
