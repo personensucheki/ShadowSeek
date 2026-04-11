@@ -14,8 +14,15 @@
         {% block content %}{% endblock %}
     </main>
     {% include 'components/chatbot.html' %}
-    <button id="chat-toggle" style="position:fixed;bottom:30px;right:30px;width:68px;height:68px;border-radius:50%;background:#00f0ff;color:#0a0c14;border:none;font-size:28px;box-shadow:0 0 30px rgba(0,240,255,0.7);cursor:pointer;z-index:999;">
-        💬
+    <button
+        id="chat-toggle"
+        type="button"
+        aria-label="ShadowSeek Assistant oeffnen"
+        aria-controls="chatbot-widget"
+        aria-expanded="false"
+        style="position:fixed;bottom:30px;right:30px;width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,#ff00ff,#00ff9f);color:#050505;border:none;font-size:18px;font-weight:800;letter-spacing:0.08em;box-shadow:0 0 30px rgba(255,0,255,0.34),0 0 40px rgba(0,255,159,0.18);cursor:pointer;z-index:999;"
+    >
+        AI
     </button>
     {% include 'auth/login_modal.html' %}
     {% include 'auth/register_modal.html' %}

@@ -11,22 +11,58 @@ document.addEventListener("DOMContentLoaded", () => {
     const profileResults = document.getElementById("profile-results");
     const platformTiles = Array.from(document.querySelectorAll(".platform-tile"));
 
+    if (
+        !form ||
+        !submitButton ||
+        !formErrors ||
+        !resultsPanel ||
+        !resultsStatus ||
+        !resultsMeta ||
+        !variationList ||
+        !reverseImageCard ||
+        !reverseImageLinks ||
+        !profileResults
+    ) {
+        return;
+    }
+
     const syncPlatformTiles = () => {
         platformTiles.forEach((tile) => {
             const checkbox = tile.querySelector("input[type='checkbox']");
+            if (!checkbox) {
+                return;
+            }
+
             tile.classList.toggle("is-active", checkbox.checked);
         });
+    };
+
+    const setStatus = (message, state = "info") => {
+        resultsStatus.textContent = message;
+        resultsStatus.dataset.state = state;
     };
 
     const setLoadingState = (isLoading) => {
         submitButton.disabled = isLoading;
         submitButton.classList.toggle("is-loading", isLoading);
         submitButton.textContent = isLoading ? "Scan laeuft..." : "Scan starten";
-        resultsStatus.textContent = isLoading ? "Plattformen werden geprueft..." : "";
+        form.setAttribute("aria-busy", String(isLoading));
+
+        if (isLoading) {
+            setStatus("Plattformen werden geprueft...");
+        }
     };
 
     const clearErrors = () => {
         formErrors.textContent = "";
+    };
+
+    const clearResults = () => {
+        resultsMeta.innerHTML = "";
+        variationList.innerHTML = "";
+        reverseImageLinks.innerHTML = "";
+        profileResults.innerHTML = "";
+        reverseImageCard.hidden = true;
     };
 
     const renderErrors = (errors) => {
@@ -59,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
         variations.forEach((variation) => {
             const chip = document.createElement("span");
             chip.className = "variation-chip";
-            chip.textContent = `${variation.username} · ${variation.score}`;
+            chip.textContent = `${variation.username} | ${variation.score}`;
             chip.title = variation.reason;
             variationList.appendChild(chip);
         });
@@ -113,12 +149,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const title = document.createElement("h3");
             title.className = "profile-title";
-            title.textContent = `${profile.username} · ${profile.verification}`;
+            title.textContent = `${profile.username} | ${profile.verification}`;
 
             const subtitle = document.createElement("p");
             subtitle.className = "profile-subtitle";
             const statusLabel = profile.http_status === "SERP" ? "SERP" : `HTTP ${profile.http_status}`;
-            subtitle.textContent = `${profile.match_reason} · Kategorie ${profile.category} · ${statusLabel}`;
+            subtitle.textContent = `${profile.match_reason} | Kategorie ${profile.category} | ${statusLabel}`;
 
             const detail = document.createElement("p");
             detail.className = "profile-subtitle";
@@ -148,7 +184,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const renderResult = (payload) => {
         resultsPanel.hidden = false;
-        resultsStatus.textContent = `${payload.meta.profile_count} Treffer fuer ${payload.query.username} wurden geladen.`;
+        setStatus(
+            `${payload.meta.profile_count} Treffer fuer ${payload.query.username} wurden geladen.`,
+            "success",
+        );
         renderMeta(payload);
         renderVariations(payload.username_variations || []);
         renderReverseLinks(payload.reverse_image_links || {});
@@ -158,23 +197,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const submitSearch = async (event) => {
         event.preventDefault();
         clearErrors();
+        clearResults();
+        resultsPanel.hidden = false;
         setLoadingState(true);
 
         try {
-            const response = await fetch("/api/search", {
+            const response = await fetch(form.action || "/api/search", {
                 method: "POST",
                 body: new FormData(form),
             });
-            const payload = await response.json();
+            const payload = await response.json().catch(() => ({}));
 
             if (!response.ok) {
                 renderErrors(payload.errors || payload);
+                setStatus("Die Suche konnte nicht abgeschlossen werden.", "error");
                 return;
             }
 
             renderResult(payload);
+            resultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
         } catch (error) {
             renderErrors({ request: "Die Plattformpruefung ist fehlgeschlagen." });
+            setStatus("Die Plattformpruefung ist fehlgeschlagen.", "error");
         } finally {
             setLoadingState(false);
         }
@@ -189,6 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     form.addEventListener("submit", submitSearch);
     syncPlatformTiles();
+    clearResults();
 });
 
 function formatTimestamp(value) {

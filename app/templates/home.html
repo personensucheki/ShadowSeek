@@ -17,7 +17,14 @@
     </div>
 
     <div class="console-panel">
-        <form id="search-form" class="search-form" method="post" enctype="multipart/form-data" novalidate>
+        <form
+            id="search-form"
+            class="search-form"
+            method="post"
+            action="{{ url_for('search.api_search') }}"
+            enctype="multipart/form-data"
+            novalidate
+        >
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
             <div class="field-grid">

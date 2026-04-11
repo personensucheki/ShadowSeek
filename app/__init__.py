@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from flask import Flask, jsonify, request
@@ -6,15 +7,32 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from .extensions import csrf, db, migrate
 
 
+def _resolve_default_config():
+    from .config import DevConfig, ProdConfig
+
+    environment = (
+        os.environ.get("SHADOWSEEK_ENV")
+        or os.environ.get("FLASK_ENV")
+        or os.environ.get("APP_ENV")
+        or ""
+    ).strip().lower()
+
+    if environment in {"prod", "production"}:
+        return ProdConfig
+
+    if os.environ.get("RENDER") or os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+        return ProdConfig
+
+    return DevConfig
+
+
 def create_app(config_class=None):
     app = Flask(__name__, instance_relative_config=True)
 
     if config_class:
         app.config.from_object(config_class)
     else:
-        from .config import DevConfig
-
-        app.config.from_object(DevConfig)
+        app.config.from_object(_resolve_default_config())
 
     upload_directory = app.config.get("UPLOAD_DIRECTORY")
     if not upload_directory:

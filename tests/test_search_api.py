@@ -1,4 +1,6 @@
+import importlib
 import io
+import os
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -113,6 +115,13 @@ class SearchApiTestCase(unittest.TestCase):
         payload = response.get_json()
         self.assertIn("username", payload["errors"])
 
+    def test_home_page_renders_search_form(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'id="search-form"', response.data)
+        self.assertIn(b'action="/api/search"', response.data)
+
     @patch("app.services.search_service.discover_profiles", return_value=[])
     @patch("app.services.search_service.collect_serper_profiles")
     def test_search_api_prefers_serper_when_available(self, collect_serper_profiles, _discover_profiles):
@@ -208,6 +217,31 @@ class SearchApiTestCase(unittest.TestCase):
         payload = response.get_json()
         self.assertTrue(payload["meta"]["ai_reranking_applied"])
         self.assertEqual(payload["profiles"][0]["platform"], "Reddit")
+
+    def test_chatbot_endpoint_returns_safe_fallback(self):
+        response = self.client.post("/api/chatbot", json={"message": "status"})
+
+        self.assertEqual(response.status_code, 503)
+        payload = response.get_json()
+        self.assertIn("Assistant", payload["error"])
+
+    def test_create_app_uses_prod_config_on_render(self):
+        with patch.dict(
+            os.environ,
+            {
+                "RENDER_EXTERNAL_HOSTNAME": "shadowseek.onrender.com",
+                "SECRET_KEY": "prod-secret",
+            },
+            clear=False,
+        ):
+            import app.config as config_module
+
+            importlib.reload(config_module)
+            prod_app = create_app()
+
+        self.assertFalse(prod_app.config["DEBUG"])
+        self.assertTrue(prod_app.config["WTF_CSRF_ENABLED"])
+        self.assertEqual(prod_app.config["SECRET_KEY"], "prod-secret")
 
 
 if __name__ == "__main__":
