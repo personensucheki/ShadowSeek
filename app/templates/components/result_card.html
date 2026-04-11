@@ -1,6 +1,9 @@
 
 <div class="result-card">
-    <img src="{{ url_for('static', filename='img/platforms/' ~ (result.platform_slug or 'default') ~ '.png') if result.platform_slug else url_for('static', filename='img/default_avatar.png') }}" alt="Plattform-Icon" class="result-avatar">
+    <img src="{{ url_for('static', filename='img/platforms/' ~ (result.platform_slug or 'default') ~ '.png') if result.platform_slug else url_for('static', filename='img/default_avatar.png') }}"
+         alt="Plattform-Icon"
+         class="result-avatar"
+         title="{{ result.platform }}">
     <div class="result-info">
         <div class="result-platform">{{ result.platform }}</div>
         <div class="result-title">{{ result.username }}</div>

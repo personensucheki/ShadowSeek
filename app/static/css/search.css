@@ -632,6 +632,19 @@ body {
     box-shadow: 0 2px 12px rgba(0,0,0,0.12);
     padding: 18px 22px;
     gap: 18px;
+    opacity: 0;
+    transform: translateY(18px);
+    animation: result-fadein 0.7s cubic-bezier(.4,0,.2,1) forwards;
+    transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+}
+.result-card:hover {
+    box-shadow: 0 4px 24px var(--recon-green), 0 0 44px var(--recon-pink);
+    border-color: var(--recon-green);
+    transform: translateY(-2px) scale(1.02);
+}
+@keyframes result-fadein {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 .result-avatar {
     width: 64px;
@@ -640,6 +653,13 @@ body {
     object-fit: cover;
     background: #23272a;
     border: 2px solid var(--recon-pink);
+    box-shadow: 0 0 0 0 var(--recon-green);
+    transition: box-shadow 0.22s, border-color 0.22s, transform 0.22s;
+}
+.result-card:hover .result-avatar {
+    box-shadow: 0 0 18px var(--recon-green), 0 0 28px var(--recon-pink);
+    border-color: var(--recon-green);
+    transform: scale(1.08) rotate(-3deg);
 }
 .result-info {
     flex: 1;

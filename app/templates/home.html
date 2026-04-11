@@ -1,36 +1,15 @@
 {% extends "base.html" %}
 {% block title %}ShadowSeek – Geschützte Suche{% endblock %}
 {% block content %}
-<section class="search-landing">
-    <div class="search-landing-inner">
-        <h1 class="search-branding">ShadowSeek</h1>
-        <div class="search-claim">
-            <span class="claim-main">Hier wirst du geschützt.</span>
-            <span class="claim-sub">Präzise Suche in öffentlichen und freigegebenen Quellen.</span>
-        </div>
-        <form id="landing-search-form" class="landing-search-form" autocomplete="off">
-            <input
-                type="text"
-                name="query"
-                class="landing-search-input"
-                placeholder="Username oder Begriff eingeben..."
-                required
-                autofocus
-                maxlength="64"
-                aria-label="Suchbegriff"
-            >
-            <button type="submit" class="landing-search-btn">Suchen</button>
+<div class="google-home-bg">
+    <div class="google-home-center">
+        <div class="google-home-logo">ShadowSeek</div>
+        <form id="landing-search-form" class="google-home-search-form" method="GET" action="/search" autocomplete="off">
+            <input type="text" name="query" class="google-home-search-input" placeholder="Suche im Web oder nach Profilen..." autofocus required>
+            <button type="submit" class="google-home-search-btn">Suche</button>
         </form>
-        <div id="category-bar" class="category-bar"></div>
-            <div class="landing-chips" id="modifier-bar">
-                <button type="button" class="chip chip--green" data-mod="public_sources">Öffentliche Quellen</button>
-                <button type="button" class="chip chip--pink" data-mod="secure_mode">Sicherer Suchmodus</button>
-                <button type="button" class="chip chip--cyan" data-mod="ai_rerank">KI-gestützte Bewertung</button>
-                <button type="button" class="chip chip--gray" data-mod="deepsearch">DeepSearch bereit</button>
-                <button type="button" class="chip chip--blue" data-mod="precision_mode">Präzise Treffer</button>
-            </div>
     </div>
-</section>
+</div>
 {% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">{% endblock %}
 {% block extra_js %}<script src="{{ url_for('static', filename='js/landing.js') }}"></script>{% endblock %}

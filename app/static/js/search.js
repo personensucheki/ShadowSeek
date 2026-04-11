@@ -186,7 +186,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         // Mapping: Kategorie → Plattform-Slug oder Typ
         const TAB_CATEGORIES = {
-            social: ['instagram','tiktok','x','twitter','facebook','linkedin','snapchat'],
+            social: ['instagram','tiktok','x','twitter','facebook','linkedin','snapchat','clapper'],
+            dating: ['lovoo','badoo','knuddels'],
+            adult: ['stripchat','onlyfans','dirtyhobby'],
+            porn: ['xhamster','pornhub','xnxx'],
             web: ['web','website','domain'],
             forum: ['forum','board','reddit'],
             image: ['image','imgur','flickr','pic','photo'],
