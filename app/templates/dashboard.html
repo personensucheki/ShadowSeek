@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Einnahmen Dashboard{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:2em;">
+  <h1>Einnahmen Dashboard</h1>
+  <canvas id="einnahmenChart" height="120"></canvas>
+  <div id="top-gifter"></div>
+  <div id="einnahmen-table"></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch('/api/einnahmen/summary').then(r=>r.json()).then(data => {
+  // Einnahmen Chart
+  const ctx = document.getElementById('einnahmenChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Einnahmen (€)',
+        data: data.values,
+        backgroundColor: 'rgba(0,255,159,0.4)',
+        borderColor: 'rgba(0,255,159,1)',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+  // Top Gifter
+  let tg = '<h3>Top Gifter</h3><ul>';
+  data.top_gifter.forEach(u => tg += `<li>${u.name}: €${u.sum.toFixed(2)}</li>`);
+  tg += '</ul>';
+  document.getElementById('top-gifter').innerHTML = tg;
+  // Einnahmen Tabelle
+  let tbl = '<h3>Letzte Einnahmen</h3><table><tr><th>Zeit</th><th>User</th><th>Betrag (€)</th><th>Betrag (USD)</th><th>Typ</th><th>Details</th></tr>';
+  data.latest.forEach(e => tbl += `<tr><td>${e.zeitpunkt}</td><td>${e.quelle||''}</td><td>€${e.betrag.toFixed(2)}</td><td>${e.betrag_usd ? '$'+e.betrag_usd.toFixed(2) : '-'}</td><td>${e.typ}</td><td>${e.details||''}</td></tr>`);
+  tbl += '</table>';
+  document.getElementById('einnahmen-table').innerHTML = tbl;
+});
+</script>
+{% endblock %}

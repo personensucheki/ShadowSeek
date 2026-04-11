@@ -71,16 +71,23 @@ def create_app(config_class=None):
             return jsonify({"error": "Die hochgeladene Datei ist zu gross."}), 413
         return error, 413
 
+
     from .routes.admin import admin_bp
     from .routes.auth import auth_bp
     from .routes.chatbot import chatbot_bp
     from .routes.health import health_bp
     from .routes.search import search_bp
+    from .routes.dashboard import dashboard_bp
+    from .routes.export import export_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(search_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(chatbot_bp)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(export_bp)
+    from .routes.einnahmen_api import api_bp
+    app.register_blueprint(api_bp)
 
     return app
