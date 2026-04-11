@@ -6,7 +6,7 @@ db = SQLAlchemy()
 
 class PublicProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False)
+    username = db.Column(db.String(80), nullable=False, index=True)
     platform = db.Column(db.String(80), nullable=False)
     category = db.Column(db.String(32), nullable=False)  # z. B. "social", "dating", "adult", "porn"
     profile_url = db.Column(db.String(255), nullable=False)
@@ -23,7 +23,7 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

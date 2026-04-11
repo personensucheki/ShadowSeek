@@ -3,49 +3,25 @@
 {% block title %}ShadowSeek - Suche{% endblock %}
 
 {% block content %}
+
 <style>
-	.search-hero { 
-		background: linear-gradient(120deg, #23272a 60%, #181a1b 100%); 
-		border-radius: 18px; 
-		padding: 38px 24px 32px; 
-		margin: 40px auto; 
-		max-width: 800px; 
-		box-shadow: 0 6px 32px rgba(0,0,0,0.22); 
-	}
-	.search-fields { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
-	.search-fields input { 
-		background: #181a1b; 
-		color: #f1f1f1; 
-		border: none; 
-		border-radius: 10px; 
-		padding: 16px 18px; 
-		font-size: 1.05em; 
-		min-width: 180px; 
-		outline: none; 
-	}
-	.search-fields input:focus { box-shadow: 0 0 0 2px #8ab4f8; }
-	.search-btn { 
-		background: #8ab4f8; 
-		color: #181a1b; 
-		border: none; 
-		border-radius: 10px; 
-		padding: 16px 36px; 
-		font-size: 1.15em; 
-		font-weight: bold; 
-		cursor: pointer; 
-	}
-	.loading {
-		display: none;
-		text-align: center;
-		color: #00f0ff;
-		font-size: 1.2em;
-		margin-top: 30px;
-	}
+  .search-hero { background: linear-gradient(120deg, #23272a 60%, #181a1b 100%); border-radius: 18px; padding: 38px 24px 32px; margin: 40px auto; max-width: 800px; box-shadow: 0 6px 32px rgba(0,0,0,0.22); }
+  .search-fields { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+  .search-fields input { background: #181a1b; color: #f1f1f1; border: none; border-radius: 10px; padding: 16px 18px; font-size: 1.05em; min-width: 180px; outline: none; }
+  .search-fields input:focus { box-shadow: 0 0 0 2px #8ab4f8; }
+  .search-btn { background: #8ab4f8; color: #181a1b; border: none; border-radius: 10px; padding: 16px 36px; font-size: 1.15em; font-weight: bold; cursor: pointer; }
+  .loading { display: none; text-align: center; color: #00f0ff; font-size: 1.2em; margin-top: 30px; }
+  .results-section { margin: 40px auto; max-width: 900px; }
+  .profile-card { background: #23272a; border-radius: 14px; box-shadow: 0 2px 16px rgba(0,0,0,0.18); padding: 22px 28px; margin-bottom: 18px; display: flex; align-items: center; gap: 22px; }
+  .profile-card img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #00f0ff; }
+  .profile-info { flex: 1; }
+  .profile-info h3 { margin: 0 0 6px 0; color: #00f0ff; font-size: 1.2em; }
+  .profile-info p { margin: 0; color: #b0b8c1; font-size: 1em; }
+  .profile-link { color: #4d9fff; text-decoration: underline; font-size: 0.98em; }
 </style>
 
 <div class="search-hero">
-	<form method="POST" action="/search" id="search-form">
-		{{ csrf_token() }}
+	<form id="search-form" autocomplete="off">
 		<div class="search-fields">
 			<input type="text" name="username" placeholder="Username" required>
 			<input type="text" name="firstname" placeholder="Vorname">
@@ -56,16 +32,69 @@
 		<button type="submit" class="search-btn" id="search-button">Suchen</button>
 	</form>
 </div>
-
 <div id="loading" class="loading">
 	<div>🔍 ShadowSeek Agent wird initialisiert...</div>
 	<div style="margin-top:12px;">Durchsuche Social Media & Adult Plattformen...</div>
 </div>
-
+<div id="results" class="results-section"></div>
 <script>
-document.getElementById('search-form').addEventListener('submit', function() {
-	document.getElementById('loading').style.display = 'block';
-	document.getElementById('search-button').style.display = 'none';
+const form = document.getElementById('search-form');
+const loading = document.getElementById('loading');
+const button = document.getElementById('search-button');
+const resultsDiv = document.getElementById('results');
+
+form.addEventListener('submit', async function(e) {
+	e.preventDefault();
+	loading.style.display = 'block';
+	button.disabled = true;
+	resultsDiv.innerHTML = '';
+
+	const data = {
+		username: form.username.value,
+		firstname: form.firstname.value,
+		lastname: form.lastname.value,
+		city: form.city.value,
+		email: form.email.value
+	};
+
+	try {
+		const res = await fetch('/api/search', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ query: data })
+		});
+		const result = await res.json();
+		loading.style.display = 'none';
+		button.disabled = false;
+		if (result && result.categorized_results) {
+			renderResults(result.categorized_results);
+		} else {
+			resultsDiv.innerHTML = '<div style="color:#ff4d4d;">Keine Ergebnisse gefunden.</div>';
+		}
+	} catch (err) {
+		loading.style.display = 'none';
+		button.disabled = false;
+		resultsDiv.innerHTML = '<div style="color:#ff4d4d;">Fehler bei der Suche.</div>';
+	}
 });
+
+function renderResults(categorized) {
+	let html = '';
+	for (const [cat, profiles] of Object.entries(categorized)) {
+		html += `<h2 style="color:#00f0ff; margin-top:32px;">${cat.charAt(0).toUpperCase() + cat.slice(1)}</h2>`;
+		for (const p of profiles) {
+			html += `<div class="profile-card">
+				<img src="/static/img/default-profile.png" alt="Profilbild" loading="lazy">
+				<div class="profile-info">
+					<h3>${p.username} <span style="font-size:0.9em; color:#b0b8c1;">@${p.platform}</span></h3>
+					<p>Score: ${p.match_score} | Kategorie: ${p.category}</p>
+					<a class="profile-link" href="${p.profile_url}" target="_blank">Profil öffnen</a>
+				</div>
+			</div>`;
+		}
+	}
+	resultsDiv.innerHTML = html;
+}
+// Alle Profilbilder werden jetzt per loading="lazy" erst geladen, wenn sie im Viewport erscheinen (Performance-Optimierung).
 </script>
 {% endblock %}

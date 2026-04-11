@@ -1,6 +1,11 @@
+prometheus-flask-exporter
+sentry-sdk[flask]
 # Für Chatbot-API
 openai
 flask
 gunicorn
 flask_sqlalchemy
 requests
+Flask-Limiter
+psycopg2-binary
+mysqlclient

@@ -1,4 +1,13 @@
-from flask import Flask, render_template, request
+
+
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
+from flask_cors import CORS
+from flask_caching import Cache
+from flask_assets import Environment, Bundle
+from utils_token import generate_reset_token, verify_reset_token
 from flask_migrate import Migrate
 from flask_mail import Mail, Message
 from flask_wtf import CSRFProtect
@@ -8,8 +17,43 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 import os
 import requests
 from openai import OpenAI
+# --- Monitoring/Logging ---
+import logging
+if os.environ.get('SENTRY_DSN'):
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+    sentry_sdk.init(
+        dsn=os.environ['SENTRY_DSN'],
+        integrations=[FlaskIntegration()],
+        traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', 0.1)),
+        environment=os.environ.get('SENTRY_ENV', 'production'),
+    )
+    print('[INFO] Sentry Monitoring aktiviert.')
+try:
+    from prometheus_flask_exporter import PrometheusMetrics
+    PROMETHEUS_ENABLED = os.environ.get('PROMETHEUS_ENABLED', '1') == '1'
+except ImportError:
+    PROMETHEUS_ENABLED = False
 
+
+# --- CDN STATIC URL Support ---
+# Setze CDN_STATIC_URL in den Umgebungsvariablen, z.B. https://cdn.shadowseek.de/static
 app = Flask(__name__)
+app.config['CDN_STATIC_URL'] = os.environ.get('CDN_STATIC_URL')  # z.B. https://cdn.shadowseek.de/static
+
+# Prometheus Monitoring aktivieren (optional)
+if 'PROMETHEUS_ENABLED' in globals() and PROMETHEUS_ENABLED:
+    metrics = PrometheusMetrics(app)
+    print('[INFO] Prometheus /metrics Endpoint aktiviert.')
+
+# Jinja2-Helper: url_for_static_cdn
+def url_for_static_cdn(filename):
+    cdn_url = app.config.get('CDN_STATIC_URL')
+    if cdn_url:
+        return f"{cdn_url}/{filename}"
+    return url_for('static', filename=filename)
+app.jinja_env.globals['url_for_static_cdn'] = url_for_static_cdn
+
 app.config['DEBUG'] = True
 app.secret_key = os.environ.get('SECRET_KEY', 'devsecret')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///shadowseek.db')
@@ -20,9 +64,44 @@ app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@shadowseek.de')
+
 db.init_app(app)
 csrf = CSRFProtect(app)
 migrate = Migrate(app, db)
+
+
+
+# Flask-Talisman Setup (HTTPS erzwingen, Security-Header)
+Talisman(
+    app,
+    content_security_policy=None,
+    frame_options="DENY",
+    referrer_policy="strict-origin-when-cross-origin",
+    permissions_policy={
+        "geolocation": "()",
+        "camera": "()",
+        "microphone": "()"
+    }
+)
+
+# CORS nur für API-Routen erlauben
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+
+# Flask-Assets Setup (JS/CSS Minifying/Bundling)
+assets = Environment(app)
+js_bundle = Bundle('js/main.js', filters='jsmin', output='gen/main.min.js')
+css_bundle = Bundle('css/main.css', filters='cssmin', output='gen/main.min.css')
+assets.register('js_all', js_bundle)
+assets.register('css_all', css_bundle)
+js_bundle.build()
+css_bundle.build()
+
+# Flask-Caching Setup
+cache = Cache(app, config={"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 60})
+
+# Flask-Limiter Setup
+limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
 
 # Flask-Login Setup
 login_manager = LoginManager()
@@ -114,6 +193,7 @@ def shadowseek_search(query):
 # Chatbot-API-Route (direkt vor /search)
 
 @app.route('/api/chat', methods=['POST'])
+@limiter.limit("20 per minute")
 def chat():
     if not client:
         return {'reply': 'Chatbot ist aktuell deaktiviert (kein API-Key).'}, 503
@@ -139,6 +219,7 @@ def chat():
         return {'error': str(e)}, 500
 
 @app.route('/api/search', methods=['POST'])
+@cache.cached(timeout=60, query_string=True)
 def api_search():
     data = request.get_json()
     query = data.get('query', '')
@@ -204,10 +285,12 @@ def search():
 
 
 
+
 # --- Auth Routes for Modal Forms ---
 from flask import redirect, url_for, flash
 
 @app.route('/register', methods=['POST'])
+@limiter.limit("5 per minute")
 def register():
     username = request.form.get('username')
     email = request.form.get('email')
@@ -233,6 +316,7 @@ def register():
     return "Registrierung erfolgreich!"
 
 @app.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
     username = request.form.get('username')
     password = request.form.get('password')
@@ -249,20 +333,43 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
+
+# Passwort-Reset: Token generieren und E-Mail versenden
 @app.route('/forgot-password', methods=['POST'])
 def forgot_password():
     email = request.form.get('email')
     user = User.query.filter_by(email=email).first()
     if user:
-        # In echt: Token generieren und Link bauen
-        reset_link = f"https://shadowseek.de/reset-password/{user.id}-dummy-token"
+        token = generate_reset_token(user.id)
+        reset_link = url_for('reset_password', token=token, _external=True)
         try:
             msg = Message("ShadowSeek Passwort zurücksetzen", recipients=[email])
-            msg.body = f"Hallo {user.username},\n\nKlicke auf den folgenden Link, um dein Passwort zurückzusetzen (Demo-Link):\n{reset_link}\n\nFalls du das nicht warst, ignoriere diese Mail."
-            mail.send(msg)
+            msg.body = f"Hallo {user.username},\n\nKlicke auf den folgenden Link, um dein Passwort zurückzusetzen:\n{reset_link}\n\nFalls du das nicht warst, ignoriere diese Mail."
+            email.send(msg)
         except Exception as e:
             return f"Fehler beim Senden der E-Mail: {str(e)}", 500
     return "Wenn die E-Mail existiert, wurde ein Reset-Link gesendet."
+
+# Passwort-Reset-Formular anzeigen und verarbeiten
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    user_id = verify_reset_token(token)
+    if not user_id:
+        return "Ungültiger oder abgelaufener Link.", 400
+    user = User.query.get(user_id)
+    if not user:
+        return "Benutzer nicht gefunden.", 404
+    if request.method == 'POST':
+        password = request.form.get('password')
+        password2 = request.form.get('password2')
+        if not password or len(password) < 8:
+            return "Passwort muss mindestens 8 Zeichen lang sein", 400
+        if password != password2:
+            return "Passwörter stimmen nicht überein", 400
+        user.password_hash = generate_password_hash(password)
+        db.session.commit()
+        return "Passwort erfolgreich zurückgesetzt! Du kannst dich jetzt einloggen."
+    return render_template('reset_password.html', token=token)
 
 
 
@@ -354,4 +461,5 @@ def add_testdata():
     return f"{len(test_profiles)} Testprofile wurden erfolgreich eingefügt!"
 
 if __name__ == '__main__':
+    print("[WARN] Starte Flask Dev-Server. Für Produktion: 'gunicorn -c gunicorn.conf.py app:app'")
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
