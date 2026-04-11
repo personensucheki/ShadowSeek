@@ -3,7 +3,9 @@
     <div class="navbar-center">
         <a href="/">Home</a>
         <a href="/search">Suche</a>
-        <a href="/admin">Admin</a>
+        {% if g.current_user and g.current_user.role in ['admin', 'super_admin'] %}
+            <a href="/admin">Admin</a>
+        {% endif %}
     </div>
     <div class="navbar-right">
         {% if not session.get('user_id') %}
