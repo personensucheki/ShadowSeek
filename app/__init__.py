@@ -5,11 +5,6 @@ from .extensions import db, migrate
 
 
 def create_app(config_class=None):
-        # CSRF-Token für alle Templates bereitstellen
-        @app.context_processor
-        def inject_csrf_token():
-            from flask_wtf.csrf import generate_csrf
-            return dict(csrf_token=generate_csrf())
     app = Flask(__name__)
     if config_class:
         app.config.from_object(config_class)
@@ -17,14 +12,16 @@ def create_app(config_class=None):
         from .config import DevConfig
         app.config.from_object(DevConfig)
 
-
     db.init_app(app)
     migrate.init_app(app, db)
     from .extensions import csrf
     csrf.init_app(app)
 
-
-
+    # CSRF-Token für alle Templates bereitstellen
+    @app.context_processor
+    def inject_csrf_token():
+        from flask_wtf.csrf import generate_csrf
+        return dict(csrf_token=generate_csrf())
 
     # Blueprints registrieren
     from .routes.auth import auth_bp
