@@ -139,7 +139,7 @@ class SearchApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         # Die neue Startseite hat landing-search-form, nicht mehr search-form
         self.assertIn(b'id="landing-search-form"', response.data)
-        self.assertIn(b'action="/search"', response.data)
+        self.assertIn(b'action="/"', response.data)
 
     def test_search_page_renders_analysis_containers(self):
         response = self.client.get("/search")
