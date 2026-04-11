@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ShadowSeek{% endblock %}</title>
     
-    <!-- Hier kommt der AdSense Code rein -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6541606308707742"
-         crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6541606308707742" crossorigin="anonymous"></script>
     
-    {% assets "css_all" %}
-           <link rel="stylesheet" href="{{ url_for_static_cdn(ASSET_URL.split('/static/', 1)[-1]) }}">
-    {% endassets %}
+    <style>
+        body { margin:0; font-family:'Segoe UI',Arial,sans-serif; background:#181a1b; color:#f1f1f1; }
+        .navbar { display:flex; align-items:center; justify-content:space-between; background:#23272a; padding:0 2vw; height:60px; }
+        .navbar-logo { font-size:1.6em; font-weight:bold; color:#00f0ff; }
+        .navbar-center a { color:#f1f1f1; text-decoration:none; padding:8px 14px; }
+        .navbar-center a:hover { background:#31363b; border-radius:4px; }
+        .world-bg { position:fixed; top:0; left:0; width:100%; height:100%; background:url('/static/img/worldmap.svg') center/cover no-repeat; opacity:0.18; z-index:-1; pointer-events:none; }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -29,211 +32,12 @@
 
     <div class="world-bg"></div>
 
-    <main style="padding-top: 90px; min-height: 80vh;">
-        
+    <main style="padding-top:90px;">
+        {% block content %}{% endblock %}
     </main>
 
-    <!-- Chatbot auf allen Seiten -->
-    <button id="chat-toggle" style="position:fixed; bottom:30px; right:30px; width:68px; height:68px; border-radius:50%; background:#00f0ff; color:#0a0c14; border:none; font-size:28px; box-shadow:0 0 30px rgba(0,240,255,0.7); cursor:pointer; z-index:999;">💬</button>
+    <button id="chat-toggle" style="position:fixed;bottom:30px;right:30px;width:68px;height:68px;border-radius:50%;background:#00f0ff;color:#0a0c14;border:none;font-size:28px;box-shadow:0 0 30px rgba(0,240,255,0.7);cursor:pointer;z-index:999;">💬</button>
 
-        <script src="{{ url_for_static_cdn(ASSET_URL.split('/static/', 1)[-1]) }}"></script>
-        <div style="background:linear-gradient(90deg,#00f0ff,#4d9fff); color:#0a0c14; padding:16px 20px; font-weight:bold; font-size:1.1em; display:flex; align-items:center; justify-content:space-between;">
-            ShadowSeek Assistant
-            <span onclick="document.getElementById('chat-window').style.display='none'" style="cursor:pointer;font-size:22px;">×</span>
-        </div>
-        <div id="chat-messages" style="height:380px; overflow-y:auto; padding:20px; background:#16213a; color:#e0e0e0; line-height:1.5;"></div>
-        <div style="padding:14px; background:#1e2838; border-top:1px solid #334155; display:flex; gap:8px;">
-            <input id="chat-input" type="text" placeholder="Frag mich was..." style="flex:1; padding:14px 18px; border:none; border-radius:12px; background:#0f1829; color:white; font-size:1em;">
-            <button id="chat-send" style="padding:14px 26px; background:#00f0ff; color:#0a0c14; border:none; border-radius:12px; font-weight:bold;">Senden</button>
-        </div>
-    </div>
-
-    {% assets "js_all" %}
-        <script src="{{ ASSET_URL }}"></script>
-    {% endassets %}
-        }
-        .navbar-center a {
-            color: #f1f1f1;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 14px;
-            border-radius: 4px;
-        }
-        .navbar-center a:hover {
-            background: #31363b;
-        }
-        .world-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('/static/img/worldmap.svg') center/cover no-repeat;
-            opacity: 0.18;
-            z-index: -1;
-            pointer-events: none;
-        }
-    </style>
-</head>
-
-<!-- Modals: Login, Register, Forgot Password -->
-<div id="login-modal" class="modal-bg" style="display:none;">
-    <div class="modal">
-        <span class="modal-close" onclick="closeModal('login-modal')">×</span>
-        <h2>Anmelden</h2>
-        <form id="login-form" autocomplete="off">
-            <input type="text" id="login-username" name="username" placeholder="Benutzername" required autofocus>
-            <input type="password" id="login-password" name="password" placeholder="Passwort" required>
-            <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Login</button>
-            <div style="margin-top:10px;text-align:right;">
-                <a href="#" onclick="showForgotModal();return false;">Passwort vergessen?</a>
-            </div>
-        </form>
-    </div>
-</div>
-<div id="register-modal" class="modal-bg" style="display:none;">
-    <div class="modal">
-        <span class="modal-close" onclick="closeModal('register-modal')">×</span>
-        <h2>Registrieren</h2>
-        <form id="register-form" autocomplete="off">
-            <input type="text" id="reg-username" name="username" placeholder="Benutzername" required autofocus>
-            <input type="email" id="reg-email" name="email" placeholder="E-Mail" required>
-            <input type="password" id="reg-password" name="password" placeholder="Passwort" required>
-            <input type="password" id="reg-password2" name="password2" placeholder="Passwort wiederholen" required>
-            <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Registrieren</button>
-        </form>
-    </div>
-</div>
-<div id="forgot-modal" class="modal-bg" style="display:none;">
-    <div class="modal">
-        <span class="modal-close" onclick="closeModal('forgot-modal')">×</span>
-        <h2>Passwort zurücksetzen</h2>
-        <form id="forgot-form" autocomplete="off">
-            <input type="email" id="forgot-email" name="email" placeholder="E-Mail" required autofocus>
-            <button type="submit" class="btn-filled" style="width:100%;margin-top:10px;">Link senden</button>
-        </form>
-    </div>
-</div>
-<script>
-function showLoginModal() {
-    closeAllModals();
-    document.getElementById('login-modal').style.display = 'flex';
-}
-function showRegisterModal() {
-    closeAllModals();
-    document.getElementById('register-modal').style.display = 'flex';
-}
-function showForgotModal() {
-    closeAllModals();
-    document.getElementById('forgot-modal').style.display = 'flex';
-}
-function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
-}
-function closeAllModals() {
-    ['login-modal','register-modal','forgot-modal'].forEach(id => {
-        document.getElementById(id).style.display = 'none';
-    });
-}
-// Demo: Prevent default form submit, show alert
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('login-form').onsubmit = function(e){ e.preventDefault(); alert('Login-Demo!'); };
-    document.getElementById('register-form').onsubmit = function(e){ e.preventDefault(); alert('Registrieren-Demo!'); };
-    document.getElementById('forgot-form').onsubmit = function(e){ e.preventDefault(); alert('Reset-Link-Demo!'); };
-});
-</script>
-</body>
-        <div class="navbar-logo">ShadowSeek</div>
-        <div class="navbar-center">
-            <a href="/">Home</a>
-            <a href="/search">Suche</a>
-            <a href="#">Admin</a>
-        </div>
-        <div class="navbar-right">
-            <button onclick="showLoginModal()" style="background:transparent;border:1px solid #00f0ff;color:#00f0ff;">Anmelden</button>
-            <button onclick="showRegisterModal()" style="background:#00f0ff;color:#0a0c14;border:none;">Registrieren</button>
-        </div>
-    </nav>
-
-    <div class="world-bg"></div>
-
-    <!-- Chatbot - immer sichtbar auf allen Seiten -->
-    <button id="chat-toggle" style="position:fixed; bottom:30px; right:30px; width:68px; height:68px; border-radius:50%; background:#00f0ff; color:#0a0c14; border:none; font-size:28px; box-shadow:0 0 30px rgba(0,240,255,0.7); cursor:pointer; z-index:999;">💬</button>
-
-    <div id="chat-window" style="display:none; position:fixed; bottom:115px; right:30px; width:360px; height:520px; background:#1e2838; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,0.7); overflow:hidden; z-index:1000; border:1px solid #334155;">
-        <div style="background:linear-gradient(90deg,#00f0ff,#4d9fff); color:#0a0c14; padding:16px 20px; font-weight:bold; font-size:1.1em; display:flex; align-items:center; justify-content:space-between;">
-            ShadowSeek Assistant
-            <span onclick="document.getElementById('chat-window').style.display='none'" style="cursor:pointer;font-size:22px;">×</span>
-        </div>
-        <div id="chat-messages" style="height:380px; overflow-y:auto; padding:20px; background:#16213a; color:#e0e0e0; line-height:1.5;"></div>
-        <div style="padding:14px; background:#1e2838; border-top:1px solid #334155; display:flex; gap:8px;">
-            <input id="chat-input" type="text" placeholder="Frag mich was..." 
-                   style="flex:1; padding:14px 18px; border:none; border-radius:12px; background:#0f1829; color:white; font-size:1em;">
-            <button id="chat-send" style="padding:14px 26px; background:#00f0ff; color:#0a0c14; border:none; border-radius:12px; font-weight:bold;">Senden</button>
-        </div>
-    </div>
-
-    <script>
-    function showLoginModal() { alert("Login Modal kommt später"); }
-    function showRegisterModal() { alert("Register Modal kommt später"); }
-    </script>
-    <script>
-    // Chatbot Logic
-    const toggleBtn = document.getElementById('chat-toggle');
-    const chatWindow = document.getElementById('chat-window');
-    const messagesDiv = document.getElementById('chat-messages');
-    const input = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('chat-send');
-
-    function addMessage(text, isUser = false) {
-        const div = document.createElement('div');
-        div.style.marginBottom = '16px';
-        div.style.padding = '10px 14px';
-        div.style.borderRadius = '12px';
-        div.style.maxWidth = '85%';
-        div.style.background = isUser ? '#00f0ff' : '#2a3a52';
-        div.style.color = isUser ? '#0a0c14' : '#e0e0e0';
-        div.style.marginLeft = isUser ? 'auto' : '0';
-        div.textContent = text;
-        messagesDiv.appendChild(div);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    toggleBtn.addEventListener('click', () => {
-        chatWindow.style.display = chatWindow.style.display === 'block' ? 'none' : 'block';
-    });
-
-    sendBtn.addEventListener('click', async () => {
-        const text = input.value.trim();
-        if (!text) return;
-        addMessage(text, true);
-        input.value = '';
-
-        const loading = document.createElement('div');
-        loading.textContent = 'denkt...';
-        loading.style.color = '#666';
-        loading.style.fontStyle = 'italic';
-        messagesDiv.appendChild(loading);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-        try {
-            const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message: text })
-            });
-            const data = await res.json();
-            loading.remove();
-            if (data.reply) addMessage(data.reply);
-        } catch (e) {
-            loading.remove();
-            addMessage('Sorry, bin gerade offline.', false);
-        }
-    });
-
-    input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendBtn.click();
-    });
-    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
