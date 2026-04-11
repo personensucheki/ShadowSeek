@@ -1,6 +1,4 @@
 from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for
-from flask_login import login_required, current_user
-from werkzeug.security import generate_password_hash
 from app.models.user import User
 from app import db
 import re
