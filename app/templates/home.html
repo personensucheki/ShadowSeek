@@ -7,113 +7,40 @@
         <h1 class="hero-logo">ShadowSeek</h1>
         <p class="hero-sub">
             Username-basierte Profilsuche mit direkten Reverse-Image-Links und einer fokussierten,
-            live-faehigen JSON-Pipeline fuer den Browser.
-        </p>
-        <div class="hero-tags">
-            <span>Black Ops UI</span>
-            <span>Neon Signal Layers</span>
-            <span>Live Platform Checks</span>
-        </div>
-    </div>
-
-    <div class="console-panel">
-        <form
-            id="search-form"
-            class="search-form"
-            method="post"
-            action="{{ url_for('search.api_search') }}"
-            enctype="multipart/form-data"
-            novalidate
-        >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-
-            <div class="field-grid">
-                <label class="field">
-                    <span>Username</span>
-                    <input type="text" name="username" placeholder="Pflichtfeld" required autofocus>
-                </label>
-                <label class="field">
-                    <span>Echtname</span>
-                    <input type="text" name="real_name" placeholder="Optional">
-                </label>
-                <label class="field">
-                    <span>Clanname</span>
-                    <input type="text" name="clan_name" placeholder="Optional">
-                </label>
-                <label class="field">
-                    <span>Alter</span>
+            {% extends "base.html" %}
+            {% block title %}ShadowSeek – Geschützte Suche{% endblock %}
+            {% block content %}
+            <section class="search-landing">
+                <div class="search-landing-inner">
+                    <h1 class="search-branding">ShadowSeek</h1>
+                    <div class="search-claim">
+                        <span class="claim-main">Hier wirst du geschützt.</span>
+                        <span class="claim-sub">Präzise Suche in öffentlichen und freigegebenen Quellen.</span>
+                    </div>
+                    <form id="landing-search-form" class="landing-search-form" autocomplete="off">
+                        <input
+                            type="text"
+                            name="query"
+                            class="landing-search-input"
+                            placeholder="Username oder Begriff eingeben..."
+                            required
+                            autofocus
+                            maxlength="64"
+                            aria-label="Suchbegriff"
+                        >
+                        <button type="submit" class="landing-search-btn">Suchen</button>
+                    </form>
+                    <div id="category-bar" class="category-bar"></div>
+                    <div class="landing-chips">
+                        <span class="chip chip--green">Öffentliche Quellen</span>
+                        <span class="chip chip--pink">Geschützte Suche</span>
+                        <span class="chip chip--cyan">KI-gestützte Bewertung</span>
+                        <span class="chip chip--gray">DeepSearch bereit</span>
+                        <span class="chip chip--blue">Präzise Treffer</span>
+                    </div>
+                </div>
+            </section>
+            {% endblock %}
+            {% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">{% endblock %}
+            {% block extra_js %}<script src="{{ url_for('static', filename='js/landing.js') }}"></script>{% endblock %}
                     <input type="number" name="age" min="1" max="120" placeholder="Optional">
-                </label>
-                <label class="field">
-                    <span>Postleitzahl</span>
-                    <input type="text" name="postal_code" maxlength="10" placeholder="Optional">
-                </label>
-                <label class="field">
-                    <span>Bild-Upload</span>
-                    <input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
-                </label>
-            </div>
-
-            <div class="platform-section">
-                <div class="section-heading">
-                    <h2>Plattformen</h2>
-                    <p>Standardmaessig sind alle Kernziele aktiv.</p>
-                </div>
-                <div class="platform-grid">
-                    {% for platform in platforms %}
-                    <label class="platform-tile">
-                        <input type="checkbox" name="platforms" value="{{ platform.slug }}" checked>
-                        <span>{{ platform.name }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="actions-row">
-                <label class="toggle">
-                    <input type="checkbox" name="deep_search">
-                    <span>DeepSearch + KI-Reranking aktivieren</span>
-                </label>
-                <button id="search-submit" type="submit">Scan starten</button>
-            </div>
-        </form>
-
-        <div id="form-errors" class="form-errors" aria-live="polite"></div>
-    </div>
-</section>
-
-<section id="results-panel" class="results-panel" hidden>
-    <div class="results-head">
-        <div>
-            <p class="results-kicker">Response Surface</p>
-            <h2>Treffer und Reverse Search</h2>
-        </div>
-        <div id="results-meta" class="results-meta"></div>
-    </div>
-
-    <div id="results-status" class="results-status" aria-live="polite"></div>
-
-    <div class="results-columns">
-        <div class="results-column">
-            <div class="column-card">
-                <h3>Generierte Variationen</h3>
-                <div id="variation-list" class="variation-list"></div>
-            </div>
-
-            <div id="reverse-image-card" class="column-card" hidden>
-                <h3>Reverse Image Search</h3>
-                <div id="reverse-image-links" class="reverse-image-links"></div>
-            </div>
-        </div>
-
-        <div class="results-column results-column-wide">
-            <div class="column-card">
-                <h3>Gefundene Profile</h3>
-                <div id="profile-results" class="profile-results"></div>
-            </div>
-        </div>
-    </div>
-</section>
-{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">{% endblock %}
-{% block extra_js %}<script src="{{ url_for('static', filename='js/home.js') }}"></script>{% endblock %}
