@@ -108,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderLinkedCreator(row, fallback) {
-        const label = escapeHtml(fallback || row.quelle || "-");
+        const label = escapeHtml(fallback || row.display_name || row.username || "-");
         if (!row.profile_url) {
             return label;
         }
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderConfidence(row) {
-        const confidence = String(row.confidence || row.typ || "-").toUpperCase();
+        const confidence = String(row.confidence ?? "-").toUpperCase();
         return escapeHtml(confidence);
     }
 
@@ -153,21 +153,21 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderRevenueQueryRows(rows) {
         setTableHeaders(queryBody, ["Zeit", "Creator", "Typ", "Betrag", "Details"]);
         renderTableRows(queryBody, rows, [
-            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt) },
-            { key: "quelle", render: (row) => escapeHtml(row.quelle || "-") },
-            { key: "typ", render: (row) => escapeHtml(row.typ || "-") },
-            { key: "betrag", render: (row) => formatEur(row.betrag), className: "pulse-table-amount" },
-            { key: "details", render: (row) => escapeHtml(row.details || "-") },
+            { key: "captured_at", render: (row) => escapeHtml(row.captured_at || "-") },
+            { key: "username", render: (row) => escapeHtml(row.display_name || row.username || "-") },
+            { key: "source", render: (row) => escapeHtml(row.source || "-") },
+            { key: "estimated_revenue", render: (row) => formatEur(row.estimated_revenue), className: "pulse-table-amount" },
+            { key: "platform", render: (row) => escapeHtml(row.platform || "-") },
         ]);
     }
 
     function renderRevenueLiveRows(rows) {
         setTableHeaders(liveBody, ["Zeit", "Creator", "Typ", "Betrag"]);
         renderTableRows(liveBody, rows, [
-            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt) },
-            { key: "quelle", render: (row) => escapeHtml(row.quelle || "-") },
-            { key: "typ", render: (row) => escapeHtml(row.typ || "-") },
-            { key: "betrag", render: (row) => formatEur(row.betrag), className: "pulse-table-amount" },
+            { key: "captured_at", render: (row) => escapeHtml(row.captured_at || "-") },
+            { key: "username", render: (row) => escapeHtml(row.display_name || row.username || "-") },
+            { key: "source", render: (row) => escapeHtml(row.source || "-") },
+            { key: "estimated_revenue", render: (row) => formatEur(row.estimated_revenue), className: "pulse-table-amount" },
         ]);
     }
 
@@ -275,11 +275,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderLatest(rows) {
         renderTableRows(latestBody, rows, [
-            { key: "zeitpunkt", render: (row) => escapeHtml(row.zeitpunkt) },
+            { key: "captured_at", render: (row) => escapeHtml(row.captured_at || "-") },
             { key: "platform", render: (row) => escapeHtml(row.platform || "-") },
-            { key: "quelle", render: (row) => escapeHtml(row.quelle || "-") },
-            { key: "betrag", render: (row) => formatEur(row.betrag), className: "pulse-table-amount" },
-            { key: "details", render: (row) => escapeHtml(row.details || "-") },
+            { key: "username", render: (row) => escapeHtml(row.display_name || row.username || "-") },
+            { key: "estimated_revenue", render: (row) => formatEur(row.estimated_revenue), className: "pulse-table-amount" },
+            { key: "source", render: (row) => escapeHtml(row.source || "-") },
         ]);
     }
 

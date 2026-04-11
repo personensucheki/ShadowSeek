@@ -13,6 +13,7 @@ from app.models.user import User
 from app import create_app
 from sqlalchemy.exc import SQLAlchemyError
 from smtplib import SMTP
+from app.services.revenue_events import event_from_legacy_row
 
 SCRAPER_URL = os.environ.get("SCRAPER_URL", "https://example.com/einnahmen")
 SCRAPER_INTERVAL = int(os.environ.get("SCRAPER_INTERVAL", 86400))  # 24h
@@ -91,13 +92,42 @@ def scrape_and_store():
                         "zeitpunkt": zeitpunkt
                     })
             # In DB speichern & Telegram-Benachrichtigung bei großen Einnahmen
+            inserted_count = 0
+            skipped_count = 0
             for eintrag in einnahmen:
-                db.session.add(EinnahmeInfo(**eintrag))
-                if eintrag["betrag"] >= 10:
-                    msg = f"💸 Neue große Einnahme: {eintrag['betrag']:.2f} EUR von {eintrag['quelle']} ({eintrag['typ']}) am {eintrag['zeitpunkt'].strftime('%d.%m.%Y %H:%M')}\nDetails: {eintrag['details'] or '-'}"
+                normalized = event_from_legacy_row(eintrag)
+                existing = EinnahmeInfo.query.filter_by(
+                    platform=normalized["platform"],
+                    username=normalized["username"],
+                    captured_at=normalized["captured_at"],
+                    source=normalized["source"],
+                ).first()
+                if existing:
+                    skipped_count += 1
+                    continue
+                db.session.add(
+                    EinnahmeInfo(
+                        **eintrag,
+                        platform=normalized["platform"],
+                        username=normalized["username"],
+                        display_name=normalized["display_name"],
+                        estimated_revenue=normalized["estimated_revenue"],
+                        currency=normalized["currency"],
+                        captured_at=normalized["captured_at"],
+                        source=normalized["source"],
+                        confidence=normalized["confidence"],
+                    )
+                )
+                inserted_count += 1
+                if normalized["estimated_revenue"] >= 10:
+                    msg = f"💸 Neue große Einnahme: {normalized['estimated_revenue']:.2f} EUR von {normalized['username']} ({eintrag['typ']}) am {normalized['captured_at'].strftime('%d.%m.%Y %H:%M')}\nDetails: {eintrag['details'] or '-'}"
                     send_telegram(msg)
             db.session.commit()
-            logging.info(f"{len(einnahmen)} Einnahmen gespeichert (TikTok, Twitch, YouTube).")
+            logging.info(
+                "%s Einnahmen gespeichert, %s Duplikate übersprungen (TikTok, Twitch, YouTube).",
+                inserted_count,
+                skipped_count,
+            )
         except Exception as e:
             logging.error(f"Scraping-Fehler: {e}")
             send_admin_notification("Scraping-Fehler", str(e))

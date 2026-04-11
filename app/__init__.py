@@ -50,6 +50,13 @@ def create_app(config_class=None):
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
+    @app.after_request
+    def add_api_cors_headers(response):
+        if request.path.startswith("/api/"):
+            response.headers.setdefault("Access-Control-Allow-Origin", "*")
+            response.headers.setdefault("Access-Control-Allow-Headers", "Content-Type, Authorization, X-CSRFToken")
+            response.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+        return response
 
     # Admin-Feedback-Blueprint registrieren
     from .routes.admin_feedback import admin_feedback_bp
