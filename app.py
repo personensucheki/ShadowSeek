@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request
+from flask_mail import Mail, Message
 from flask_wtf import CSRFProtect
 from models import db, PublicProfile, User
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -10,6 +11,14 @@ from openai import OpenAI
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.secret_key = os.environ.get('SECRET_KEY', 'devsecret')
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'localhost')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 25))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'false').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@shadowseek.de')
+mail = Mail(app)
 csrf = CSRFProtect(app)
 
 # Flask-Login Setup
@@ -240,7 +249,16 @@ def logout():
 @app.route('/forgot-password', methods=['POST'])
 def forgot_password():
     email = request.form.get('email')
-    # Hier später echte E-Mail-Funktion einbauen
+    user = User.query.filter_by(email=email).first()
+    if user:
+        # In echt: Token generieren und Link bauen
+        reset_link = f"https://shadowseek.de/reset-password/{user.id}-dummy-token"
+        try:
+            msg = Message("ShadowSeek Passwort zurücksetzen", recipients=[email])
+            msg.body = f"Hallo {user.username},\n\nKlicke auf den folgenden Link, um dein Passwort zurückzusetzen (Demo-Link):\n{reset_link}\n\nFalls du das nicht warst, ignoriere diese Mail."
+            mail.send(msg)
+        except Exception as e:
+            return f"Fehler beim Senden der E-Mail: {str(e)}", 500
     return "Wenn die E-Mail existiert, wurde ein Reset-Link gesendet."
 
 
