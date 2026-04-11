@@ -89,5 +89,9 @@ def create_app(config_class=None):
     app.register_blueprint(export_bp)
     from .routes.einnahmen_api import api_bp
     app.register_blueprint(api_bp)
+    from .routes.live_api import live_api_bp
+    app.register_blueprint(live_api_bp)
+    from .routes.query_api import query_api_bp
+    app.register_blueprint(query_api_bp)
 
     return app

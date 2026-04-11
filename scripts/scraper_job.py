@@ -38,12 +38,11 @@ def scrape_and_store():
             resp = requests.get(SCRAPER_URL, timeout=20)
             resp.raise_for_status()
             soup = BeautifulSoup(resp.text, "html.parser")
-            # TikTok Live Einnahmen extrahieren (z.B. wie Tikleap)
             einnahmen = []
+            # TikTok
             for row in soup.select("table.tiktok-live tr")[1:]:
                 cols = row.find_all("td")
                 if len(cols) >= 4:
-                    # Annahme: [Zeit, User, Einnahme, Typ, Details]
                     zeitpunkt = datetime.strptime(cols[0].text.strip(), "%d.%m.%Y %H:%M")
                     quelle = cols[1].text.strip()
                     betrag = float(cols[2].text.replace("€", "").replace(",", ".").strip())
@@ -52,7 +51,41 @@ def scrape_and_store():
                     einnahmen.append({
                         "betrag": betrag,
                         "waehrung": "EUR",
-                        "typ": typ,
+                        "typ": f"tiktok_{typ}",
+                        "quelle": quelle,
+                        "details": details,
+                        "zeitpunkt": zeitpunkt
+                    })
+            # Twitch
+            for row in soup.select("table.twitch-live tr")[1:]:
+                cols = row.find_all("td")
+                if len(cols) >= 4:
+                    zeitpunkt = datetime.strptime(cols[0].text.strip(), "%d.%m.%Y %H:%M")
+                    quelle = cols[1].text.strip()
+                    betrag = float(cols[2].text.replace("€", "").replace(",", ".").strip())
+                    typ = cols[3].text.strip().lower()
+                    details = cols[4].text.strip() if len(cols) > 4 else None
+                    einnahmen.append({
+                        "betrag": betrag,
+                        "waehrung": "EUR",
+                        "typ": f"twitch_{typ}",
+                        "quelle": quelle,
+                        "details": details,
+                        "zeitpunkt": zeitpunkt
+                    })
+            # YouTube
+            for row in soup.select("table.youtube-live tr")[1:]:
+                cols = row.find_all("td")
+                if len(cols) >= 4:
+                    zeitpunkt = datetime.strptime(cols[0].text.strip(), "%d.%m.%Y %H:%M")
+                    quelle = cols[1].text.strip()
+                    betrag = float(cols[2].text.replace("€", "").replace(",", ".").strip())
+                    typ = cols[3].text.strip().lower()
+                    details = cols[4].text.strip() if len(cols) > 4 else None
+                    einnahmen.append({
+                        "betrag": betrag,
+                        "waehrung": "EUR",
+                        "typ": f"youtube_{typ}",
                         "quelle": quelle,
                         "details": details,
                         "zeitpunkt": zeitpunkt
@@ -60,11 +93,11 @@ def scrape_and_store():
             # In DB speichern & Telegram-Benachrichtigung bei großen Einnahmen
             for eintrag in einnahmen:
                 db.session.add(EinnahmeInfo(**eintrag))
-                if eintrag["betrag"] >= 10:  # Schwelle für große Einnahme
+                if eintrag["betrag"] >= 10:
                     msg = f"💸 Neue große Einnahme: {eintrag['betrag']:.2f} EUR von {eintrag['quelle']} ({eintrag['typ']}) am {eintrag['zeitpunkt'].strftime('%d.%m.%Y %H:%M')}\nDetails: {eintrag['details'] or '-'}"
                     send_telegram(msg)
             db.session.commit()
-            logging.info(f"{len(einnahmen)} TikTok-Live Einnahmen gespeichert.")
+            logging.info(f"{len(einnahmen)} Einnahmen gespeichert (TikTok, Twitch, YouTube).")
         except Exception as e:
             logging.error(f"Scraping-Fehler: {e}")
             send_admin_notification("Scraping-Fehler", str(e))
