@@ -6,7 +6,7 @@ from openai import OpenAI
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'devsecret')
-app.config = os.environ.get('DATABASE_URL', 'sqlite:///shadowseek.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///shadowseek.db')
 db.init_app(app)
 
 api_key = os.environ.get('OPENAI_API_KEY')
