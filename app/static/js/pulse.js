@@ -480,11 +480,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Stabiles Auto-Refresh für Summary (alle 30s, nur einmalig)
-    let summaryInterval = null;
+
+    // Stabiles Auto-Refresh für Summary (alle 45s, nur einmalig)
+    let summaryRefreshTimer = null;
     function startSummaryRefresh() {
-        if (summaryInterval) return;
-        summaryInterval = setInterval(loadSummary, 30000);
+        if (summaryRefreshTimer) return;
+        summaryRefreshTimer = window.setInterval(() => {
+            void loadSummary();
+        }, 45000);
     }
 
     Promise.all([loadSummary(), loadLive("tiktok")]).then(() => {

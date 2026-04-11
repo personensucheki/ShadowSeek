@@ -1,3 +1,79 @@
+/* --- Compact Revenue Timeline Card & Side Stack --- */
+
+/* Kompakte Timeline Card ohne zusätzliches Padding */
+.pulse-card--timeline,
+.pulse-panel--timeline,
+.revenue-timeline-card {
+    display: flex;
+    flex-direction: column;
+    height: 390px;
+    min-height: 390px;
+    max-height: 390px;
+    overflow: hidden;
+    padding: 0;
+}
+}
+
+
+.pulse-chart-wrap,
+.pulse-timeline-chart-wrap,
+.revenue-chart-wrap {
+    position: relative;
+    height: 260px;
+    min-height: 260px;
+    max-height: 260px;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+
+.pulse-chart-wrap canvas,
+.pulse-timeline-chart-wrap canvas,
+.revenue-chart-wrap canvas {
+    width: 100% !important;
+    height: 260px !important;
+    display: block;
+}
+
+
+/* Kompakte Side-Stack Card ohne zusätzliches Padding */
+.pulse-side-stack,
+.pulse-side-panel {
+    display: flex;
+    flex-direction: column;
+    height: 390px;
+    min-height: 390px;
+    max-height: 390px;
+    overflow: hidden;
+    padding: 0;
+}
+}
+
+
+@media (max-width: 880px) {
+    .pulse-card--timeline,
+    .pulse-panel--timeline,
+    .revenue-timeline-card,
+    .pulse-side-stack,
+    .pulse-side-panel {
+        height: auto;
+        min-height: 120px;
+        max-height: none;
+    }
+    .pulse-chart-wrap,
+    .pulse-timeline-chart-wrap,
+    .revenue-chart-wrap {
+        height: 120px;
+        min-height: 80px;
+        max-height: 120px;
+    }
+    .pulse-chart-wrap canvas,
+    .pulse-timeline-chart-wrap canvas,
+    .revenue-chart-wrap canvas {
+        height: 120px !important;
+    }
+}
+:root {
 :root {
     --pulse-bg: #06060a;
     --pulse-surface: rgba(16, 16, 22, 0.92);
@@ -9,6 +85,15 @@
     --pulse-cyan: #00f0ff;
     --pulse-text: #f6f7fb;
     --pulse-muted: #98a2b3;
+}
+
+/* Grid-Alignments für kompakte Cards */
+.pulse-grid,
+.pulse-grid--top,
+.pulse-grid--middle,
+.pulse-grid--bottom {
+    align-items: start;
+}
 }
 
 body {

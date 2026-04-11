@@ -95,17 +95,20 @@
     </section>
 
     <section class="pulse-grid pulse-grid--top">
-        <article class="pulse-panel pulse-panel--chart">
+
+        <article class="pulse-panel pulse-card--timeline">
             <div class="pulse-panel-head">
                 <div>
                     <h2>Revenue Timeline</h2>
                     <p>14-Tage-Ansicht aus der Summary-API</p>
                 </div>
             </div>
-            <canvas id="pulse-chart" height="120"></canvas>
+            <div class="pulse-chart-wrap">
+                <canvas id="pulse-chart" height="120"></canvas>
+            </div>
         </article>
 
-        <article class="pulse-panel pulse-panel--leaders">
+        <article class="pulse-panel pulse-panel--leaders pulse-side-stack">
             <div class="pulse-panel-head">
                 <div>
                     <h2>Top Creator Flow</h2>
