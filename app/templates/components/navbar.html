@@ -1,0 +1,17 @@
+<nav class="navbar">
+    <div class="navbar-logo">ShadowSeek</div>
+    <div class="navbar-center">
+        <a href="/">Home</a>
+        <a href="/search">Suche</a>
+        <a href="/admin">Admin</a>
+    </div>
+    <div class="navbar-right">
+        {% if not session.get('user_id') %}
+            <button id="login-btn">Anmelden</button>
+            <button id="register-btn">Registrieren</button>
+        {% else %}
+            <a href="/profile">Profil</a>
+            <a href="/auth/logout">Logout</a>
+        {% endif %}
+    </div>
+</nav>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Suche – ShadowSeek{% endblock %}
+{% block content %}
+<div class="search-page">
+    <form id="search-form" method="GET" action="/search">
+        <input type="text" name="query" value="{{ request.args.get('query', '') }}" placeholder="Suche..." required>
+        <button type="submit">Suchen</button>
+        <div class="search-filters">
+            {% include 'components/search_filters.html' %}
+        </div>
+    </form>
+    <div id="search-results">
+        {% if results %}
+            <div class="results-list">
+                {% for result in results %}
+                    {% include 'components/result_card.html' %}
+                {% endfor %}
+            </div>
+            {% include 'components/pagination.html' %}
+        {% else %}
+            <div class="empty-state">Keine Ergebnisse gefunden. Bitte verfeinere deine Suche.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+{% endblock %}

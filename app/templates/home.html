@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}ShadowSeek{% endblock %}
+{% block content %}
+<div class="hero">
+    <h1 class="hero-logo">ShadowSeek</h1>
+    <p class="hero-sub">Privat. Sicher. Ohne Tracking.</p>
+    <form id="search-form" method="GET" action="/search">
+        <input type="text" name="query" placeholder="Wonach suchst du?" required autofocus>
+        <button type="submit">Suchen</button>
+    </form>
+    <div class="category-buttons">
+        <button class="category-btn" data-category="social">Social Media</button>
+        <button class="category-btn" data-category="web">Webseiten</button>
+        <button class="category-btn" data-category="images">Bilder</button>
+        <button class="category-btn" data-category="forums">Foren</button>
+        <button class="category-btn" data-category="videos">Videos</button>
+        <button class="category-btn" data-category="news">News</button>
+    </div>
+</div>
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/home.js') }}"></script>{% endblock %}

@@ -1,11 +1,25 @@
-from flask import Flask, render_template, request
-import os
-from models import db
 
+from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
+import os, re
+from models import db, User
+from werkzeug.security import generate_password_hash
+
+# Flask-App-Instanz ganz oben definieren
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'devsecret')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///shadowseek.db')
 db.init_app(app)
+
+# API-Route erst nach app-Definition
+@app.route('/api/chatbot', methods=['POST'])
+def api_chatbot():
+    data = request.get_json() or request.form
+    user_message = data.get('message', '').strip()
+    if not user_message:
+        return jsonify({'error': 'Keine Nachricht erhalten.'}), 400
+    # Demo-Response
+    bot_reply = f"Demo: Du hast gesagt: {user_message}"
+    return jsonify({'reply': bot_reply})
 
 @app.route('/')
 def home():
@@ -13,12 +27,38 @@ def home():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    username = request.form.get('username', '').strip()
-    email = request.form.get('email', '').strip()
-    password = request.form.get('password', '').strip()
-    if not username or not email or not password:
-        return 'Alle Felder erforderlich!', 400
-    return 'Registrierung erfolgreich!'
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        # Validierung
+        if not username or not email or not password:
+            return 'Alle Felder erforderlich!', 400
+        if not re.match(r"^[\w.-]{3,32}$", username):
+            return 'Ungültiger Benutzername (3-32 Zeichen, Buchstaben/Zahlen/._- erlaubt)', 400
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$", email):
+            return 'Ungültige E-Mail-Adresse!', 400
+        if len(password) < 8 or not re.search(r"[A-Za-z]", password) or not re.search(r"\d", password):
+            return 'Passwort zu schwach (mind. 8 Zeichen, Buchstaben & Zahl)', 400
+        # Existenz prüfen
+        if User.query.filter_by(username=username).first():
+            return 'Benutzername bereits vergeben!', 400
+        if User.query.filter_by(email=email).first():
+            return 'E-Mail bereits registriert!', 400
+        # Passwort hashen
+        pw_hash = generate_password_hash(password)
+        user = User(username=username, email=email, password_hash=pw_hash)
+        db.session.add(user)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return 'Fehler beim Speichern. Bitte versuche es erneut.', 500
+        # Session-Start
+        session['user_id'] = user.id
+        session['username'] = user.username
+        return redirect(url_for('home'))
+    return render_template('home.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

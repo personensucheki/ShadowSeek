@@ -1,0 +1,14 @@
+<div id="register-modal" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <button class="modal-close" aria-label="Schließen">×</button>
+    <h2>Registrieren</h2>
+    <form id="register-form" method="POST" action="/auth/register">
+      <input type="text" name="username" placeholder="Benutzername" required>
+      <input type="email" name="email" placeholder="E-Mail" required>
+      <input type="password" name="password" placeholder="Passwort" required>
+      <input type="password" name="password2" placeholder="Passwort wiederholen" required>
+      <button type="submit">Registrieren</button>
+    </form>
+    <div class="modal-error" id="register-error"></div>
+  </div>
+</div>

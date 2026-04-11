@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShadowSeek{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% include 'components/navbar.html' %}
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    {% include 'components/chatbot.html' %}
+    <button id="chat-toggle" style="position:fixed;bottom:30px;right:30px;width:68px;height:68px;border-radius:50%;background:#00f0ff;color:#0a0c14;border:none;font-size:28px;box-shadow:0 0 30px rgba(0,240,255,0.7);cursor:pointer;z-index:999;">
+        💬
+    </button>
+    {% include 'auth/login_modal.html' %}
+    {% include 'auth/register_modal.html' %}
+    {% include 'auth/forgot_password_modal.html' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

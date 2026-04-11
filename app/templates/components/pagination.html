@@ -1,0 +1,9 @@
+<div class="pagination">
+  {% if page > 1 %}
+    <a href="?query={{ query }}&page={{ page-1 }}" class="pagination-prev">&laquo; Zurück</a>
+  {% endif %}
+  <span class="pagination-info">Seite {{ page }}{% if total_pages %} von {{ total_pages }}{% endif %}</span>
+  {% if total_pages and page < total_pages %}
+    <a href="?query={{ query }}&page={{ page+1 }}" class="pagination-next">Weiter &raquo;</a>
+  {% endif %}
+</div>
