@@ -4,3 +4,19 @@ __pycache__/
 instance/
 secrets/
 *.key
+
+# Runtime logs and traces
+logs/
+*.log
+trace.log
+
+# Local editor settings
+.vscode/
+
+# TikTok scraper local outputs/debug artifacts
+app/modules/tiktok_scraper/data/
+app/modules/tiktok_scraper/debug/
+app/modules/tiktok_scraper/archive_legacy/
+app/modules/tiktok_scraper/*.csv
+app/modules/tiktok_scraper/*.json
+app/modules/tiktok_scraper/urls.txt
