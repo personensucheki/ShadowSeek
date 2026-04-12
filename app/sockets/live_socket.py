@@ -30,6 +30,10 @@ def handle_leave_stream(socketio, sid, stream_id):
     viewer_counts[stream_id] = max(0, viewer_counts[stream_id] - 1)
     socketio.emit("viewer_update", {"stream_id": stream_id, "viewer_count": viewer_counts[stream_id]}, room=room)
 
+# --- Verbesserte Viewer-Count-Logik ---
+# Merkt sich, welche Sockets in welchem Stream sind
+socket_stream_map = {}
+
 class LiveNamespace(Namespace):
     def on_connect(self):
         pass
@@ -42,12 +46,14 @@ class LiveNamespace(Namespace):
         sid = request.sid
         if stream_id:
             handle_join_stream(self.server, sid, stream_id)
+            self.socket_stream_map[sid] = stream_id
 
     def on_leave_stream(self, data):
         stream_id = data.get("stream_id")
         sid = request.sid
         if stream_id:
             handle_leave_stream(self.server, sid, stream_id)
+            self.socket_stream_map.pop(sid, None)
 
     def on_send_message(self, data):
         stream_id = data.get("stream_id")
