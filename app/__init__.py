@@ -91,7 +91,18 @@ def create_app(config_class=None):
     csrf.init_app(app)
     init_socketio(app)
     app.socketio = socketio
-    from .helpers.factory import register_blueprints
+    from .helpers.factory import (
+        ensure_instance_directories,
+        register_blueprints,
+        register_context_processors,
+        register_error_handlers,
+        register_hooks,
+    )
+
+    ensure_instance_directories(app)
+    register_context_processors(app)
+    register_error_handlers(app)
+    register_hooks(app)
     register_blueprints(app)
     register_live_socket_handlers(app)
 
