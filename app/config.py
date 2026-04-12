@@ -37,10 +37,10 @@ class BaseConfig:
     Inherit from this for Dev/Prod/Test configs.
     """
     SECRET_KEY = os.environ.get("SECRET_KEY")
-    _db_url = os.environ.get("DATABASE_URL")
-    if not _db_url:
-        raise RuntimeError("DATABASE_URL ist nicht gesetzt. Bitte .env prüfen und Datenbank-URL konfigurieren.")
-    SQLALCHEMY_DATABASE_URI = _normalize_database_uri(_db_url)
+    # Default to local sqlite for development/test unless DATABASE_URL is provided.
+    SQLALCHEMY_DATABASE_URI = _normalize_database_uri(
+        os.environ.get("DATABASE_URL", "sqlite:///shadowseek.db")
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
@@ -132,6 +132,10 @@ class BaseConfig:
     # Optional default stream key shown in the UI; per-stream keys can still be generated.
     LIVE_RTMP_STREAM_KEY = os.environ.get("LIVE_RTMP_STREAM_KEY", "").strip()
 
+    # Feed demo content (example videos) – should not be used to fake production activity.
+    # Enabled by default in DevelopmentConfig, disabled in ProductionConfig.
+    FEED_DEMO_ENABLED = os.environ.get("FEED_DEMO_ENABLED", "").strip().lower() in {"1", "true", "yes", "on"}
+
 
 
 
@@ -142,6 +146,7 @@ class DevelopmentConfig(BaseConfig):
     SECRET_KEY = BaseConfig.SECRET_KEY or "shadowseek-dev-secret"
     SESSION_COOKIE_SECURE = False
     WTF_CSRF_ENABLED = False
+    FEED_DEMO_ENABLED = True
 
 
 
@@ -152,6 +157,7 @@ class ProductionConfig(BaseConfig):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
     WTF_CSRF_ENABLED = True
+    FEED_DEMO_ENABLED = False
 
 
 

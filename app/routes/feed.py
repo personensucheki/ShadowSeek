@@ -1,23 +1,4 @@
 from __future__ import annotations
-from __future__ import annotations
-def feed_post_detail(post_id):
-    from app.models.media_post import MediaPost
-    from app.models import User
-    from app.services.media import resolve_user_avatar_url
-    post = MediaPost.query.get(post_id)
-    if not post:
-        return render_template("feed_post_not_found.html"), 404
-    user = User.query.get(post.user_id)
-    item = {
-        **post.to_dict(),
-        "username": user.username if user else "user",
-        "display_name": (user.display_name or user.username) if user else "User",
-        "avatar_url": resolve_user_avatar_url(user) if user else None,
-        "media_url": url_for("profile.uploaded_file", filename=post.file_path),
-        "profile_url": url_for("feed.public_profile", username=user.username) if user else None,
-    }
-    return render_template("feed_post_detail.html", item=item)
-
 
 from datetime import datetime
 from pathlib import Path
@@ -27,7 +8,7 @@ from werkzeug.utils import secure_filename
 
 from app.extensions.main import db
 from app.models import MediaPost, User
-from app.rbac_helpers import login_required 
+from app.rbac_helpers import login_required
 from app.services.media import resolve_user_avatar_url
 
 
@@ -83,6 +64,24 @@ def feed_page():
     return render_template("feed.html")
 
 
+@feed_bp.route("/feed/post/<int:post_id>", methods=["GET"])
+def feed_post_detail(post_id: int):
+    post = db.session.get(MediaPost, post_id)
+    if not post:
+        return render_template("feed_post_not_found.html"), 404
+
+    user = db.session.get(User, post.user_id) if post.user_id else None
+    item = {
+        **post.to_dict(),
+        "username": user.username if user else "user",
+        "display_name": (user.display_name or user.username) if user else "User",
+        "avatar_url": resolve_user_avatar_url(user) if user else url_for("static", filename="images/default-avatar.png"),
+        "media_url": url_for("profile.uploaded_file", filename=post.file_path),
+        "profile_url": url_for("feed.public_profile", username=user.username) if user else None,
+    }
+    return render_template("feed_post_detail.html", item=item)
+
+
 @feed_bp.route("/upload", methods=["GET"])
 @login_required
 def upload_page():
@@ -91,6 +90,7 @@ def upload_page():
 
 @feed_bp.route("/api/feed", methods=["GET"])
 def api_feed():
+    demo_requested = (request.args.get("demo") or "").strip() in {"1", "true", "yes", "on"}
     limit = min(max(int(request.args.get("limit", 12)), 1), 40)
     cursor = request.args.get("cursor")
 
@@ -103,6 +103,32 @@ def api_feed():
             pass
 
     posts = query.limit(limit).all()
+    if (not posts) and (demo_requested or bool(current_app.config.get("FEED_DEMO_ENABLED"))):
+        # Demo feed for UI testing only (no DB required). Never pretend this is real user content.
+        demo_items = [
+            {
+                "id": 0,
+                "is_demo": True,
+                "media_type": "video",
+                "media_url": url_for("static", filename="demo/demo1.mp4"),
+                "poster_url": url_for("static", filename="images/default-banner.jpg"),
+                "caption": "Demo Clip – Beispielvideo für das ShadowSeek Feed-Layout.",
+                "hashtags": "#shadowseek #demo",
+                "category": "Demo",
+                "location": "europe-west3",
+                "like_count": 0,
+                "comment_count": 0,
+                "view_count": 0,
+                "liked": False,
+                "username": "shadowseek",
+                "display_name": "ShadowSeek Demo",
+                "avatar_url": url_for("static", filename="images/default-avatar.png"),
+                "profile_url": None,
+                "created_at": datetime.utcnow().isoformat() + "Z",
+            }
+        ]
+        return jsonify({"success": True, "items": demo_items, "next_cursor": None, "demo": True})
+
     user_ids = {post.user_id for post in posts}
     users = {user.id: user for user in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
 

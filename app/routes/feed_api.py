@@ -1,149 +1,133 @@
+from __future__ import annotations
 
-from app.models.post_interaction import PostComment
+"""
+Feed interaction endpoints (comments/likes/views).
 
-# Kommentare listen
-@feed_api_bp.route("/api/feed/<int:post_id>/comments", methods=["GET"])
-def get_comments(post_id):
-    post = MediaPost.query.get(post_id)
+These endpoints are used by the Feed frontend (`app/static/js/feed.js`).
+They are intentionally separate from the main feed listing endpoint in `routes/feed.py`.
+"""
+
+from flask import Blueprint, jsonify, request, session
+
+from app.extensions.main import db
+from app.models.media_post import MediaPost
+from app.models.post_interaction import PostComment, PostLike
+from app.models.user import User
+
+
+feed_api_bp = Blueprint("feed_api", __name__)
+
+
+def _current_user_id() -> int | None:
+    user_id = session.get("user_id")
+    if user_id:
+        return int(user_id)
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        if isinstance(data, dict) and data.get("user_id"):
+            try:
+                return int(data["user_id"])
+            except Exception:
+                return None
+    return None
+
+
+@feed_api_bp.get("/api/feed/<int:post_id>/comments")
+def get_comments(post_id: int):
+    post = db.session.get(MediaPost, post_id)
     if not post:
         return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
-    comments = PostComment.query.filter_by(post_id=post_id).order_by(PostComment.created_at.asc()).all()
+
+    comments = (
+        PostComment.query.filter_by(post_id=post_id)
+        .order_by(PostComment.created_at.asc())
+        .all()
+    )
+
+    user_ids = {c.user_id for c in comments}
+    users = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
+
     items = []
     for c in comments:
-        user = User.query.get(c.user_id)
-        items.append({
-            "id": c.id,
-            "user_id": c.user_id,
-            "username": user.username if user else "user",
-            "display_name": (user.display_name or user.username) if user else "User",
-            "content": c.content,
-            "created_at": c.created_at.isoformat(),
-        })
+        user = users.get(c.user_id)
+        items.append(
+            {
+                "id": c.id,
+                "user_id": c.user_id,
+                "username": user.username if user else "user",
+                "display_name": (user.display_name or user.username) if user else "User",
+                "content": c.content,
+                "created_at": c.created_at.isoformat(),
+            }
+        )
     return jsonify({"success": True, "items": items})
 
-# Kommentar erstellen
-@feed_api_bp.route("/api/feed/<int:post_id>/comments", methods=["POST"])
-def post_comment(post_id):
-    user_id = session.get("user_id") or (request.json and request.json.get("user_id"))
+
+@feed_api_bp.post("/api/feed/<int:post_id>/comments")
+def post_comment(post_id: int):
+    user_id = _current_user_id()
     if not user_id:
         return jsonify({"success": False, "error": {"message": "Nicht eingeloggt.", "code": "not_authenticated"}}), 401
-    post = MediaPost.query.get(post_id)
+
+    post = db.session.get(MediaPost, post_id)
     if not post:
         return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
-    data = request.get_json(force=True)
+
+    data = request.get_json(silent=True) or {}
     content = (data.get("content") or "").strip()
     if not content:
         return jsonify({"success": False, "error": {"message": "Kommentar darf nicht leer sein.", "code": "empty"}}), 400
-    comment = PostComment(post_id=post_id, user_id=user_id, content=content)
+
+    comment = PostComment(post_id=post_id, user_id=user_id, content=content[:500])
     db.session.add(comment)
     db.session.commit()
-    user = User.query.get(user_id)
-    return jsonify({
-        "success": True,
-        "comment": {
-            "id": comment.id,
-            "user_id": user_id,
-            "username": user.username if user else "user",
-            "display_name": (user.display_name or user.username) if user else "User",
-            "content": comment.content,
-            "created_at": comment.created_at.isoformat(),
+
+    user = db.session.get(User, user_id)
+    return jsonify(
+        {
+            "success": True,
+            "comment": {
+                "id": comment.id,
+                "user_id": user_id,
+                "username": user.username if user else "user",
+                "display_name": (user.display_name or user.username) if user else "User",
+                "content": comment.content,
+                "created_at": comment.created_at.isoformat(),
+            },
         }
-    })
+    )
 
-# --- Interaktions- und View-Tracking-API ---
 
-from flask import session
-from app.models.post_interaction import PostLike
-from app.models.media_post import MediaPost
-from app.models import User
-
-@feed_api_bp.route("/api/feed/<int:post_id>/like", methods=["POST"])
-def like_post(post_id):
-    user_id = session.get("user_id") or (request.json and request.json.get("user_id"))
+@feed_api_bp.post("/api/feed/<int:post_id>/like")
+def like_post(post_id: int):
+    user_id = _current_user_id()
     if not user_id:
         return jsonify({"success": False, "error": {"message": "Nicht eingeloggt.", "code": "not_authenticated"}}), 401
-    post = MediaPost.query.get(post_id)
+
+    post = db.session.get(MediaPost, post_id)
     if not post:
         return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
-    like = PostLike.query.filter_by(post_id=post_id, user_id=user_id).first()
-    liked = False
-    if like:
-        db.session.delete(like)
+
+    existing = PostLike.query.filter_by(post_id=post_id, user_id=user_id).first()
+    if existing:
+        db.session.delete(existing)
         liked = False
     else:
         db.session.add(PostLike(post_id=post_id, user_id=user_id))
         liked = True
-    # Like-Count aktualisieren
+
     db.session.flush()
     like_count = PostLike.query.filter_by(post_id=post_id).count()
     post.like_count = like_count
     db.session.commit()
     return jsonify({"success": True, "liked": liked, "like_count": like_count, "post_id": post_id})
 
-@feed_api_bp.route("/api/feed/<int:post_id>/view", methods=["POST"])
-def view_post(post_id):
-    # TODO: Echte View-Logik
-    # Erwartet: { user_id: ... }
+
+@feed_api_bp.post("/api/feed/<int:post_id>/view")
+def view_post(post_id: int):
+    # Minimal structured response; view-count persistence can be added later.
+    post = db.session.get(MediaPost, post_id)
+    if not post:
+        return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
     return jsonify({"success": True, "viewed": True, "post_id": post_id})
-"""
-API-Routen für Feed, Live und Interaktionen
-"""
-from flask import Blueprint, request, jsonify
-from app.services.feed_service import feed_service
-from app.services.live_service import live_service
-from app.services.recommendation_service import recommendation_service
-from app.services.ranking_service import ranking_service
-from app.services.user_interest_service import user_interest_service
-from app.models.event_tracking import FeedImpression, UserInteraction, LiveMetric
-from app.extensions.main import db
 
-feed_api_bp = Blueprint("feed_api", __name__)
-
-@feed_api_bp.route("/api/feed", methods=["GET"])
-def get_feed():
-    user_id = request.args.get("user_id")
-    feed_type = request.args.get("type", "discovery")
-    location = request.args.get("location")
-    dev_fallback = request.args.get("dev_fallback") == "1"
-    try:
-        items = feed_service.get_feed(user_id, feed_type, location, dev_fallback)
-        return jsonify({"success": True, "items": items})
-    except Exception as exc:
-        return jsonify({"success": False, "error": {"message": str(exc), "code": "feed_error"}}), 500
-
-@feed_api_bp.route("/api/live/recommended", methods=["GET"])
-def get_live_recommended():
-    user_id = request.args.get("user_id")
-    lives = live_service.get_recommended_live(user_id)
-    return jsonify({"success": True, "items": lives})
-
-@feed_api_bp.route("/api/interactions/feed", methods=["POST"])
-def post_feed_interaction():
-    data = request.get_json(force=True)
-    user_id = data.get("user_id")
-    post_id = data.get("post_id")
-    event_type = data.get("event_type")
-    value = data.get("value")
-    meta = data.get("meta")
-    if not (user_id and post_id and event_type):
-        return jsonify({"success": False, "error": "Missing required fields."}), 400
-    interaction = UserInteraction(user_id=user_id, post_id=post_id, event_type=event_type, value=value, meta=meta)
-    db.session.add(interaction)
-    db.session.commit()
-    user_interest_service.update_user_interest_profile(user_id, interaction)
-    return jsonify({"success": True})
-
-@feed_api_bp.route("/api/interactions/live", methods=["POST"])
-def post_live_interaction():
-    data = request.get_json(force=True)
-    user_id = data.get("user_id")
-    live_session_id = data.get("live_session_id")
-    event_type = data.get("event_type")
-    value = data.get("value")
-    meta = data.get("meta")
-    if not (user_id and live_session_id and event_type):
-        return jsonify({"success": False, "error": "Missing required fields."}), 400
-    metric = LiveMetric(user_id=user_id, live_session_id=live_session_id, event_type=event_type, value=value, meta=meta)
-    db.session.add(metric)
-    db.session.commit()
-    return jsonify({"success": True})

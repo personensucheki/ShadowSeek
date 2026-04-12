@@ -60,7 +60,7 @@ html, body {
 .feed-empty-state .empty-illustration {
   width: 120px;
   height: 120px;
-  background: url('/static/images/default-poster.jpg') center/cover no-repeat;
+  background: url('/static/images/default-banner.jpg') center/cover no-repeat;
   margin-bottom: 1.2rem;
   border-radius: 18px;
   box-shadow: 0 0 30px var(--neon-pink), 0 0 30px var(--neon-green);
@@ -242,42 +242,4 @@ html, body {
     max-width: 480px;
     margin: 0 auto;
   }
-}
-}
-
-.feed-user {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  margin-bottom: 0.45rem;
-}
-
-.feed-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,0,255,0.55);
-  box-shadow: 0 0 14px rgba(255,0,255,0.2);
-  object-fit: cover;
-}
-
-.feed-user a {
-  color: var(--neon-green);
-  text-decoration: none;
-  font-weight: 800;
-}
-
-.feed-caption {
-  font-size: 0.98rem;
-  color: rgba(232,246,255,0.88);
-  white-space: pre-wrap;
-}
-
-.feed-stats {
-  margin-top: 0.45rem;
-  display: flex;
-  gap: 0.7rem;
-  color: rgba(232,246,255,0.7);
-  font-weight: 700;
-  font-size: 0.9rem;
 }

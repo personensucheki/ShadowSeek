@@ -8,7 +8,7 @@
         {% if item.media_type == 'photo' %}
           <img src="{{ item.media_url }}" alt="Foto" style="width:100%;height:auto;">
         {% else %}
-          <video src="{{ item.media_url }}" controls playsinline poster="{{ item.poster_url or '/static/images/default-poster.jpg' }}" style="width:100%;max-width:480px;"></video>
+          <video src="{{ item.media_url }}" controls playsinline poster="{{ item.poster_url or '/static/images/default-banner.jpg' }}" style="width:100%;max-width:480px;"></video>
         {% endif %}
       </div>
       <div class="feed-overlay">

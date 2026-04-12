@@ -60,8 +60,6 @@ function openCommentsModal(item) {
   };
 }
 let nextCursor = null;
-
-let nextCursor = null;
 let loading = false;
 let feedItems = [];
 
@@ -88,7 +86,7 @@ function createFeedItem(item, idx) {
     mediaEl.setAttribute("webkit-playsinline", "true");
     mediaEl.setAttribute("playsinline", "true");
     mediaEl.setAttribute("tabindex", "0");
-    mediaEl.poster = item.poster_url || "/static/images/default-poster.jpg";
+    mediaEl.poster = item.poster_url || "/static/images/default-banner.jpg";
     mediaEl.className = "feed-video";
     // Mute toggle
     const muteBtn = document.createElement("button");
@@ -122,6 +120,7 @@ function createFeedItem(item, idx) {
   if (liked) likeBtn.classList.add("liked");
   likeBtn.onclick = async (e) => {
     e.stopPropagation();
+    if (item.is_demo) return;
     likeBtn.disabled = true;
     try {
       const res = await fetch(`/api/feed/${item.id}/like`, {method: "POST", headers: {"Content-Type": "application/json"}});
@@ -148,6 +147,7 @@ function createFeedItem(item, idx) {
   commentBtn.innerHTML = `💬<span>${item.comment_count ?? 0}</span>`;
   commentBtn.onclick = (e) => {
     e.stopPropagation();
+    if (item.is_demo) return;
     openCommentsModal(item);
   };
 
@@ -233,9 +233,13 @@ function renderFeed(items) {
       <div class="empty-illustration"></div>
       <div class="empty-text">Noch keine Uploads.</div>
       <a href="/upload" class="feed-cta">Zum Upload</a>
-      <button class="feed-cta-alt" onclick="window.location.reload()">Testfeed laden</button>
+      <button class="feed-cta-alt" id="feed-demo-btn" type="button">Testfeed laden</button>
     `;
     stage.appendChild(empty);
+    const demoBtn = document.getElementById("feed-demo-btn");
+    if (demoBtn) {
+      demoBtn.addEventListener("click", () => loadFeed({ demo: true }));
+    }
     return;
   }
   items.forEach((item, idx) => {
@@ -245,13 +249,17 @@ function renderFeed(items) {
   setupVideoAutoplay();
 }
 
-async function loadFeed() {
+async function loadFeed(options = {}) {
   loading = true;
   const stage = document.getElementById("feed-stage");
   const loadingEl = document.getElementById("feed-loading");
   if (loadingEl) loadingEl.textContent = "Feed wird geladen…";
   try {
-    const res = await fetch(`/api/feed?limit=10`, { credentials: "same-origin" });
+    const params = new URLSearchParams({ limit: "10" });
+    if (options.demo) {
+      params.set("demo", "1");
+    }
+    const res = await fetch(`/api/feed?${params.toString()}`, { credentials: "same-origin" });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error?.message || "Feed error");
     feedItems = data.items || [];
@@ -295,7 +303,7 @@ function setupVideoAutoplay() {
         video.play().catch(()=>{});
         currentPlaying = video;
         // View-Tracking mit debounce
-        if (!viewedPosts.has(item.id)) {
+        if (!item.is_demo && !viewedPosts.has(item.id)) {
           if (viewTimeouts.has(video)) clearTimeout(viewTimeouts.get(video));
           viewTimeouts.set(video, setTimeout(() => {
             fetch(`/api/feed/${item.id}/view`, {method: "POST", headers: {"Content-Type": "application/json"}});
@@ -323,4 +331,3 @@ function setupVideoAutoplay() {
 document.addEventListener("DOMContentLoaded", () => {
   loadFeed();
 });
-
