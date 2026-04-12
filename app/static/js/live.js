@@ -9,6 +9,11 @@ const videoEl = document.getElementById("live-preview-video");
 const btnFront = document.getElementById("btn-front");
 const btnBack = document.getElementById("btn-back");
 const btnMic = document.getElementById("btn-mic");
+
+const btnFrontBroadcast = document.getElementById("btn-front-broadcast");
+const btnBackBroadcast = document.getElementById("btn-back-broadcast");
+const btnMicBroadcast = document.getElementById("btn-mic-broadcast");
+const broadcastControlsEl = document.getElementById("live-broadcast-controls");
 const statusEl = document.getElementById("direct-status");
 
 const setupStepEl = document.getElementById("live-step-setup");
@@ -58,27 +63,37 @@ function stopDirectStream() {
 }
 
 function updateButtonStates() {
-    if (!btnFront || !btnBack || !btnMic) return;
-    btnFront.classList.toggle("active", currentFacing === "user");
-    btnBack.classList.toggle("active", currentFacing === "environment");
-    btnMic.classList.toggle("active", micEnabled);
-    btnMic.textContent = micEnabled ? "Mikro an" : "Mikro aus";
+    const fronts = [btnFront, btnFrontBroadcast].filter(Boolean);
+    const backs = [btnBack, btnBackBroadcast].filter(Boolean);
+    const mics = [btnMic, btnMicBroadcast].filter(Boolean);
+
+    fronts.forEach((button) => button.classList.toggle("active", currentFacing === "user"));
+    backs.forEach((button) => button.classList.toggle("active", currentFacing === "environment"));
+    mics.forEach((button) => button.classList.toggle("active", micEnabled));
+
+    if (btnMic) btnMic.textContent = micEnabled ? "Mikro an" : "Mikro aus";
+    if (btnMicBroadcast) btnMicBroadcast.textContent = micEnabled ? "Mic" : "Mic off";
 }
 
-if (btnFront && btnBack && btnMic) {
-    btnFront.addEventListener("click", async () => {
-        if (currentFacing !== "user") {
-            currentFacing = "user";
-            await startDirectStream(currentFacing, micEnabled);
-        }
-    });
-    btnBack.addEventListener("click", async () => {
-        if (currentFacing !== "environment") {
-            currentFacing = "environment";
-            await startDirectStream(currentFacing, micEnabled);
-        }
-    });
-    btnMic.addEventListener("click", async () => {
+function bindDirectControls(frontBtn, backBtn, micBtn) {
+    if (frontBtn) {
+        frontBtn.addEventListener("click", async () => {
+            if (currentFacing !== "user") {
+                currentFacing = "user";
+                await startDirectStream(currentFacing, micEnabled);
+            }
+        });
+    }
+    if (backBtn) {
+        backBtn.addEventListener("click", async () => {
+            if (currentFacing !== "environment") {
+                currentFacing = "environment";
+                await startDirectStream(currentFacing, micEnabled);
+            }
+        });
+    }
+    if (micBtn) {
+        micBtn.addEventListener("click", async () => {
         micEnabled = !micEnabled;
         // Versuche Audio-Track zu aktivieren/deaktivieren
         if (directStream) {
@@ -94,8 +109,12 @@ if (btnFront && btnBack && btnMic) {
             await startDirectStream(currentFacing, micEnabled);
         }
         updateButtonStates();
-    });
+        });
+    }
 }
+
+bindDirectControls(btnFront, btnBack, btnMic);
+bindDirectControls(btnFrontBroadcast, btnBackBroadcast, btnMicBroadcast);
 
 function stopDirectStreamIfRunning() {
     if (directStream) {
@@ -187,8 +206,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     // Kamera erst nach dem "Live gehen" starten (nicht davor).
                     if (selectedMode === "direct") {
+                        if (broadcastControlsEl) broadcastControlsEl.hidden = false;
                         await startDirectStream(currentFacing, micEnabled);
                     } else {
+                        if (broadcastControlsEl) broadcastControlsEl.hidden = true;
                         stopDirectStreamIfRunning();
                         setStatus("OBS-Modus aktiv. Kamera-Vorschau ist aus.", false);
                     }
