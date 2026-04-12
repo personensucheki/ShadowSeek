@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Upload - ShadowSeek{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/upload.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="upload-shell">
+    <header class="upload-head">
+        <h1>Upload</h1>
+        <p>Video oder Foto hochladen – erscheint im Feed (falls öffentlich).</p>
+    </header>
+
+    <form id="upload-form" class="upload-form" enctype="multipart/form-data">
+        <label>Typ
+            <select name="media_type" id="media-type">
+                <option value="video">Video</option>
+                <option value="photo">Foto</option>
+            </select>
+        </label>
+
+        <label>Datei
+            <input type="file" name="file" id="upload-file" accept="video/mp4,video/webm,video/quicktime,image/png,image/jpeg,image/webp,image/gif" required>
+        </label>
+
+        <label>Caption (optional)
+            <textarea name="caption" id="upload-caption" maxlength="500" placeholder="Beschreibe deinen Clip…"></textarea>
+        </label>
+
+        <label class="upload-toggle">
+            <input type="checkbox" name="is_public" value="true" checked>
+            Öffentlich im Feed anzeigen
+        </label>
+
+        <button type="submit" class="upload-submit">Upload</button>
+        <div class="upload-status" id="upload-status" aria-live="polite"></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}
+

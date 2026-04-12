@@ -48,6 +48,7 @@ class BaseConfig:
     PERMANENT_SESSION_LIFETIME = 3600
     WTF_CSRF_ENABLED = True
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 5 * 1024 * 1024))
+    MAX_VIDEO_UPLOAD_BYTES = int(os.environ.get("MAX_VIDEO_UPLOAD_BYTES", 60 * 1024 * 1024))
     # Harden upload security: only allow specific upload dir
     UPLOAD_DIRECTORY = _default_upload_directory()
     # API/worker limits
@@ -148,3 +149,4 @@ class TestingConfig(BaseConfig):
     WTF_CSRF_ENABLED = False
     SESSION_COOKIE_SECURE = False
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024
+    MAX_VIDEO_UPLOAD_BYTES = 10 * 1024 * 1024

@@ -9,6 +9,7 @@ from .einnahme_info import EinnahmeInfo
 from .processed_webhook_event import ProcessedWebhookEvent
 from .oauth_token import OAuthToken
 from .live_stream import LiveStream, LiveLike, LiveChatMessage, LiveGift
+from .media_post import MediaPost
 
 __all__ = [
     "PublicProfile",
@@ -24,4 +25,5 @@ __all__ = [
     "LiveLike",
     "LiveChatMessage",
     "LiveGift",
+    "MediaPost",
 ]

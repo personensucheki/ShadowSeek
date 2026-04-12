@@ -23,6 +23,7 @@ def register_blueprints(app):
     from app.routes.einnahmen_api import api_bp
     from app.routes.live_api import live_api_bp
     from app.routes.query_api import query_api_bp
+    from app.routes.feed import feed_bp
 
     app.register_blueprint(admin_feedback_bp)
     app.register_blueprint(auth_bp)
@@ -46,6 +47,7 @@ def register_blueprints(app):
     app.register_blueprint(api_bp)
     app.register_blueprint(live_api_bp)
     app.register_blueprint(query_api_bp)
+    app.register_blueprint(feed_bp)
 
 
 def register_hooks(app):

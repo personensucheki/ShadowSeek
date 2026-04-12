@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.username }} - ShadowSeek{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile_public.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="pp-shell">
+    <header class="pp-head">
+        <div class="pp-avatar">
+            <img src="{{ avatar_url }}" alt="Avatar von {{ profile_user.username }}">
+        </div>
+        <div class="pp-meta">
+            <div class="pp-title-row">
+                <h1>{{ profile_user.display_name or profile_user.username }}</h1>
+                <div class="pp-handle">@{{ profile_user.username }}</div>
+            </div>
+            <div class="pp-actions">
+                {% if session.get('user_id') == profile_user.id %}
+                    <a class="pp-btn pp-btn--primary" href="{{ url_for('profile.profile') }}">Profil bearbeiten</a>
+                {% else %}
+                    <a class="pp-btn" href="{{ url_for('community.messages', user=profile_user.id) }}">Nachricht</a>
+                {% endif %}
+                <button type="button" class="pp-icon" id="pp-settings" aria-label="Einstellungen">⚙</button>
+                <button type="button" class="pp-icon" id="pp-share" aria-label="Teilen">↗</button>
+            </div>
+            <div class="pp-bio">
+                <div class="pp-bio-title">{{ profile_user.profile_title or "ShadowSeek" }}</div>
+                <div class="pp-bio-text">{{ profile_user.bio or "Noch keine Bio hinterlegt." }}</div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="pp-tabs" role="tablist" aria-label="Profil Tabs">
+        <button type="button" class="pp-tab active" data-tab="videos">Videos</button>
+        <button type="button" class="pp-tab" data-tab="favorites" disabled title="Coming soon">Favoriten</button>
+        <button type="button" class="pp-tab" data-tab="likes" disabled title="Coming soon">Gelikt</button>
+    </nav>
+
+    <div class="pp-grid" id="pp-grid" aria-live="polite"></div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.SHADOWSEEK_PROFILE_USERNAME = {{ profile_user.username|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/profile_public.js') }}"></script>
+{% endblock %}
+

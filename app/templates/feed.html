@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Feed - ShadowSeek{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/feed.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="feed-shell">
+    <div class="feed-stage" id="feed-stage" aria-live="polite">
+        <div class="feed-loading" id="feed-loading">Feed wird geladen…</div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/feed.js') }}"></script>
+{% endblock %}
+

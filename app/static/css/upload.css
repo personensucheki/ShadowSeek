@@ -1,0 +1,45 @@
+:root { --neon-pink:#ff00ff; --neon-green:#00ff9f; }
+
+.upload-shell{
+  max-width: 760px;
+  margin: 2rem auto 4rem;
+  padding: 0 1rem;
+  color:#e8f6ff;
+}
+.upload-head h1{ margin:0 0 .35rem; }
+.upload-head p{ margin:0 0 1rem; color: rgba(232,246,255,.75); }
+
+.upload-form{
+  background: rgba(10,18,38,.92);
+  border:1px solid rgba(0,255,159,.22);
+  border-radius: 18px;
+  padding: 1rem;
+  box-shadow: 0 0 28px rgba(255,0,255,.12);
+}
+.upload-form label{ display:block; margin:.65rem 0 .25rem; font-weight:800; color: rgba(232,246,255,.88); }
+.upload-form input[type="file"], .upload-form select, .upload-form textarea{
+  width:100%;
+  background:#07070a;
+  border:1px solid rgba(255,0,255,.22);
+  color:#fff;
+  border-radius: 12px;
+  padding:.65rem .75rem;
+}
+.upload-form textarea{ min-height: 100px; resize: vertical; }
+.upload-toggle{ display:flex; align-items:center; gap:.6rem; margin-top:.75rem; font-weight:800; }
+
+.upload-submit{
+  margin-top: 1rem;
+  width:100%;
+  border:0;
+  border-radius: 14px;
+  padding:.85rem 1rem;
+  background: var(--neon-pink);
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow: 0 0 18px rgba(255,0,255,.55);
+}
+.upload-status{ margin-top:.8rem; color: rgba(0,255,159,.9); font-weight:800; }
+.upload-status.error{ color: rgba(255,0,255,.9); }
+
