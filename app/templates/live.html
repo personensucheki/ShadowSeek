@@ -13,9 +13,9 @@
     </header>
 
     <div class="live-layout">
-        <article class="live-panel">
+        <article class="live-panel live-step live-step--setup" id="live-step-setup">
             <h2>Stream vorbereiten</h2>
-            <form class="live-form" id="live-setup-form" enctype="multipart/form-data">
+            <form class="live-form" id="live-setup-form" enctype="multipart/form-data" novalidate>
                 <fieldset class="live-form-section">
                     <legend>Allgemeine Angaben</legend>
 
@@ -99,16 +99,40 @@
                     </div>
                 </fieldset>
 
-                <button class="live-start-btn" type="submit">Live-Setup speichern</button>
+                <button class="live-start-btn" type="submit">Live gehen</button>
                 <p class="live-feedback" id="live-feedback" aria-live="polite"></p>
             </form>
         </article>
 
-        <aside class="live-preview">
-            <h2>Vorschau</h2>
-            <video id="live-preview-video" autoplay muted playsinline></video>
-            <p class="live-preview__note">Kein Stream aktiv? OBS benötigt einen externen RTMP-Ingest (siehe Hinweis).</p>
-        </aside>
+        <!-- Broadcast-UI wird nach Setup eingeblendet (TikTok-Flow). -->
+        <article class="live-panel live-step live-step--broadcast" id="live-step-broadcast" hidden>
+            <div class="live-broadcast-head">
+                <div class="live-broadcast-meta">
+                    <div class="live-broadcast-title" id="live-broadcast-title"></div>
+                    <div class="live-broadcast-sub" id="live-broadcast-sub"></div>
+                </div>
+                <div class="live-broadcast-actions">
+                    <button type="button" class="btn-secondary" id="live-edit-setup">Zurück</button>
+                </div>
+            </div>
+
+            <div class="live-broadcast-layout">
+                <div class="live-broadcast-video">
+                    <video id="live-preview-video" autoplay muted playsinline></video>
+                    <div class="live-broadcast-badges">
+                        <span class="live-status-badge">LIVE</span>
+                        <span class="viewer-count"><span id="viewer-count">0</span> Zuschauer</span>
+                    </div>
+                </div>
+                <div class="live-broadcast-chat">
+                    <div class="live-chat" id="live-chat"></div>
+                    <form class="live-chat-input" id="live-chat-form" autocomplete="off">
+                        <input type="text" id="chat-message" placeholder="Nachricht senden..." maxlength="200" required>
+                        <button type="submit">Senden</button>
+                    </form>
+                </div>
+            </div>
+        </article>
     </div>
 </section>
 {% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Profil von {{ member.display_name }} - ShadowSeek{% endblock %}
+{% block content %}
+<div class="member-profile-card neon-card" style="max-width:600px;margin:2em auto 0 auto;padding:2em;">
+    <div class="member-profile-header" style="display:flex;align-items:center;gap:2em;">
+        <img src="{{ member.avatar_url }}" alt="{{ member.display_name }}" class="member-profile-avatar" style="width:120px;height:120px;border-radius:50%;border:3px solid var(--neon-pink,#FF00FF);object-fit:cover;background:#222;">
+        <div>
+            <h2>{{ member.display_name }}</h2>
+            <div class="community-subtle" style="font-size:1.1em;">@{{ member.username }}</div>
+            <span class="member-tag">{{ member.role }}</span>
+            <span class="presence-dot {{ 'presence-dot--online' if member.is_online else 'presence-dot--offline' }}"></span>
+            <span class="member-status">{{ 'Online' if member.is_online else 'Offline' }}</span>
+            <div class="community-subtle" style="margin-top:0.5em;">Mitglied seit {{ member.created_at.strftime('%d.%m.%Y') if member.created_at else '-' }}</div>
+        </div>
+    </div>
+    <div class="member-profile-details" style="margin-top:2em;">
+        <div style="margin-bottom:1em;">
+            <strong style="color:var(--neon-pink,#FF00FF);">Bio:</strong><br>
+            <span>{{ member.bio or 'Noch keine Bio hinterlegt.' }}</span>
+        </div>
+        {% if member.profile_title %}
+        <div style="margin-bottom:1em;">
+            <strong style="color:#FF00FF;">Titel:</strong> <span style="color:#fff;">{{ member.profile_title }}</span>
+        </div>
+        {% endif %}
+        {% if member.country or member.city %}
+        <div style="margin-bottom:1em;">
+            <strong style="color:#FF00FF;">Ort:</strong> <span style="color:#fff;">{{ member.city }}{% if member.city and member.country %}, {% endif %}{{ member.country }}</span>
+        </div>
+        {% endif %}
+        {% if member.age %}
+        <div style="margin-bottom:1em;">
+            <strong style="color:#FF00FF;">Alter:</strong> <span style="color:#fff;">{{ member.age }}</span>
+        </div>
+        {% endif %}
+    </div>
+    <div style="display:flex;gap:1em;margin-top:2em;">
+        <a href="/messages?user={{ member.id }}" class="neon-button">Nachricht senden</a>
+        <a href="/members" class="ghost-button">Zurück zur Mitgliederliste</a>
+    </div>
+</div>
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/member_profile.css') }}">{% endblock %}

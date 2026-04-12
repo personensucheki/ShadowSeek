@@ -1,3 +1,11 @@
+@community_bp.route("/members/<string:username>", methods=["GET"])
+def member_profile(username):
+    user = User.query.filter_by(username=username, is_active=True).first_or_404()
+    payload = _member_payload(user)
+    return render_template(
+        "members/member_profile.html",
+        member=payload
+    )
 from __future__ import annotations
 
 from collections import Counter

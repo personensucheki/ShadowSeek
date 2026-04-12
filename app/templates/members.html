@@ -78,13 +78,17 @@
         {% for member in members %}
             <article class="member-card">
                 <div class="member-card__top">
-                    <img src="{{ member.avatar_url }}" alt="{{ member.display_name }}">
+                    <button class="member-avatar-button" data-profile-url="{{ url_for('community.member_profile', username=member.username) }}" style="background:none;border:none;padding:0;cursor:pointer;">
+                        <img src="{{ member.avatar_url }}" alt="{{ member.display_name }}">
+                    </button>
                     <div>
                         <div class="member-meta">
                             <span class="presence-dot {{ 'presence-dot--online' if member.is_online else 'presence-dot--offline' }}"></span>
                             {{ 'Online' if member.is_online else 'Offline' }}
                         </div>
-                        <h3>{{ member.display_name }}</h3>
+                        <button class="member-name-button" data-profile-url="{{ url_for('community.member_profile', username=member.username) }}" style="background:none;border:none;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;">
+                            <h3 style="display:inline;">{{ member.display_name }}</h3>
+                        </button>
                         <div class="community-subtle">@{{ member.username }}</div>
                     </div>
                 </div>
@@ -104,6 +108,7 @@
                     {% else %}
                         <span class="pill">Login erforderlich</span>
                     {% endif %}
+                    <button class="member-profile-button neon-button" data-profile-url="{{ url_for('community.member_profile', username=member.username) }}" style="margin-left:0.5em;">Profil besuchen</button>
                     <span class="pill">Mitglied seit {{ member.created_at.strftime('%d.%m.%Y') if member.created_at else '-' }}</span>
                 </div>
             </article>
