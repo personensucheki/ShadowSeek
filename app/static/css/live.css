@@ -1,3 +1,184 @@
+/* === CYBERPUNK NEON STYLES === */
+
+:root {
+    --neon-pink: #FF00FF;
+    --neon-green: #00FF9F;
+    --dark-bg: #07070a;
+    --panel-glass: rgba(10,18,38,0.92);
+    --panel-border: #1be6b6;
+}
+
+body, .live-page, .live-viewer {
+    background: var(--dark-bg) !important;
+    color: #e8f6ff;
+}
+
+/* Primary Button */
+.btn-primary, .live-start-btn, .live-like-btn .heart {
+    background: var(--neon-pink);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 0 18px 2px var(--neon-pink), 0 0 2px 0 #fff2;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    transition: box-shadow 0.13s, transform 0.13s, background 0.13s;
+}
+.btn-primary:hover, .live-start-btn:hover, .live-like-btn:hover .heart {
+    box-shadow: 0 0 32px 6px var(--neon-pink), 0 0 8px 0 #fff4;
+    transform: translateY(-2px) scale(1.04);
+}
+.btn-primary:active, .live-start-btn:active, .live-like-btn:active .heart {
+    box-shadow: 0 0 12px 2px var(--neon-pink);
+    transform: scale(0.98);
+}
+
+/* Secondary Button */
+.btn-secondary, .live-mode-switch button:not(.active), .gift-btn {
+    background: transparent;
+    color: var(--neon-green);
+    border: 1.5px solid var(--neon-green);
+    border-radius: 12px;
+    font-weight: 600;
+    transition: background 0.13s, box-shadow 0.13s, color 0.13s;
+}
+.btn-secondary:hover, .live-mode-switch button:not(.active):hover, .gift-btn:hover {
+    background: var(--neon-green);
+    color: #07070a;
+    box-shadow: 0 0 18px 2px var(--neon-green);
+}
+.btn-secondary:active, .live-mode-switch button:not(.active):active, .gift-btn:active {
+    background: #0a1a2a;
+    color: var(--neon-green);
+}
+
+/* Inputs, Selects, Textareas */
+.live-form input,
+.live-form select,
+.live-form textarea {
+    background: #07070a;
+    border: 1.5px solid #FF00FF44;
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 0 0 var(--neon-pink);
+    transition: box-shadow 0.13s, border 0.13s;
+}
+.live-form input:focus,
+.live-form select:focus,
+.live-form textarea:focus {
+    outline: none;
+    border: 1.5px solid var(--neon-green);
+    box-shadow: 0 0 12px 2px var(--neon-green);
+}
+
+/* Panels / Cards */
+.live-panel, .live-preview, .live-viewer-side, .live-supporters, .live-chat {
+    background: var(--panel-glass);
+    border: 1.5px solid var(--panel-border);
+    border-radius: 16px;
+    box-shadow: 0 0 32px 0 #00ff9f22, 0 2px 24px 0 #ff00ff22;
+    position: relative;
+}
+.live-panel:before, .live-viewer-side:before {
+    content: "";
+    display: block;
+    position: absolute;
+    left: 0; top: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--neon-pink), var(--neon-green));
+    border-radius: 16px 16px 0 0;
+    opacity: 0.7;
+}
+
+/* Like-Button Neon Pink */
+.live-like-btn .heart {
+    fill: var(--neon-pink);
+    filter: drop-shadow(0 0 12px var(--neon-pink));
+}
+.live-like-btn.liked .heart {
+    animation: popHeart 0.4s;
+    transform: scale(1.25);
+}
+
+/* Geschenk-Button Neon Grün */
+.gift-btn {
+    background: var(--neon-green);
+    color: #07070a;
+    border: none;
+    box-shadow: 0 0 18px 2px var(--neon-green);
+}
+
+/* Chat/Utility Buttons */
+.live-chat-input button {
+    background: #0a1a2a;
+    color: var(--neon-green);
+    border: 1.5px solid var(--neon-green);
+    border-radius: 10px;
+    font-weight: 600;
+    transition: background 0.13s, color 0.13s, box-shadow 0.13s;
+}
+.live-chat-input button:hover {
+    background: var(--neon-green);
+    color: #07070a;
+    box-shadow: 0 0 12px 2px var(--neon-green);
+}
+
+/* Rangliste Neon-Card */
+.live-supporters {
+    border: 1.5px solid var(--neon-pink);
+    box-shadow: 0 0 18px 2px var(--neon-pink);
+}
+.live-supporter-rank {
+    color: var(--neon-pink);
+}
+
+/* Glow-Badges */
+.viewer-count, .live-status-badge {
+    background: #0a1a2a;
+    color: var(--neon-green);
+    border: 1.5px solid var(--neon-green);
+    border-radius: 12px;
+    padding: 0.2em 0.7em;
+    box-shadow: 0 0 12px 2px var(--neon-green);
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+}
+.live-status-badge {
+    color: var(--neon-pink);
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 12px 2px var(--neon-pink);
+}
+
+/* Floating-Action-Spalte (Viewer) */
+.live-viewer-side {
+    position: sticky;
+    top: 2.5rem;
+    min-width: 320px;
+    max-width: 380px;
+}
+
+/* Animationen */
+.btn-primary, .btn-secondary, .live-start-btn, .live-like-btn, .gift-btn, .live-chat-input button {
+    transition: box-shadow 0.13s, transform 0.13s, background 0.13s, color 0.13s;
+}
+
+/* Mobile Anpassungen */
+@media (max-width: 700px) {
+    .live-layout {
+        grid-template-columns: 1fr;
+    }
+    .live-viewer-main {
+        flex-direction: column;
+    }
+    .live-viewer-side {
+        position: static;
+        min-width: unset;
+        max-width: unset;
+    }
+}
+<<<<<<< ours
+<<<<<<< ours
 /* Game-Suche für Live-Studio */
 .game-search-results {
     position: absolute;
@@ -37,6 +218,10 @@
 #game-search-row {
     position: relative;
 }
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 .live-page {
     max-width: 1140px;
     margin: 2rem auto 4rem;
@@ -154,6 +339,8 @@
 .live-feedback {
     min-height: 1.2rem;
     color: #7dfbd0;
+<<<<<<< ours
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -277,6 +464,10 @@
     min-height: 1.2rem;
     color: #7dfbd0;
 >>>>>>> ca53806 (Login reperatur)
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
