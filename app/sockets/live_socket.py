@@ -34,7 +34,24 @@ def handle_leave_stream(socketio, sid, stream_id):
 # Merkt sich, welche Sockets in welchem Stream sind
 socket_stream_map = {}
 
+
+# --- Einfache Rate-Limit- und Validierungsbasis ---
+import time
+
 class LiveNamespace(Namespace):
+    # In-Memory Rate-Limit: {sid: {event: [timestamps]}}
+    rate_limits = defaultdict(lambda: defaultdict(list))
+
+    def _rate_limited(self, sid, event, max_calls, per_seconds):
+        now = time.time()
+        timestamps = self.rate_limits[sid][event]
+        # Entferne alte Einträge
+        self.rate_limits[sid][event] = [t for t in timestamps if now - t < per_seconds]
+        if len(self.rate_limits[sid][event]) >= max_calls:
+            return True
+        self.rate_limits[sid][event].append(now)
+        return False
+
     def on_connect(self):
         pass
 
@@ -44,26 +61,37 @@ class LiveNamespace(Namespace):
     def on_join_stream(self, data):
         stream_id = data.get("stream_id")
         sid = request.sid
-        if stream_id:
-            handle_join_stream(self.server, sid, stream_id)
-            self.socket_stream_map[sid] = stream_id
+        # Validierung: Stream-ID Pflicht, max. 64 Zeichen
+        if not stream_id or not isinstance(stream_id, str) or len(stream_id) > 64:
+            return
+        handle_join_stream(self.server, sid, stream_id)
+        self.socket_stream_map[sid] = stream_id
 
     def on_leave_stream(self, data):
         stream_id = data.get("stream_id")
         sid = request.sid
-        if stream_id:
-            handle_leave_stream(self.server, sid, stream_id)
-            self.socket_stream_map.pop(sid, None)
+        if not stream_id or not isinstance(stream_id, str) or len(stream_id) > 64:
+            return
+        handle_leave_stream(self.server, sid, stream_id)
+        self.socket_stream_map.pop(sid, None)
 
     def on_send_message(self, data):
         stream_id = data.get("stream_id")
         message = (data.get("message") or "").strip()
         sid = request.sid
         user_id = session.get("user_id")
-        # Validierung
-        if not stream_id or not message or len(message) > 500:
+        # Session-Check: Nur eingeloggte User
+        if not user_id:
             return
-        # Hier könnte DB-Speicherung erfolgen
+        # Validierung
+        if not stream_id or not isinstance(stream_id, str) or len(stream_id) > 64:
+            return
+        if not message or len(message) > 500:
+            return
+        # Rate-Limit: max 5 Nachrichten pro 10s
+        if self._rate_limited(sid, "send_message", 5, 10):
+            emit("rate_limit", {"event": "send_message", "msg": "Zu viele Nachrichten. Bitte warte kurz."})
+            return
         payload = {
             "stream_id": stream_id,
             "user_id": user_id,
@@ -76,9 +104,14 @@ class LiveNamespace(Namespace):
         stream_id = data.get("stream_id")
         sid = request.sid
         user_id = session.get("user_id")
-        if not stream_id:
+        if not user_id:
             return
-        # Hier könnte Like in DB gespeichert werden
+        if not stream_id or not isinstance(stream_id, str) or len(stream_id) > 64:
+            return
+        # Rate-Limit: max 5 Likes pro 10s
+        if self._rate_limited(sid, "send_like", 5, 10):
+            emit("rate_limit", {"event": "send_like", "msg": "Zu viele Likes. Bitte warte kurz."})
+            return
         payload = {
             "stream_id": stream_id,
             "user_id": user_id,
@@ -89,12 +122,24 @@ class LiveNamespace(Namespace):
     def on_send_gift(self, data):
         stream_id = data.get("stream_id")
         gift_type = data.get("gift_type")
-        amount = int(data.get("amount") or 1)
+        try:
+            amount = int(data.get("amount") or 1)
+        except Exception:
+            amount = 1
         sid = request.sid
         user_id = session.get("user_id")
-        if not stream_id or not gift_type or amount < 1:
+        if not user_id:
             return
-        # Hier könnte Gift in DB gespeichert werden
+        if not stream_id or not isinstance(stream_id, str) or len(stream_id) > 64:
+            return
+        if not gift_type or not isinstance(gift_type, str) or len(gift_type) > 32:
+            return
+        if amount < 1 or amount > 100:
+            return
+        # Rate-Limit: max 3 Gifts pro 20s
+        if self._rate_limited(sid, "send_gift", 3, 20):
+            emit("rate_limit", {"event": "send_gift", "msg": "Zu viele Gifts. Bitte warte kurz."})
+            return
         payload = {
             "stream_id": stream_id,
             "user_id": user_id,
@@ -107,7 +152,6 @@ class LiveNamespace(Namespace):
     # Leaderboard-Update (Platzhalter, später DB)
     def on_leaderboard_update(self, data):
         stream_id = data.get("stream_id")
-        # Hier könnte die Leaderboard-Logik stehen
         room = get_stream_room(stream_id)
         emit("leaderboard_update", {"stream_id": stream_id, "leaderboard": []}, room=room)
 
