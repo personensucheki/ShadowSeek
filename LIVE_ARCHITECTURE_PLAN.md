@@ -7,6 +7,14 @@
 - Cloud Storage Bucket als HLS-Ausgabeziel
 - HLS-Playback im Frontend
 
+## Region / Location (Google Provider)
+- Empfohlene Default-Region für dieses Setup: **`europe-west3` (Frankfurt)**.
+- Warum:
+  - europäische/deutsche Nähe (Latenz),
+  - konsistente Provider-Ressourcen (Inputs/Channels/Endpoints in einer Region),
+  - besser planbar für Betrieb/Observability.
+- ShadowSeek speichert und nutzt diese Location **serverseitig** via `GOOGLE_CLOUD_LOCATION`.
+
 ## Provider-Output-Referenzierung
 - Das LiveStream-Modell speichert:
   - provider

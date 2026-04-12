@@ -12,6 +12,28 @@ from app.services.provider_errors import ProviderError
 
 _BUCKET_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$")
 _FORBIDDEN_BUCKET_SUBSTRINGS = ("gs://", "http://", "https://")
+_LOCATION_PATTERN = re.compile(r"^[a-z]+-[a-z0-9]+\\d+$")
+
+
+def validate_gcp_location(value: str) -> str:
+    """
+    Validates that `value` looks like a GCP region/location slug (e.g. europe-west3).
+    No silent normalization/conversion; returns trimmed value when valid.
+    """
+    raw = (value or "").strip()
+    if not raw:
+        raise ProviderError(
+            "provider_not_configured",
+            "Google location is not configured.",
+            detail={"missing_fields": ["GOOGLE_CLOUD_LOCATION"]},
+        )
+    if not _LOCATION_PATTERN.match(raw):
+        raise ProviderError(
+            "validation_error",
+            "GOOGLE_CLOUD_LOCATION has an invalid region/location format (e.g. europe-west3).",
+            detail={"value": raw},
+        )
+    return raw
 
 
 def validate_gcs_bucket_name(value: str) -> str:
@@ -105,6 +127,8 @@ def google_credentials_status() -> dict:
         "credentials_path_hint": str(cred_path) if cred_path else None,
         "project_id": project_id or None,
         "location": location or None,
+        "location_valid": location_valid,
+        "location_error": location_error,
         "output_bucket": output_bucket or None,
         "output_bucket_valid": bucket_valid,
         "output_bucket_error": bucket_error,
@@ -127,6 +151,7 @@ def require_google_credentials() -> Path:
 
     # Validate bucket format early (no implicit conversions).
     validate_gcs_bucket_name(current_app.config.get("GOOGLE_CLOUD_OUTPUT_BUCKET") or "")
+    validate_gcp_location(current_app.config.get("GOOGLE_CLOUD_LOCATION") or "")
 
     cred_path = _normalize_credentials_path(current_app.config.get("GOOGLE_APPLICATION_CREDENTIALS") or "")
     if not cred_path:
@@ -196,3 +221,11 @@ def require_google_credentials() -> Path:
         )
 
     return cred_path
+    location_valid = False
+    location_error = None
+    if location:
+        try:
+            validate_gcp_location(location)
+            location_valid = True
+        except ProviderError as exc:
+            location_error = exc.as_dict()
