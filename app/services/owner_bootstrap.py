@@ -56,12 +56,30 @@ def ensure_owner_account(app):
             user = User(username=username, email=email)
             db.session.add(user)
 
+        # Standard-Profilwerte
         user.username = username
         user.email = email
         user.role = "super_admin"
         user.is_active = True
         user.is_verified = True
         user.set_password(password)
+        user.display_name = "Admin"
+        user.profile_title = "SuperAdmin | Eigentumer | Support"
+        user.bio = "Ich bin der Eigentumer von ShadowSeek, SuperAdmin und fuer Support zustaendig. Bei Anliegen oder Spenden bitte direkt kontaktieren."
+        user.birthdate = datetime(2026, 4, 12).date()
+        user.gender = "Männlich"
+        user.country = ""
+        user.city = ""
+        user.height_cm = 187
+        user.hobbies = ""
+        user.interests = ""
+        user.preferences = ""
+        user.support_contact = "personensucheki@gmail.com"
+        user.donation_link = "https://paypal.me/personensucheki"
+        user.social_accounts = "{}"
+        # Avatar und Banner setzen
+        user.avatar = "avatars/user_1_avatar_20260412000000.png"
+        user.banner = "banners/user_1_banner_20260412000000.png"
         db.session.commit()
     except OperationalError as exc:  # pragma: no cover
         db.session.rollback()
