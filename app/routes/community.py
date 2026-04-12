@@ -303,7 +303,8 @@ def unread_message_count():
         )
         .count()
     )
-    return jsonify(success=True, unread_count=count)
+    from app.services.response_utils import api_success
+    return api_success({"unread_count": count})
 
 
 @community_bp.route("/stats", methods=["GET"])

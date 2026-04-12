@@ -1,6 +1,7 @@
 import logging
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, request, session
+from app.services.response_utils import api_success, api_error
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -73,11 +74,11 @@ def _collect_revenue_query_rows(data):
 def einnahmen_query():
     data = request.get_json(silent=True) or {}
     if not isinstance(data, dict):
-        return jsonify({"success": False, "error": "Invalid JSON body."}), 400
+        return api_error("Invalid JSON body.", status=400)
     rows = _collect_revenue_query_rows(data)
     if isinstance(rows, dict) and rows.get("_validation_error"):
-        return jsonify({"success": False, "errors": rows["_validation_error"]}), 400
-    return jsonify(rows)
+        return api_error("Validation error", status=400, errors=rows["_validation_error"])
+    return api_success(rows)
 
 
 @query_api_bp.route("/api/pulse/query", methods=["POST"])
@@ -85,7 +86,7 @@ def einnahmen_query():
 def pulse_query():
     data = request.get_json(silent=True) or {}
     if not isinstance(data, dict):
-        return jsonify({"success": False, "error": "Invalid JSON body."}), 400
+        return api_error("Invalid JSON body.", status=400)
 
     creator_query = (data.get("nutzername") or "").strip()
     if creator_query:
@@ -97,29 +98,23 @@ def pulse_query():
                 deep_search=True,
             )
         except SearchValidationError as error:
-            return jsonify({"success": False, "errors": error.errors}), 400
+            return api_error("Validation error", status=400, errors=error.errors)
 
-        return jsonify(
-            {
-                "success": True,
-                "mode": "profile_scan",
-                "query": scan_result.get("query", {}),
-                "summary": scan_result.get("summary", {}),
-                "meta": scan_result.get("meta", {}),
-                "rows": build_query_rows(scan_result),
-            }
-        )
+        return api_success({
+            "mode": "profile_scan",
+            "query": scan_result.get("query", {}),
+            "summary": scan_result.get("summary", {}),
+            "meta": scan_result.get("meta", {}),
+            "rows": build_query_rows(scan_result),
+        })
 
     rows = _collect_revenue_query_rows(data)
     if isinstance(rows, dict) and rows.get("_validation_error"):
-        return jsonify({"success": False, "errors": rows["_validation_error"]}), 400
-    return jsonify(
-        {
-            "success": True,
-            "mode": "revenue",
-            "rows": rows,
-        }
-    )
+        return api_error("Validation error", status=400, errors=rows["_validation_error"])
+    return api_success({
+        "mode": "revenue",
+        "rows": rows,
+    })
 
 
 @query_api_bp.route("/api/pulse/query/search", methods=["POST"])

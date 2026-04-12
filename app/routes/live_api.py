@@ -1,7 +1,8 @@
 import logging
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, request, session
+from app.services.response_utils import api_success, api_error
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import EinnahmeInfo, User
@@ -35,7 +36,7 @@ def _collect_live_rows(platform):
 
 @live_api_bp.route("/api/live/<platform>")
 def live_platform(platform):
-    return jsonify(_collect_live_rows(platform))
+    return api_success(_collect_live_rows(platform))
 
 
 @live_api_bp.route("/api/pulse/live/<platform>")
@@ -51,25 +52,19 @@ def pulse_live_platform(platform):
                 deep_search=True,
             )
         except SearchValidationError as error:
-            return jsonify({"success": False, "errors": error.errors}), 400
+            return api_error("Validation error", status=400, errors=error.errors)
 
-        return jsonify(
-            {
-                "success": True,
-                "mode": "profile_scan",
-                "platform": platform,
-                "query": scan_result.get("query", {}),
-                "summary": scan_result.get("summary", {}),
-                "meta": scan_result.get("meta", {}),
-                "rows": build_live_rows(scan_result),
-            }
-        )
-
-    return jsonify(
-        {
-            "success": True,
-            "mode": "revenue",
+        return api_success({
+            "mode": "profile_scan",
             "platform": platform,
-            "rows": _collect_live_rows(platform),
-        }
-    )
+            "query": scan_result.get("query", {}),
+            "summary": scan_result.get("summary", {}),
+            "meta": scan_result.get("meta", {}),
+            "rows": build_live_rows(scan_result),
+        })
+
+    return api_success({
+        "mode": "revenue",
+        "platform": platform,
+        "rows": _collect_live_rows(platform),
+    })

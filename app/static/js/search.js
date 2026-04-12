@@ -803,17 +803,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
 
             const contentType = response.headers.get("content-type") || "";
-            const payload = contentType.includes("application/json")
+            const envelope = contentType.includes("application/json")
                 ? await response.json()
                 : { error: "Unexpected server response." };
 
-            if (!response.ok) {
-                const errors = payload.errors
-                    ? Object.values(payload.errors).join(" ")
-                    : payload.error || "Suche fehlgeschlagen.";
+            if (!envelope.success) {
+                const errors = envelope.errors
+                    ? Object.values(envelope.errors).join(" ")
+                    : envelope.error || envelope.message || "Suche fehlgeschlagen.";
                 throw new Error(errors);
             }
 
+            const payload = envelope.data || {};
             renderMessages(payload, messageBox);
             renderReverseImageLinks(payload.reverse_image_search, reverseLinks);
             renderProfiles(payload.profiles, resultsList);

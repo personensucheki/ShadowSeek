@@ -1,4 +1,44 @@
+
+
 from __future__ import annotations
+# --- Shared Upload Validation Helper ---
+import mimetypes
+
+ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov"}
+ALLOWED_MIME_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".mov": "video/quicktime",
+}
+
+def validate_upload(file_obj, allowed_exts, max_size):
+    """
+    Validates file extension, MIME type, and size. Raises ValueError on error.
+    """
+    if not file_obj or not file_obj.filename:
+        raise ValueError("Keine Datei erhalten.")
+    filename = secure_filename(file_obj.filename)
+    ext = Path(filename).suffix.lower()
+    if ext not in allowed_exts:
+        raise ValueError(f"Dateityp {ext} nicht erlaubt.")
+    file_obj.stream.seek(0, 2)
+    size = file_obj.stream.tell()
+    file_obj.stream.seek(0)
+    if size > max_size:
+        raise ValueError(f"Datei zu gross (max. {max_size // (1024 * 1024)} MB).")
+    # MIME type check
+    mime_type = file_obj.mimetype or mimetypes.guess_type(filename)[0]
+    expected_mime = ALLOWED_MIME_TYPES.get(ext)
+    if expected_mime and mime_type and not mime_type.startswith(expected_mime.split("/")[0]):
+        raise ValueError(f"MIME-Typ {mime_type} stimmt nicht mit Dateityp {ext} überein.")
+
+    return filename, ext, mime_type
 
 import re
 from pathlib import Path

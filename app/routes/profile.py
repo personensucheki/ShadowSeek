@@ -43,40 +43,27 @@ def _ensure_upload_dir(folder_name: str) -> Path:
 
 
 def _save_image(file_obj, user_id: int, kind: str):
+    from app.services.media import validate_upload, ALLOWED_IMAGE_EXTENSIONS
     if not file_obj or not file_obj.filename:
         return None
-
-    # Enforce MAX_CONTENT_LENGTH
     max_size = current_app.config.get("MAX_CONTENT_LENGTH", 5 * 1024 * 1024)
-    file_obj.stream.seek(0, 2)  # Seek to end
-    size = file_obj.stream.tell()
-    file_obj.stream.seek(0)
-    if size > max_size:
-        raise ValueError(f"Datei zu gross (max. {max_size // (1024*1024)} MB erlaubt).")
-
-    filename = secure_filename(file_obj.filename)
-    extension = Path(filename).suffix.lower()
-    if extension not in ALLOWED_IMAGE_EXTENSIONS:
-        raise ValueError("Nur PNG, JPG, JPEG, WEBP oder GIF sind erlaubt.")
-
+    filename, extension, mime_type = validate_upload(file_obj, ALLOWED_IMAGE_EXTENSIONS, max_size)
     folder = _ensure_upload_dir("avatars" if kind == "avatar" else "banners")
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     stored_name = f"user_{user_id}_{kind}_{timestamp}{extension}"
     target = folder / stored_name
     file_obj.save(target)
-
     relative = "avatars" if kind == "avatar" else "banners"
     return f"{relative}/{stored_name}"
 
 
 @profile_bp.route("/uploads/<path:filename>", methods=["GET"])
 def uploaded_file(filename: str):
-    """Serve uploaded media files.
-
-    On Render this MUST be backed by a persistent disk via UPLOAD_DIRECTORY,
-    otherwise images will disappear after restart.
-    """
+    """Serve uploaded media files. Returns 404 with safe error if missing."""
     upload_root = Path(current_app.config["UPLOAD_DIRECTORY"])
+    target = upload_root / filename
+    if not target.exists() or not target.is_file():
+        return api_error("Datei nicht gefunden.", status=404)
     return send_from_directory(upload_root, filename, conditional=True)
 
 

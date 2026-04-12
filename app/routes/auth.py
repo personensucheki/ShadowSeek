@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from flask import Blueprint, jsonify, redirect, request, session, url_for
+from app.services.response_utils import api_success, api_error
 from sqlalchemy import func
 
 from app.extensions.main import db
@@ -29,15 +30,10 @@ def _payload_value(data: dict, key: str) -> str:
 
 def _auth_response(success: bool, message: str, *, redirect_to: str, status_code: int = 200):
     if _wants_json_response():
-        return (
-            jsonify(
-                success=success,
-                message=message,
-                redirect=redirect_to if success else None,
-            ),
-            status_code,
-        )
-
+        if success:
+            return api_success({"redirect": redirect_to}, message=message, status=status_code)
+        else:
+            return api_error(message, status=status_code, errors={"redirect": redirect_to})
     if success:
         return redirect(redirect_to)
     return redirect(url_for("search.home"))
@@ -51,7 +47,6 @@ def _set_auth_session(user: User) -> None:
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
-@csrf.exempt
 def register():
     if request.method == "GET":
         return redirect(url_for("search.home"))
@@ -143,8 +138,20 @@ def register():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
-@csrf.exempt
 def login():
+
+    from app.services.response_utils import check_rate_limit
+    allowed, remaining = check_rate_limit("/auth/login")
+    if not allowed:
+        import logging
+        logging.warning("/auth/login rate limit hit for IP %s", request.remote_addr)
+        return api_error("Rate limit exceeded. Bitte warte kurz.", status=429)
+    allowed, remaining = check_rate_limit("/auth/register")
+    if not allowed:
+        import logging
+        logging.warning("/auth/register rate limit hit for IP %s", request.remote_addr)
+        return api_error("Rate limit exceeded. Bitte warte kurz.", status=429)
+
     if request.method == "GET":
         return redirect(url_for("search.home"))
 
@@ -199,12 +206,11 @@ def logout():
     session.pop("is_admin", None)
 
     if _wants_json_response():
-        return jsonify(success=True, message="Abgemeldet.", redirect=url_for("search.home"))
+        return api_success({"redirect": url_for("search.home")}, message="Abgemeldet.")
     return redirect(url_for("search.home"))
 
 
 @auth_bp.route("/forgot-password", methods=["POST"])
-@csrf.exempt
 def forgot_password():
     return _auth_response(
         False,

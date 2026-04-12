@@ -7,7 +7,8 @@ These endpoints are used by the Feed frontend (`app/static/js/feed.js`).
 They are intentionally separate from the main feed listing endpoint in `routes/feed.py`.
 """
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, request, session
+from app.services.response_utils import api_success, api_error
 
 from app.extensions.main import db
 from app.models.media_post import MediaPost
@@ -36,7 +37,7 @@ def _current_user_id() -> int | None:
 def get_comments(post_id: int):
     post = db.session.get(MediaPost, post_id)
     if not post:
-        return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
+        return api_error("Post nicht gefunden.", status=404, errors={"code": "not_found"})
 
     comments = (
         PostComment.query.filter_by(post_id=post_id)
@@ -60,53 +61,50 @@ def get_comments(post_id: int):
                 "created_at": c.created_at.isoformat(),
             }
         )
-    return jsonify({"success": True, "items": items})
+    return api_success({"items": items})
 
 
 @feed_api_bp.post("/api/feed/<int:post_id>/comments")
 def post_comment(post_id: int):
     user_id = _current_user_id()
     if not user_id:
-        return jsonify({"success": False, "error": {"message": "Nicht eingeloggt.", "code": "not_authenticated"}}), 401
+        return api_error("Nicht eingeloggt.", status=401, errors={"code": "not_authenticated"})
 
     post = db.session.get(MediaPost, post_id)
     if not post:
-        return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
+        return api_error("Post nicht gefunden.", status=404, errors={"code": "not_found"})
 
     data = request.get_json(silent=True) or {}
     content = (data.get("content") or "").strip()
     if not content:
-        return jsonify({"success": False, "error": {"message": "Kommentar darf nicht leer sein.", "code": "empty"}}), 400
+        return api_error("Kommentar darf nicht leer sein.", status=400, errors={"code": "empty"})
 
     comment = PostComment(post_id=post_id, user_id=user_id, content=content[:500])
     db.session.add(comment)
     db.session.commit()
 
     user = db.session.get(User, user_id)
-    return jsonify(
-        {
-            "success": True,
-            "comment": {
-                "id": comment.id,
-                "user_id": user_id,
-                "username": user.username if user else "user",
-                "display_name": (user.display_name or user.username) if user else "User",
-                "content": comment.content,
-                "created_at": comment.created_at.isoformat(),
-            },
-        }
-    )
+    return api_success({
+        "comment": {
+            "id": comment.id,
+            "user_id": user_id,
+            "username": user.username if user else "user",
+            "display_name": (user.display_name or user.username) if user else "User",
+            "content": comment.content,
+            "created_at": comment.created_at.isoformat(),
+        },
+    })
 
 
 @feed_api_bp.post("/api/feed/<int:post_id>/like")
 def like_post(post_id: int):
     user_id = _current_user_id()
     if not user_id:
-        return jsonify({"success": False, "error": {"message": "Nicht eingeloggt.", "code": "not_authenticated"}}), 401
+        return api_error("Nicht eingeloggt.", status=401, errors={"code": "not_authenticated"})
 
     post = db.session.get(MediaPost, post_id)
     if not post:
-        return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
+        return api_error("Post nicht gefunden.", status=404, errors={"code": "not_found"})
 
     existing = PostLike.query.filter_by(post_id=post_id, user_id=user_id).first()
     if existing:
@@ -120,7 +118,7 @@ def like_post(post_id: int):
     like_count = PostLike.query.filter_by(post_id=post_id).count()
     post.like_count = like_count
     db.session.commit()
-    return jsonify({"success": True, "liked": liked, "like_count": like_count, "post_id": post_id})
+    return api_success({"liked": liked, "like_count": like_count, "post_id": post_id})
 
 
 @feed_api_bp.post("/api/feed/<int:post_id>/view")
@@ -128,6 +126,6 @@ def view_post(post_id: int):
     # Minimal structured response; view-count persistence can be added later.
     post = db.session.get(MediaPost, post_id)
     if not post:
-        return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
-    return jsonify({"success": True, "viewed": True, "post_id": post_id})
+        return api_error("Post nicht gefunden.", status=404, errors={"code": "not_found"})
+    return api_success({"viewed": True, "post_id": post_id})
 

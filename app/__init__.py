@@ -66,10 +66,91 @@ def _resolve_default_config():
 
 def create_app(config_class=None):
 
+    # --- ENV VALIDATION LAYER (PHASE 1) ---
+    import sys
+    required_env = [
+        "SECRET_KEY",
+        "DATABASE_URL",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_PRICE_ID_ABO_1",
+        "STRIPE_PRICE_ID_ABO_2",
+        "STRIPE_PRICE_ID_ABO_3",
+        "STRIPE_PRICE_ID_ABO_4",
+    ]
+    optional_env = [
+        "OPENAI_API_KEY",
+        "SERPER_API_KEY",
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_CHAT_ID",
+        "TWITCH_CLIENT_ID",
+        "TWITCH_CLIENT_SECRET",
+        "YOUTUBE_API_KEY",
+        "REDDIT_USER_AGENT",
+    ]
+    missing_required = [k for k in required_env if not os.environ.get(k)]
+    missing_optional = [k for k in optional_env if not os.environ.get(k)]
+    disabled_features = []
+    if not os.environ.get("OPENAI_API_KEY"):
+        disabled_features.append("AI rerank (OpenAI)")
+    if not os.environ.get("SERPER_API_KEY"):
+        disabled_features.append("Websearch (Serper)")
+    if not os.environ.get("TELEGRAM_BOT_TOKEN") or not os.environ.get("TELEGRAM_CHAT_ID"):
+        disabled_features.append("Telegram alerts")
+    if not os.environ.get("TWITCH_CLIENT_ID") or not os.environ.get("TWITCH_CLIENT_SECRET"):
+        disabled_features.append("Twitch integration")
+    if not os.environ.get("YOUTUBE_API_KEY"):
+        disabled_features.append("YouTube integration")
+    if not os.environ.get("REDDIT_USER_AGENT"):
+        disabled_features.append("Reddit integration")
+
+    if missing_required:
+        print("\n[ENV VALIDATION] FATAL: Missing required environment variables:", file=sys.stderr)
+        for k in missing_required:
+            print(f"  - {k}", file=sys.stderr)
+        print("\n[ENV VALIDATION] Application startup aborted due to missing critical configuration.\n", file=sys.stderr)
+        sys.exit(1)
+
+    if missing_optional:
+        print("\n[ENV VALIDATION] WARNING: Missing optional environment variables:", file=sys.stderr)
+        for k in missing_optional:
+            print(f"  - {k}", file=sys.stderr)
+
+    if disabled_features:
+        print("\n[ENV VALIDATION] Optional features disabled due to missing ENV:", file=sys.stderr)
+        for feat in disabled_features:
+            print(f"  - {feat}", file=sys.stderr)
+
+
+
     # .env laden, bevor Flask/Provider initialisiert werden
     load_dotenv()
     import logging
+    from logging.handlers import RotatingFileHandler
     from app.services.response_utils import api_error
+
+    # --- LOGGING SETUP ---
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "app.log")
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    # Remove default handlers to avoid duplicate logs
+    for handler in list(root_logger.handlers):
+        root_logger.removeHandler(handler)
+    file_handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=5, encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
+    file_handler.setFormatter(file_formatter)
+    root_logger.addHandler(file_handler)
+    # Console handler for development
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
+    console_handler.setFormatter(console_formatter)
+    root_logger.addHandler(console_handler)
+
+    logging.info("Logging initialized. Log file: %s", log_file)
 
     app = Flask(__name__, instance_relative_config=True)
 
@@ -99,7 +180,8 @@ def create_app(config_class=None):
     Path(app.config["UPLOAD_DIRECTORY"]).mkdir(parents=True, exist_ok=True)
 
     if not app.config.get("SECRET_KEY") and not app.config.get("TESTING"):
-        raise RuntimeError("SECRET_KEY must be configured for ShadowSeek.")
+        print("[ENV VALIDATION] FATAL: SECRET_KEY must be configured for ShadowSeek.", file=sys.stderr)
+        sys.exit(1)
 
     db.init_app(app)
     migrate.init_app(app, db)

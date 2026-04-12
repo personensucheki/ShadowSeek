@@ -1,12 +1,25 @@
 # ShadowSeek – Final Launch Status (Stand: 2026-04-12)
 
+
 ## Zusammenfassung (ohne Beschönigung)
 
 ShadowSeek ist **nicht** “fertig live” im Sinne eines sauberen, harten Produktionsbetriebs, aber der Kernflow (Search UI → `/api/search` → JSON → UI Rendering) ist real verbunden.
 
-Status: **Ready with warnings**
+### Status Matrix (April 2026)
+
+| Module                  | Status                | Reason/Evidence                                                                 | Risks |
+|-------------------------|----------------------|-------------------------------------------------------------------------------|-------|
+| Upload/Media            | READY WITH WARNINGS  | Validation not fully hardened; depends on /data/uploads; see audit            | Data loss, unsafe files |
+| API Response Standard   | READY WITH WARNINGS  | Search/Suggest jetzt voll normalisiert (Envelope), Frontend kompatibel, Rest siehe Audit | Integration bugs, Rate-Limit fehlt |
+| Search/Deepsearch       | READY WITH WARNINGS  | Envelope jetzt strikt, Runtime-Tests bestanden, Frontend kompatibel, Rest siehe Audit | Incomplete, ToS/privacy |
+| Pulse/Revenue           | READY WITH WARNINGS  | Legacy fields, config incomplete; endpoints 404; see audit                    | Data drift, missing features |
+| Responsive UI           | PARTIALLY VERIFIED   | Only core pages tested; no full viewport validation                           | Layout issues |
+| Integrations            | PARTIALLY VERIFIED   | ENV keys not all validated/tested; see audit                                  | Integration failures |
+
+**Global:** VERIFIED = proven + complete + no known risks. Siehe PROJECT_AUDIT_FULL.md und PHASE 5 Patch für Details.
 
 ---
+
 
 ## Was funktioniert echt?
 
@@ -35,13 +48,19 @@ Status: **Ready with warnings**
 
 ---
 
+
 ## Was bleibt offen / blockiert “sauber live”?
 
-Blocker/High-Risks:
-- CSRF/Session-Security auf Auth (P0)
+**Blocker/High-Risks:**
+	- Auth CSRF: READY WITH WARNINGS. CSRF enforced, but failure feedback is not explicit. No raw exceptions.
 - Rate-Limiting/Abuse-Protection (P1)
 - Screenshot Deploy (Playwright) oder ehrliches Deaktivieren (P1/P2)
 - Legacy Cleanup (P2)
+- Upload/Media: Validation und Directory-Checks härten
+- API Response: Standardisierung abschließen
+- Pulse/Revenue: Legacy-Felder bereinigen, Endpunkte implementieren
+- Responsive UI: Auf allen Viewports testen
+- Integrationen: ENV/Secrets validieren und testen
 
 ---
 

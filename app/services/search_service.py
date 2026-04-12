@@ -407,6 +407,7 @@ def _build_candidate_result(platform, variation, *, deep_search=False):
 
 
 def dedupe_and_limit_profiles(profiles, deep_search):
+    # Bound deepsearch to max 2 per platform, never more than 20 total
     per_platform_limit = 2 if deep_search else 1
     deduped = {}
 
@@ -426,7 +427,7 @@ def dedupe_and_limit_profiles(profiles, deep_search):
             sorted(items, key=lambda item: item["match_score"], reverse=True)[:per_platform_limit]
         )
 
-    return sorted(limited, key=lambda item: item["match_score"], reverse=True)
+    return sorted(limited, key=lambda item: item["match_score"], reverse=True)[:20]
 
 
 def execute_search(payload, request_base_url, image_file=None):
@@ -438,16 +439,50 @@ def execute_search(payload, request_base_url, image_file=None):
     primary_variation = username_variations[0] if username_variations else UsernameVariation(payload.username, 100, "Exact username")
     profiles = []
 
+    import logging
     for platform in selected_platforms:
-        profiles.append(_build_candidate_result(platform, primary_variation, deep_search=payload.deep_search))
-        if payload.deep_search and len(username_variations) > 1:
-            profiles.append(
-                _build_candidate_result(
-                    platform,
-                    username_variations[1],
-                    deep_search=payload.deep_search,
+        if platform.slug == "tiktok":
+            logging.warning("SEARCH_DISPATCH_TRACE: Attempting TikTok provider dispatch for username='%s'", payload.username)
+            try:
+                from app.providers.tiktok_provider import TikTokProvider
+                provider = TikTokProvider()
+                provider_result = provider.search_creator(
+                    payload.username,
+                    platform.slug,
+                    getattr(payload, "real_name", None),
+                    getattr(payload, "deep_search", False),
                 )
-            )
+                logging.warning("SEARCH_DISPATCH_TRACE: TikTok provider returned result: %s", bool(provider_result))
+                if provider_result:
+                    profiles.append({
+                        "platform": platform.name,
+                        "platform_slug": platform.slug,
+                        "category": platform.category,
+                        "username": payload.username,
+                        "profile_url": f"https://www.tiktok.com/@{payload.username}",
+                        "url": f"https://www.tiktok.com/@{payload.username}",
+                        "match_score": 100,
+                        "verification": "provider",
+                        "confidence": "high",
+                        "match_reason": "TikTok provider executed",
+                        "source": "tiktok_provider",
+                        "title": "TikTok Provider Result",
+                        "snippet": str(provider_result),
+                    })
+                else:
+                    logging.warning("SEARCH_DISPATCH_TRACE: TikTok provider returned no result.")
+            except Exception as e:
+                logging.error("SEARCH_DISPATCH_TRACE: TikTok provider dispatch failed: %s", e)
+        else:
+            profiles.append(_build_candidate_result(platform, primary_variation, deep_search=payload.deep_search))
+            if payload.deep_search and len(username_variations) > 1:
+                profiles.append(
+                    _build_candidate_result(
+                        platform,
+                        username_variations[1],
+                        deep_search=payload.deep_search,
+                    )
+                )
 
     serper_meta = {"used": False, "queries": 0, "provider": None}
     search_engine_meta = {"used": False, "queries": 0, "provider": None}
@@ -675,14 +710,19 @@ def run_serper_query(query, config):
         "hl": (config or {}).get("hl", "de"),
         "num": int((config or {}).get("num", 8)),
     }
-    response = get_http_session().post(
-        api_url,
-        headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
-        json=payload,
-        timeout=float((config or {}).get("timeout", 6.0)),
-    )
-    response.raise_for_status()
-    return response.json()
+    import logging
+    try:
+        response = get_http_session().post(
+            api_url,
+            headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
+            json=payload,
+            timeout=float((config or {}).get("timeout", 6.0)),
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logging.warning(f"[Serper] Provider call failed or timed out: {e}")
+        return {"organic": []}
 
 
 def has_serper_api_key():
@@ -734,23 +774,22 @@ def collect_serper_profiles(payload, username_variations, selected_platforms):
 
     raw_results: list[dict] = []
     used_queries = 0
+    import logging
     for q in queries:
-        try:
-            data = run_serper_query(
-                q,
-                {
-                    "api_url": current_app.config.get("SERPER_API_URL"),
-                    "api_key": current_app.config.get("SERPER_API_KEY"),
-                    "gl": current_app.config.get("SERPER_GL", "de"),
-                    "hl": current_app.config.get("SERPER_HL", "de"),
-                    "num": num,
-                    "timeout": timeout,
-                },
-            )
-        except Exception:
-            continue
-
+        data = run_serper_query(
+            q,
+            {
+                "api_url": current_app.config.get("SERPER_API_URL"),
+                "api_key": current_app.config.get("SERPER_API_KEY"),
+                "gl": current_app.config.get("SERPER_GL", "de"),
+                "hl": current_app.config.get("SERPER_HL", "de"),
+                "num": num,
+                "timeout": timeout,
+            },
+        )
         organic = data.get("organic") or []
+        if not organic:
+            logging.info(f"[Serper] No organic results for query: {q}")
         for item in organic:
             link = normalize_result_url(item.get("link"))
             if not link:
@@ -792,6 +831,7 @@ def collect_bing_profiles(payload, username_variations, selected_platforms):
 
     raw_results: list[dict] = []
     used_queries = 0
+    import logging
     for q in queries:
         try:
             response = get_http_session().get(
@@ -801,7 +841,8 @@ def collect_bing_profiles(payload, username_variations, selected_platforms):
                 allow_redirects=True,
             )
             response.raise_for_status()
-        except Exception:
+        except Exception as e:
+            logging.warning(f"[Bing RSS] Provider call failed or timed out: {e}")
             continue
 
         parsed = parse_bing_rss_feed(response.text, limit)
@@ -841,10 +882,14 @@ def discover_profiles(payload, username_variations, selected_platforms):
     # Backwards-compatible behavior for tests/older frontend:
     # - If Serper is configured, prefer Serper.
     # - Otherwise use Bing RSS fallback if enabled.
+    import logging
     profiles, meta = collect_serper_profiles(payload, username_variations, selected_platforms)
     if profiles:
         return profiles, meta
+    logging.warning("[Discover] Serper failed or returned no profiles, falling back to Bing RSS.")
     profiles, meta = collect_bing_profiles(payload, username_variations, selected_platforms)
+    if not profiles:
+        logging.error("[Discover] All provider calls failed, returning empty profile list.")
     return profiles, meta
 
 def scan_platform(payload, username_variations, platform, raw_results):

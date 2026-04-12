@@ -101,7 +101,8 @@ function renderAutocompleteList(container, input, suggestions, query) {
 async function fetchSuggestions(query, engine) {
     const url = `/api/suggest?${new URLSearchParams({ q: query, engine: engine || "shadowseek" }).toString()}`;
     const response = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
-    const payload = await response.json().catch(() => ({}));
+    const envelope = await response.json().catch(() => ({}));
+    const payload = envelope && envelope.success ? envelope.data : {};
     const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions : [];
     return suggestions.slice(0, 10);
 }

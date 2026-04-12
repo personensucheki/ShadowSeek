@@ -1,4 +1,5 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
+from app.services.response_utils import api_success, api_error
 from app.models import EinnahmeInfo
 from app.services.request_validation import ValidationError, parse_date, parse_float, parse_pagination
 from app.services.revenue_events import serialize_revenue_event
@@ -29,6 +30,6 @@ def einnahmen_list():
             query = query.filter(EinnahmeInfo.captured_at <= parse_date(args["to"], "to"))
         limit, offset = parse_pagination(args, default_limit=100, max_limit=500)
         einnahmen = query.order_by(EinnahmeInfo.captured_at.desc()).offset(offset).limit(limit).all()
-        return jsonify([serialize_revenue_event(entry) for entry in einnahmen])
+        return api_success([serialize_revenue_event(entry) for entry in einnahmen])
     except ValidationError as error:
-        return jsonify({"success": False, "errors": error.errors}), 400
+        return api_error("Validation error", status=400, errors=error.errors)

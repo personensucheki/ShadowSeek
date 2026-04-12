@@ -4,6 +4,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
 
+from app.services.response_utils import api_success
+
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
@@ -52,19 +54,20 @@ def _empty_summary_payload(labels, collector_status="waiting"):
 
 @dashboard_bp.route("/api/einnahmen/summary")
 def einnahmen_summary():
+    import logging
+    logging.warning("[TRACE] /api/einnahmen/summary route ENTRY")
     today = datetime.utcnow().date()
     days = [today - timedelta(days=index) for index in range(13, -1, -1)]
     labels = [day.strftime("%d.%m.") for day in days]
     try:
+        logging.warning("[TRACE] /api/einnahmen/summary before main logic")
         # Zeitraum für die letzten 14 Tage
         start_dt = datetime.combine(days[0], datetime.min.time())
         end_dt = datetime.combine(days[-1] + timedelta(days=1), datetime.min.time())
-
-        # Basis-Query: wird in Tests gepatcht (EinnahmeInfo.query.filter).
         base_query = EinnahmeInfo.query.filter(
             EinnahmeInfo.captured_at.between(start_dt, end_dt)
         )
-
+        logging.warning("[TRACE] /api/einnahmen/summary after base_query")
         daily_rows = (
             base_query.with_entities(
                 func.date(EinnahmeInfo.captured_at).label("day"),
@@ -73,9 +76,9 @@ def einnahmen_summary():
             .group_by(func.date(EinnahmeInfo.captured_at))
             .all()
         )
+        logging.warning(f"[TRACE] /api/einnahmen/summary after daily_rows: {daily_rows}")
         totals_by_day = {str(row.day): float(row.total or 0.0) for row in daily_rows}
         values = [totals_by_day.get(day.isoformat(), 0.0) for day in days]
-
         total_revenue = float(
             EinnahmeInfo.query.with_entities(func.sum(EinnahmeInfo.estimated_revenue)).scalar()
             or 0.0
@@ -88,7 +91,7 @@ def einnahmen_summary():
             EinnahmeInfo.query.with_entities(func.count(func.distinct(EinnahmeInfo.username))).scalar()
             or 0
         )
-
+        logging.warning("[TRACE] /api/einnahmen/summary after stats queries")
         top_creator_rows = (
             EinnahmeInfo.query.with_entities(
                 EinnahmeInfo.username,
@@ -99,11 +102,11 @@ def einnahmen_summary():
             .limit(5)
             .all()
         )
+        logging.warning(f"[TRACE] /api/einnahmen/summary after top_creator_rows: {top_creator_rows}")
         top_gifter = [
             {"name": username or "?", "sum": float(total or 0.0)}
             for username, total in top_creator_rows
         ]
-
         limit, offset = parse_pagination(request.args, default_limit=12, max_limit=100)
         latest_entries = (
             EinnahmeInfo.query.order_by(EinnahmeInfo.captured_at.desc())
@@ -111,6 +114,7 @@ def einnahmen_summary():
             .limit(limit)
             .all()
         )
+        logging.warning(f"[TRACE] /api/einnahmen/summary after latest_entries: {latest_entries}")
         latest_list = []
         for entry in latest_entries:
             row = serialize_revenue_event(entry)
@@ -118,7 +122,6 @@ def einnahmen_summary():
             row["details"] = entry.details or entry.source or ""
             row["captured_at"] = entry.captured_at.strftime("%d.%m.%Y %H:%M")
             latest_list.append(row)
-
         grouped_platforms = (
             EinnahmeInfo.query.with_entities(
                 EinnahmeInfo.platform,
@@ -127,31 +130,28 @@ def einnahmen_summary():
             .group_by(EinnahmeInfo.platform)
             .all()
         )
+        logging.warning(f"[TRACE] /api/einnahmen/summary after grouped_platforms: {grouped_platforms}")
         platform_totals_map: defaultdict[str, float] = defaultdict(float)
         for platform, total in grouped_platforms:
             platform_totals_map[platform or "unknown"] += float(total or 0.0)
-
         platform_totals = [
             {"platform": platform.title(), "total": round(total, 2)}
             for platform, total in sorted(platform_totals_map.items(), key=lambda item: item[1], reverse=True)
         ]
-
-        return jsonify(
-            {
-                "labels": labels,
-                "values": values,
-                "top_gifter": top_gifter,
-                "latest": latest_list,
-                "total_revenue": round(total_revenue, 2),
-                "today_revenue": round(today_revenue, 2),
-                "active_creators": active_creators,
-                "record_count": record_count,
-                "platform_totals": platform_totals,
-                "collector_status": "active" if record_count else "waiting",
-            }
-        )
-    except SQLAlchemyError:
-        logger.exception("Pulse summary unavailable because revenue data could not be loaded.")
-        return jsonify(_empty_summary_payload(labels, collector_status="unavailable"))
-    except ValidationError as error:
-        return jsonify({"success": False, "errors": error.errors}), 400
+        logging.warning("[TRACE] /api/einnahmen/summary before return api_success")
+        return api_success({
+            "labels": labels,
+            "values": values,
+            "top_gifter": top_gifter,
+            "latest": latest_list,
+            "total_revenue": round(total_revenue, 2),
+            "today_revenue": round(today_revenue, 2),
+            "active_creators": active_creators,
+            "record_count": record_count,
+            "platform_totals": platform_totals,
+            "collector_status": "active" if record_count else "waiting",
+        })
+    except Exception as exc:
+        import traceback
+        logging.error(f"[TRACE] /api/einnahmen/summary exception: {type(exc).__name__}: {exc}\n{traceback.format_exc()}")
+        return api_success(_empty_summary_payload(labels, collector_status="waiting"))

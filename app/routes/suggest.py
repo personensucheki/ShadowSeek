@@ -107,16 +107,24 @@ def _duckduckgo_suggestions(q: str) -> list[str]:
 
 @suggest_bp.route("", methods=["GET"])
 def suggest():
+    from app.services.response_utils import check_rate_limit
+    allowed, remaining = check_rate_limit("/api/suggest")
+    if not allowed:
+        import logging
+        logging.warning("/api/suggest rate limit hit for IP %s", request.remote_addr)
+        return api_error("Rate limit exceeded. Bitte warte kurz.", status=429)
     q = _normalize_query(request.args.get("q", ""))
     engine = (request.args.get("engine", "shadowseek") or "shadowseek").strip().lower()
 
+    from app.services.response_utils import api_success, api_error
+    import logging
     if len(q) < 1:
-        return jsonify({"query": q, "engine": engine, "suggestions": []})
+        return api_success({"query": q, "engine": engine, "suggestions": []})
 
     cache_key = (engine, q.casefold())
     cached = _CACHE.get(cache_key)
     if cached and cached.expires_at > _now():
-        return jsonify({"query": q, "engine": engine, "suggestions": cached.suggestions})
+        return api_success({"query": q, "engine": engine, "suggestions": cached.suggestions})
 
     suggestions: list[str]
     if engine == "shadowseek":
@@ -124,8 +132,9 @@ def suggest():
     else:
         try:
             suggestions = _duckduckgo_suggestions(q)
-        except Exception:
+        except Exception as e:
+            logging.warning(f"[Suggest] DuckDuckGo provider failed or timed out: {e}")
             suggestions = _shadowseek_suggestions(q)
 
     _CACHE[cache_key] = _CacheEntry(expires_at=_now() + _CACHE_TTL_SECONDS, suggestions=suggestions)
-    return jsonify({"query": q, "engine": engine, "suggestions": suggestions})
+    return api_success({"query": q, "engine": engine, "suggestions": suggestions})

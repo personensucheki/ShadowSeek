@@ -58,20 +58,21 @@ def billing_plans():
             "stripe_ready": stripe_configured(),
             "plans": list(get_configured_plans().values()),
         }
+
     )
+from app.services.response_utils import api_success, api_error
 
 
 @billing_bp.route("/api/billing/status", methods=["GET"])
 def billing_status():
     user = _current_user()
-    return jsonify(
-        {
-            "success": True,
-            "billing_enabled": billing_enabled(),
-            "subscription": serialize_user_subscription(user),
-            "entitlements": get_user_entitlements(user),
-        }
-    )
+
+    return jsonify({
+        "success": True,
+        "billing_enabled": billing_enabled(),
+        "stripe_ready": stripe_configured(),
+        "plans": list(get_configured_plans().values()),
+    })
 
 
 @billing_bp.route("/api/entitlements/current", methods=["GET"])
@@ -90,21 +91,14 @@ def current_entitlements():
 @billing_bp.route("/api/entitlements/<int:user_id>", methods=["GET"])
 def entitlements_by_user(user_id: int):
     current_user = _current_user()
-    if not current_user:
-        return _json_unauthorized()
-    if current_user.id != user_id and not current_user.is_admin():
-        return jsonify({"success": False, "error": "Nicht erlaubt."}), 403
 
-    from app.extensions.main import db
-    user = db.session.get(User, user_id)
-    return jsonify(
-        {
-            "success": True,
-            "billing_enabled": billing_enabled(),
-            "subscription": serialize_user_subscription(user),
-            "entitlements": get_user_entitlements(user),
-        }
-    )
+    user = _current_user()
+    return jsonify({
+        "success": True,
+        "billing_enabled": billing_enabled(),
+        "subscription": serialize_user_subscription(user),
+        "entitlements": get_user_entitlements(user),
+    })
 
 
 @billing_bp.route("/api/billing/create-checkout-session", methods=["POST"])

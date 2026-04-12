@@ -29,28 +29,16 @@ def _ensure_upload_dir(name: str) -> Path:
 
 
 def _save_media(file_obj, *, user_id: int, media_type: str) -> str:
-    if not file_obj or not file_obj.filename:
-        raise ValueError("Keine Datei erhalten.")
-
-    # Videos dürfen größer sein als Avatar/Banner Uploads.
-    max_size = int(current_app.config.get("MAX_VIDEO_UPLOAD_BYTES") or (60 * 1024 * 1024))
-    file_obj.stream.seek(0, 2)
-    size = file_obj.stream.tell()
-    file_obj.stream.seek(0)
-    if size > max_size:
-        raise ValueError(f"Datei zu gross (max. {max_size // (1024 * 1024)} MB).")
-
-    filename = secure_filename(file_obj.filename)
-    ext = Path(filename).suffix.lower()
+    from app.services.media import validate_upload, ALLOWED_VIDEO_EXTENSIONS, ALLOWED_PHOTO_EXTENSIONS
     if media_type == "video":
         allowed = ALLOWED_VIDEO_EXTENSIONS
         folder = "posts/videos"
+        max_size = int(current_app.config.get("MAX_VIDEO_UPLOAD_BYTES") or (60 * 1024 * 1024))
     else:
         allowed = ALLOWED_PHOTO_EXTENSIONS
         folder = "posts/photos"
-    if ext not in allowed:
-        raise ValueError("Dateityp nicht erlaubt.")
-
+        max_size = int(current_app.config.get("MAX_CONTENT_LENGTH") or (5 * 1024 * 1024))
+    filename, ext, mime_type = validate_upload(file_obj, allowed, max_size)
     out_dir = _ensure_upload_dir(folder)
     ts = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     stored_name = f"user_{user_id}_{media_type}_{ts}{ext}"

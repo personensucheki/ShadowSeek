@@ -1,0 +1,6 @@
+services:
+  tiktokscraping:
+    image: tiktokscraping
+    build:
+      context: .
+      dockerfile: ./Dockerfile

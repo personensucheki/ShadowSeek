@@ -1,54 +1,70 @@
+
 # ShadowSeek – Live Readiness Report (Stand: 2026-04-12)
 
-Bewertung: **Ready with warnings**
+## Status Matrix (Evidence-based, April 2026)
+
+| Module                  | Status                | Reason/Evidence                                                                 | Risks |
+|-------------------------|----------------------|-------------------------------------------------------------------------------|-------|
+| Upload/Media            | READY WITH WARNINGS  | Validation not fully hardened; depends on /data/uploads; see audit            | Data loss, unsafe files |
+| API Response Standard   | READY WITH WARNINGS  | Search/Suggest jetzt voll normalisiert (Envelope), Frontend kompatibel, Rest siehe Audit | Integration bugs, Rate-Limit fehlt |
+| Search/Deepsearch       | READY WITH WARNINGS  | Envelope jetzt strikt, Runtime-Tests bestanden, Frontend kompatibel, Rest siehe Audit | Incomplete, ToS/privacy |
+| Pulse/Revenue           | READY WITH WARNINGS  | Legacy fields, config incomplete; endpoints 404; see audit                    | Data drift, missing features |
+| Responsive UI           | PARTIALLY VERIFIED   | Only core pages tested; no full viewport validation                           | Layout issues |
+| Integrations            | PARTIALLY VERIFIED   | ENV keys not all validated/tested; see audit                                  | Integration failures |
+
+**Global:** VERIFIED = proven + complete + no known risks. Siehe PROJECT_AUDIT_FULL.md und PHASE 5 Patch für Details.
 
 ---
 
-## Ready (funktioniert real)
+
+## Ready (funktioniert real, mit Warnungen)
 
 - App Factory Boot (`D:\ShadowSeek\app\__init__.py`) startet lokal mit Default Dev Config.
 - Healthchecks: `GET /healthz` (JSON), `GET /health` (route existiert).
 - Search UI + `/api/search` Flow ist verbunden.
-- Reverse-Image Upload Token + Asset Link Flow ist real.
-- Billing/Stripe: Codepfad vorhanden (abhängig von Secrets/Stripe setup).
+- Reverse-Image Upload Token + Asset Link Flow ist real (siehe Warnungen).
+- Billing/Stripe: Codepfad vorhanden (abhängig von Secrets/Stripe setup, ENV prüfen).
 - Feature-Gating ist serverseitig implementiert und wird auf zentralen Flows genutzt.
 
 ---
 
+
 ## Warnings (Live-fähig, aber mit Risiken)
 
-### W1: Auth CSRF exempt
-- Login/Register ohne CSRF. Für production browser sessions kritisch.
-
-### W2: Public Search Provider abhängig
-- Serper Key nötig für konsistente Web-Suche.
-- Bing RSS fallback ist best-effort und kann limitiert/unzuverlässig sein.
-
-### W3: Rate Limiting fehlt
-- DoS/Spam/Bruteforce möglich.
-
-### W4: Legacy Files / Modell-Duplikate
-- `D:\ShadowSeek\models.py` kann zu Import-Verwechslungen führen.
+   - Auth CSRF: READY WITH WARNINGS. CSRF enforced, but failure feedback is not explicit. No raw exceptions.
+- Public Search Provider abhängig: Serper Key nötig für konsistente Web-Suche. Bing RSS fallback ist best-effort und kann limitiert/unzuverlässig sein.
+- Rate Limiting fehlt: DoS/Spam/Bruteforce möglich.
+- Legacy Files / Modell-Duplikate: `D:\ShadowSeek\models.py` kann zu Import-Verwechslungen führen.
+- Upload/Media: Validation nicht voll gehärtet, Verzeichnisabhängigkeit, siehe Status Matrix.
+- API Response: Uneinheitlich, Standardisierung offen.
+- Pulse/Revenue: Legacy-Felder, Endpunkte teils 404.
+- Responsive UI: Nicht auf allen Viewports getestet.
+- Integrationen: ENV/Secrets nicht überall validiert.
 
 ---
+
 
 ## Blocked (nicht live-ready ohne Zusatzarbeit)
 
-### B1: Screenshot Engine
-- Endpoint vorhanden, aber Playwright fehlt (Dependency + Browser install).
-- Ohne Deploy-Schritte ist dieses Modul tot.
+- Screenshot Engine: Endpoint vorhanden, aber Playwright fehlt (Dependency + Browser install). Ohne Deploy-Schritte ist dieses Modul tot.
 
 ---
 
+
 ## Sofort empfohlene nächste Schritte (minimal-invasiv)
 
-1) CSRF/Origin Policy für Auth entscheiden und implementieren.
+1) CSRF/Origin Policy for Auth: Implemented and READY WITH WARNINGS. CSRF enforced, but failure feedback is not explicit.
 2) Rate-Limits für `/auth/login`, `/auth/register`, `/api/search`, Live APIs.
 3) Screenshot-Modul entweder:
    - sauber deploy-ready machen (Playwright + install), oder
    - im UI/Backend ehrlich deaktivieren.
 4) `D:\ShadowSeek\models.py` entfernen/archivieren.
 5) Production CORS streng konfigurieren (`API_CORS_ALLOWED_ORIGINS`).
+6) Upload/Media: Validation und Directory-Checks härten.
+7) API Response: Standardisierung abschließen.
+8) Pulse/Revenue: Legacy-Felder bereinigen, Endpunkte implementieren.
+9) Responsive UI: Auf allen Viewports testen.
+10) Integrationen: ENV/Secrets validieren und testen.
 
 ## April 2026 – Finaler Produktionscheck
 

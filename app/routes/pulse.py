@@ -1,7 +1,9 @@
+from app.services.response_utils import check_rate_limit
 from flask import Blueprint, request, jsonify, session
 from app.models import User
 from app.services.pulse_service import search_creator_service
 from app.services.feature_gating import feature_required
+from app.services.response_utils import api_success, api_error
 from app.services.permissions import FEATURE_PULSE
 from app.services.oauth_token_store import get_valid_access_token, require_user_session_user_id
 import requests
@@ -12,29 +14,48 @@ bp = Blueprint("pulse", __name__)
 @bp.route("/api/pulse/search", methods=["POST"])
 @feature_required(FEATURE_PULSE)
 def pulse_search():
+    from app.services.response_utils import check_rate_limit
+    allowed, remaining = check_rate_limit("/api/pulse/query/search")
+    if not allowed:
+        import logging
+        logging.warning("/api/pulse/query/search rate limit hit for IP %s", request.remote_addr)
+        return api_error("Rate limit exceeded. Bitte warte kurz.", status=429)
+    import logging
+    logger = logging.getLogger("pulse_search")
     try:
-        data = request.get_json(force=True)
+        data = request.get_json(silent=True) or {}
+        logger.info("/api/pulse/search payload: %r", data)
         username = data.get("username", "").strip()
         platform = data.get("platform", "").strip().lower()
         realname = data.get("realname", "").strip() if data.get("realname") else None
         deepsearch = bool(data.get("deepsearch", False))
         if not username or not platform:
-            return jsonify({"success": False, "error": "username und platform sind Pflichtfelder."}), 400
+            logger.warning("Missing username or platform in payload: %r", data)
+            return api_error("username und platform sind Pflichtfelder.", status=400)
+        # Check session or user context (simulate minimal auth/session check)
+        user_id = session.get("user_id")
+        if not user_id:
+            logger.warning("/api/pulse/search called without session user_id")
+            return api_error("Nicht angemeldet oder Session fehlt.", status=401)
         result = search_creator_service(username, platform, realname, deepsearch)
+        logger.info("/api/pulse/search result: %r", result)
         return jsonify({
-            "success": True,
-            "query": {
-                "username": username,
-                "platform": platform,
-                "realname": realname or "",
-                "deepsearch": deepsearch
-            },
-            **result
+            **api_success({
+                "query": {
+                    "username": username,
+                    "platform": platform,
+                    "realname": realname or "",
+                    "deepsearch": deepsearch
+                },
+                **result
+            })
         })
     except ValueError as ve:
-        return jsonify({"success": False, "error": str(ve)}), 400
+        logger.warning("/api/pulse/search ValueError: %s", ve)
+        return api_error(str(ve), status=400)
     except Exception as ex:
-        return jsonify({"success": False, "error": "Internal error: " + str(ex)}), 500
+        logger.exception("/api/pulse/search error: %s", ex)
+        return api_error("Internal error: " + str(ex), status=500)
 
 
 @bp.route("/api/pulse/me/<platform>", methods=["GET"])
@@ -50,20 +71,20 @@ def pulse_me(platform: str):
         if platform == "twitch":
             token = get_valid_access_token(user_id, "twitch")
             if not token:
-                return jsonify({"success": False, "error": "Twitch ist nicht verbunden."}), 400
+                return api_error("Twitch ist nicht verbunden.", status=400)
             # Access app config via current_app to avoid circular imports in blueprint module scope
             from flask import current_app
 
             client_id = current_app.config.get("TWITCH_CLIENT_ID")
             if not client_id:
-                return jsonify({"success": False, "error": "TWITCH_CLIENT_ID fehlt."}), 400
+                return api_error("TWITCH_CLIENT_ID fehlt.", status=400)
 
             headers = {"Client-Id": client_id, "Authorization": f"Bearer {token}"}
             me = requests.get("https://api.twitch.tv/helix/users", headers=headers, timeout=10)
             me.raise_for_status()
             items = (me.json() or {}).get("data") or []
             if not items:
-                return jsonify({"success": False, "error": "Twitch User konnte nicht geladen werden."}), 400
+                return api_error("Twitch User konnte nicht geladen werden.", status=400)
             user = items[0]
             user_id_twitch = user.get("id")
             profile_url = f"https://www.twitch.tv/{user.get('login') or ''}".rstrip("/")
@@ -128,7 +149,7 @@ def pulse_me(platform: str):
         if platform == "youtube":
             token = get_valid_access_token(user_id, "google")
             if not token:
-                return jsonify({"success": False, "error": "YouTube/Google ist nicht verbunden."}), 400
+                return api_error("YouTube/Google ist nicht verbunden.", status=400)
 
             headers = {"Authorization": f"Bearer {token}"}
             ch = requests.get(
@@ -138,10 +159,10 @@ def pulse_me(platform: str):
                 timeout=10,
             )
             if ch.status_code >= 400:
-                return jsonify({"success": False, "error": "YouTube Channel konnte nicht geladen werden."}), 400
+                return api_error("YouTube Channel konnte nicht geladen werden.", status=400)
             items = (ch.json() or {}).get("items") or []
             if not items:
-                return jsonify({"success": False, "error": "Kein YouTube Channel gefunden."}), 400
+                return api_error("Kein YouTube Channel gefunden.", status=400)
 
             channel = items[0]
             snippet = channel.get("snippet") or {}
@@ -155,38 +176,34 @@ def pulse_me(platform: str):
             views_total = stats.get("viewCount")
             videos_total = stats.get("videoCount")
 
-            return jsonify(
-                {
-                    "success": True,
-                    "creator": {
-                        "display_name": title or custom or "YouTube",
-                        "username": custom.lstrip("@") if custom else "",
-                        "platform": "youtube",
-                        "country": None,
-                        "profile_url": profile_url,
-                        "avatar": thumb,
-                    },
-                    "metrics": {
-                        "subscribers": int(subscribers) if subscribers is not None else None,
-                        "views_total": int(views_total) if views_total is not None else None,
-                        "videos_total": int(videos_total) if videos_total is not None else None,
-                        "estimated_earnings_today_usd": None,
-                        "estimated_earnings_total_usd": None,
-                        "diamonds_today": None,
-                        "ranking_country": None,
-                    },
-                    "history": [],
-                    "source": {"provider": "youtube", "type": "oauth_user", "confidence": "high"},
-                }
-            )
-
+            return jsonify(api_success({
+                "creator": {
+                    "display_name": title or custom or "YouTube",
+                    "username": custom.lstrip("@") if custom else "",
+                    "platform": "youtube",
+                    "country": None,
+                    "profile_url": profile_url,
+                    "avatar": thumb,
+                },
+                "metrics": {
+                    "subscribers": int(subscribers) if subscribers is not None else None,
+                    "views_total": int(views_total) if views_total is not None else None,
+                    "videos_total": int(videos_total) if videos_total is not None else None,
+                    "estimated_earnings_today_usd": None,
+                    "estimated_earnings_total_usd": None,
+                    "diamonds_today": None,
+                    "ranking_country": None,
+                },
+                "history": [],
+                "source": {"provider": "youtube", "type": "oauth_user", "confidence": "high"},
+            }))
         return jsonify({"success": False, "error": f"Platform '{platform}' nicht fuer OAuth-Me unterstuetzt."}), 400
     except PermissionError as exc:
-        return jsonify({"success": False, "error": str(exc)}), 401
+        return api_error(str(exc), status=401)
     except requests.RequestException:
-        return jsonify({"success": False, "error": "Provider API Fehler."}), 502
+        return api_error("Provider API Fehler.", status=502)
     except Exception as ex:
-        return jsonify({"success": False, "error": "Internal error: " + str(ex)}), 500
+        return api_error("Internal error: " + str(ex), status=500)
 
 
 def _parse_ymd(value: str, field: str) -> date:
