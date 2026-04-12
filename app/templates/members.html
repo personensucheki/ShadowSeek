@@ -99,7 +99,11 @@
                 {% endif %}
                 <div class="community-subtle">{{ member.bio or 'Noch keine Bio hinterlegt.' }}</div>
                 <div class="member-actions">
-                    <a class="ghost-button" href="/messages?user={{ member.id }}">Nachricht</a>
+                    {% if session.get('user_id') %}
+                        <a class="ghost-button" href="/messages?user={{ member.id }}">Nachricht</a>
+                    {% else %}
+                        <span class="pill">Login erforderlich</span>
+                    {% endif %}
                     <span class="pill">Mitglied seit {{ member.created_at.strftime('%d.%m.%Y') if member.created_at else '-' }}</span>
                 </div>
             </article>

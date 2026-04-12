@@ -168,7 +168,6 @@ def _contacts_for_user(current_user_id: int):
 
 
 @community_bp.route("/members", methods=["GET"])
-@login_required
 def members():
     sort_key = (request.args.get("sort") or "online").strip().lower()
     users = (
