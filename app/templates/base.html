@@ -13,6 +13,15 @@
 <body>
     {% include 'components/navbar.html' %}
     <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-stack">
+                    {% for category, message in messages %}
+                        <div class="flash-pill" data-level="{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 
@@ -43,6 +52,7 @@
     <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
     <script src="{{ url_for('static', filename='js/agent.js') }}"></script>
     <script src="{{ url_for('static', filename='js/billing_gating.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/community.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

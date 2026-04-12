@@ -2,9 +2,28 @@ import os
 
 
 def _normalize_database_uri(uri):
+    if not uri:
+        return uri
+
     if uri.startswith("postgres://"):
-        return uri.replace("postgres://", "postgresql://", 1)
+        uri = uri.replace("postgres://", "postgresql://", 1)
+
+    if uri.startswith("postgresql://") and not uri.startswith("postgresql+"):
+        return uri.replace("postgresql://", "postgresql+psycopg://", 1)
+
     return uri
+
+
+def _default_upload_directory():
+    configured = os.environ.get("UPLOAD_DIRECTORY")
+    if configured:
+        return configured
+
+    # Render persistent disks are commonly mounted at /data.
+    if os.environ.get("RENDER") or os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+        return "/data/uploads"
+
+    return None
 
 
 class BaseConfig:
@@ -24,7 +43,7 @@ class BaseConfig:
     SEARCH_MAX_WORKERS = int(os.environ.get("SEARCH_MAX_WORKERS", 8))
     REVERSE_IMAGE_MAX_AGE = int(os.environ.get("REVERSE_IMAGE_MAX_AGE", 3600))
     PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
-    UPLOAD_DIRECTORY = os.environ.get("UPLOAD_DIRECTORY")
+    UPLOAD_DIRECTORY = _default_upload_directory()
     SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
     SERPER_API_URL = os.environ.get("SERPER_API_URL", "https://google.serper.dev/search")
     SERPER_RESULTS_PER_QUERY = int(os.environ.get("SERPER_RESULTS_PER_QUERY", 8))

@@ -10,6 +10,8 @@ services:
     startCommand: gunicorn run:app
     healthCheckPath: /health
     envVars:
+      - key: UPLOAD_DIRECTORY
+        value: /data/uploads
       - key: SECRET_KEY
         generateValue: true
       - key: PUBLIC_BASE_URL

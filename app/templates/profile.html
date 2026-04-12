@@ -6,13 +6,15 @@
 
     <div style="position:relative;border-radius:14px;overflow:hidden;margin-bottom:1.4em;border:1px solid #2a2a2a;">
         <img
-            src="{{ url_for('static', filename=(current_user.banner or 'img/default_avatar.png')) }}"
+            class="profile-banner"
+            src="{{ profile_banner_url }}"
             alt="Banner"
             style="width:100%;height:210px;object-fit:cover;display:block;opacity:0.92;"
         >
         <div style="position:absolute;left:1.2em;bottom:1.1em;display:flex;align-items:center;gap:0.8em;">
             <img
-                src="{{ url_for('static', filename=(current_user.avatar or 'img/default_avatar.png')) }}"
+                class="profile-avatar"
+                src="{{ profile_avatar_url }}"
                 alt="Profilbild"
                 style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid #00FF9F;box-shadow:0 0 14px #00FF9F77,0 0 8px #FF00FF44;background:#000;"
             >
@@ -51,6 +53,14 @@
             <div class="form-group">
                 <label for="gender">Geschlecht</label>
                 <input type="text" name="gender" id="gender" value="{{ current_user.gender or '' }}" placeholder="z.B. maennlich / weiblich / divers" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="country">Land</label>
+                <input type="text" name="country" id="country" value="{{ current_user.country or '' }}" placeholder="z.B. Deutschland" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="city">Stadt</label>
+                <input type="text" name="city" id="city" value="{{ current_user.city or '' }}" placeholder="z.B. Berlin" style="width:100%">
             </div>
             <div class="form-group">
                 <label for="height_cm">Koerpergroesse (cm)</label>

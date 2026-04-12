@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Nachrichten - ShadowSeek{% endblock %}
+{% block content %}
+<section class="community-shell">
+    <div class="community-hero">
+        <div class="community-headline">
+            <div>
+                <h1>Direktnachrichten</h1>
+                <p>Private 1:1-Nachrichten fuer registrierte Mitglieder, ohne Realtime, aber mit sauberer Inbox.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="messages-layout">
+        <aside class="message-sidebar">
+            <div>
+                <h2>Inbox</h2>
+                <div class="community-subtle">{{ contacts|length }} aktive Konversationen</div>
+            </div>
+            <div class="contact-list">
+                {% for contact in contacts %}
+                    <a class="contact-card" href="/messages?user={{ contact.user.id }}" data-active="{{ 'true' if partner and partner.id == contact.user.id else 'false' }}">
+                        <img src="{{ contact.avatar_url }}" alt="{{ contact.user.username }}">
+                        <div style="flex:1;">
+                            <div style="display:flex;justify-content:space-between;gap:8px;">
+                                <strong>{{ contact.user.display_name or contact.user.username }}</strong>
+                                {% if contact.unread_count %}
+                                    <span class="contact-unread">{{ contact.unread_count }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="community-subtle">@{{ contact.user.username }}</div>
+                            <div class="message-meta">
+                                {{ contact.last_message_at.strftime('%d.%m.%Y %H:%M') if contact.last_message_at else '-' }}
+                            </div>
+                        </div>
+                    </a>
+                {% else %}
+                    <div class="empty-note">Noch keine Konversationen vorhanden.</div>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <section class="message-thread">
+            {% if partner %}
+                <div class="message-toolbar">
+                    <span class="pill">
+                        <span class="presence-dot {{ 'presence-dot--online' if partner.is_online else 'presence-dot--offline' }}"></span>
+                        {{ partner.display_name or partner.username }}
+                    </span>
+                    <span class="pill">@{{ partner.username }}</span>
+                    {% if partner.country %}<span class="pill">{{ partner.country }}</span>{% endif %}
+                    {% if partner.age %}<span class="pill">{{ partner.age }} Jahre</span>{% endif %}
+                </div>
+
+                <div class="thread-list">
+                    {% for item in thread_messages %}
+                        <article class="message-row {{ 'message-row--mine' if item.sender_id == session.get('user_id') else 'message-row--theirs' }}">
+                            <img src="{{ avatar_lookup.get(item.sender_id) if item.sender_id in avatar_lookup else url_for('static', filename='images/default-avatar.png') }}" alt="avatar">
+                            <div class="message-bubble">
+                                <strong>{{ item.sender.display_name or item.sender.username }}</strong>
+                                <div class="message-body">{{ item.body }}</div>
+                                <div class="message-meta">{{ item.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                            </div>
+                        </article>
+                    {% else %}
+                        <div class="empty-note">Noch keine Nachrichten in diesem Thread.</div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-note">Waehle links eine Konversation oder starte unten eine neue Direktnachricht.</div>
+            {% endif %}
+
+            <form class="message-compose" method="post" action="/messages/send">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <h2>Neue Nachricht</h2>
+                <label>Empfaenger
+                    <select name="recipient_id" required>
+                        <option value="">Bitte waehlen</option>
+                        {% for user in available_users %}
+                            <option value="{{ user.id }}" {% if partner and partner.id == user.id %}selected{% endif %}>{{ user.display_name or user.username }} (@{{ user.username }})</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Nachricht
+                    <textarea name="body" maxlength="4000" placeholder="Schreibe eine Direktnachricht..." required></textarea>
+                </label>
+                <div class="message-compose__actions">
+                    <button class="neon-button" type="submit">Senden</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</section>
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/community.css') }}">{% endblock %}

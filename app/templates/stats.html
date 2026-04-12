@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Statistik - ShadowSeek{% endblock %}
+{% block content %}
+<section class="community-shell">
+    <div class="community-hero">
+        <div class="community-headline">
+            <div>
+                <h1>Community-Statistik</h1>
+                <p>Nur fuer Moderatoren und Admins: Mitgliederlage, Online-Aktivitaet und Nachrichtenvolumen.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <article>
+            <span class="community-subtle">Mitglieder gesamt</span>
+            <strong>{{ metrics.total_members }}</strong>
+        </article>
+        <article>
+            <span class="community-subtle">Gerade online</span>
+            <strong>{{ metrics.online_members }}</strong>
+        </article>
+        <article>
+            <span class="community-subtle">Neue Mitglieder 7 Tage</span>
+            <strong>{{ metrics.new_members_7d }}</strong>
+        </article>
+        <article>
+            <span class="community-subtle">Nachrichten 7 Tage</span>
+            <strong>{{ metrics.messages_7d }}</strong>
+        </article>
+        <article>
+            <span class="community-subtle">Ungelesene DMs</span>
+            <strong>{{ metrics.unread_messages }}</strong>
+        </article>
+    </div>
+
+    <div class="messages-layout">
+        <section class="stats-list">
+            <h2>Rollenverteilung</h2>
+            <ul>
+                {% for role, count in role_counts.items() %}
+                    <li><span>{{ role }}</span><strong>{{ count }}</strong></li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="stats-list">
+            <h2>Top Laender</h2>
+            <ul>
+                {% for country, count in country_counts %}
+                    <li><span>{{ country }}</span><strong>{{ count }}</strong></li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+
+    <section class="stats-list">
+        <h2>Neueste Mitglieder</h2>
+        <div>
+            {% for user in newest_members %}
+                <div class="stats-user">
+                    <img src="{{ avatar_lookup[user.id] }}" alt="{{ user.username }}">
+                    <div class="stats-user__meta">
+                        <strong>{{ user.display_name or user.username }}</strong>
+                        <span>@{{ user.username }}{% if user.country %} · {{ user.country }}{% endif %}</span>
+                    </div>
+                    <div class="community-subtle">{{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '-' }}</div>
+                </div>
+            {% else %}
+                <div class="empty-note">Keine Mitgliederdaten vorhanden.</div>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/community.css') }}">{% endblock %}

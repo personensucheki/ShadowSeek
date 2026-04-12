@@ -1,4 +1,15 @@
 document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("img.profile-avatar, img.profile-banner").forEach((img) => {
+        img.addEventListener("error", () => {
+            if (img.classList.contains("profile-avatar")) {
+                img.src = "/static/images/default-avatar.png";
+            }
+            if (img.classList.contains("profile-banner")) {
+                img.src = "/static/images/default-banner.jpg";
+            }
+        });
+    });
+
     const form = document.getElementById("profile-form");
     const message = document.getElementById("profile-message");
     if (!form || !message) {

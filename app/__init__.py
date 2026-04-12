@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from flask import Flask, jsonify, request, session
@@ -68,12 +69,38 @@ def create_app(config_class=None):
     if not app.config.get("SECRET_KEY") and not app.config.get("TESTING"):
         raise RuntimeError("SECRET_KEY must be configured for ShadowSeek.")
 
-
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
     with app.app_context():
         ensure_owner_account(app)
+
+    @app.before_request
+    def track_member_presence():
+        user_id = session.get("user_id")
+        if not user_id:
+            return None
+
+        last_ping_raw = session.get("presence_ping_at")
+        if last_ping_raw:
+            try:
+                last_ping = datetime.fromisoformat(last_ping_raw)
+                if datetime.utcnow() - last_ping < timedelta(seconds=90):
+                    return None
+            except ValueError:
+                pass
+
+        from app.models.user import User
+
+        user = User.query.get(user_id)
+        if not user:
+            return None
+
+        user.last_seen_at = datetime.utcnow()
+        db.session.commit()
+        session["presence_ping_at"] = datetime.utcnow().isoformat()
+        return None
+
     @app.after_request
     def add_api_cors_headers(response):
         if request.path.startswith("/api/"):
@@ -124,6 +151,7 @@ def create_app(config_class=None):
     from .routes.admin import admin_bp
     from .routes.auth import auth_bp
     from .routes.chatbot import chatbot_bp
+    from .routes.community import community_bp
     from .routes.health import health_bp
     from .routes.search import search_bp
     from .routes.suggest import suggest_bp
@@ -137,6 +165,7 @@ def create_app(config_class=None):
     from .routes.oauth_connect import oauth_bp
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(community_bp)
     app.register_blueprint(search_bp)
     app.register_blueprint(suggest_bp)
     app.register_blueprint(websearch_bp)

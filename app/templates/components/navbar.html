@@ -13,8 +13,8 @@
             <a href="/search" data-feature="search">Suche</a>
         {% endif %}
         <a href="/pulse" data-feature="pulse">Pulse</a>
-        {% if session.get('role') in ['super_admin', 'admin', 'moderator'] %}
-            <a href="/admin">Admin</a>
+        {% if session.get('user_id') %}
+            <a href="/members" data-feature="members">Mitglieder</a>
         {% endif %}
     </div>
     <div class="navbar-right">
@@ -22,6 +22,13 @@
             <button id="login-btn">Anmelden</button>
             <button id="register-btn">Registrieren</button>
         {% else %}
+            <a href="/messages" id="navbar-messages-link">Nachrichten <span id="navbar-messages-unread" class="contact-unread" hidden></span></a>
+            {% if session.get('role') in ['super_admin', 'admin', 'moderator'] %}
+                <a href="/stats">Statistik</a>
+            {% endif %}
+            {% if session.get('role') in ['super_admin', 'admin', 'moderator'] %}
+                <a href="/admin">Admin</a>
+            {% endif %}
             <a href="/billing">Abo</a>
             <a href="/profile">Mein Profil</a>
             <a href="/auth/logout">Logout</a>

@@ -1,8 +1,266 @@
 {% extends "base.html" %}
 {% block title %}Admin-Bereich{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
 {% block content %}
-<div style="max-width:600px;margin:60px auto 0;background:#23272a;padding:36px 32px 28px 32px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
-    <h2 style="color:#00f0ff;">Admin-Bereich</h2>
-    <p>Willkommen im geschuetzten Admin-Bereich. Hier koennen spaeter Einstellungen, User-Management und Logs angezeigt werden.</p>
-</div>
+<section class="admin-shell">
+    <div class="admin-hero">
+        <div>
+            <div class="admin-kicker">ShadowSeek Control Grid</div>
+            <h1>Admin-Konsole</h1>
+            <p>
+                Moderation, Abo-Steuerung, Betriebsflags, Wartungsnachrichten und Rabattaktionen
+                laufen hier in einer Oberflaeche zusammen.
+            </p>
+        </div>
+        <div class="admin-hero__badge">
+            <span>Aktiver Zugang</span>
+            <strong>{{ admin_actor.username }}</strong>
+            <small>{{ admin_actor.role }}</small>
+        </div>
+    </div>
+
+    {% if admin_notice %}
+        <div class="admin-notice admin-notice--{{ admin_notice_level }}">
+            {{ admin_notice }}
+        </div>
+    {% endif %}
+
+    <div class="admin-metrics">
+        <article class="admin-metric-card">
+            <span>Total User</span>
+            <strong>{{ dashboard_metrics.total_users }}</strong>
+            <small>{{ dashboard_metrics.active_users }} aktiv</small>
+        </article>
+        <article class="admin-metric-card">
+            <span>Paid Accounts</span>
+            <strong>{{ dashboard_metrics.paid_users }}</strong>
+            <small>trialing + active</small>
+        </article>
+        <article class="admin-metric-card">
+            <span>Search Logs</span>
+            <strong>{{ dashboard_metrics.recent_searches }}</strong>
+            <small>gesamt erfasst</small>
+        </article>
+        <article class="admin-metric-card">
+            <span>Rollenbild</span>
+            <strong>{{ role_stats.get('admin', 0) + role_stats.get('super_admin', 0) }}</strong>
+            <small>{{ role_stats.get('moderator', 0) }} Moderatoren</small>
+        </article>
+    </div>
+
+    <div class="admin-grid">
+        <article class="admin-panel admin-panel--wide">
+            <div class="admin-panel__header">
+                <div>
+                    <h2>User & Abos</h2>
+                    <p>Nutzerstatus, Rollen, aktive Plaene und Moderation.</p>
+                </div>
+            </div>
+            <div class="admin-user-table-wrap">
+                <table class="admin-user-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Kontakt</th>
+                            <th>Abo</th>
+                            <th>Rolle</th>
+                            <th>Status</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in user_rows %}
+                            {% set row_form_id = 'user-admin-form-' ~ user.id %}
+                            <tr>
+                                <td>
+                                    <div class="user-name">{{ user.username }}</div>
+                                    <div class="user-meta">ID {{ user.id }} | seit {{ user.created_at.strftime('%d.%m.%Y') if user.created_at else '-' }}</div>
+                                </td>
+                                <td>
+                                    <div>{{ user.email }}</div>
+                                    <div class="user-meta">{{ user.display_name or 'kein Display Name' }}</div>
+                                </td>
+                                <td>
+                                    <form id="{{ row_form_id }}" method="post" action="{{ url_for('admin.update_user_profile', user_id=user.id) }}" class="admin-inline-form">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    </form>
+                                    <select name="plan_code" form="{{ row_form_id }}">
+                                        <option value="">Kein Plan</option>
+                                        {% for code, plan in plan_definitions.items() %}
+                                            <option value="{{ code }}" {% if user.plan_code == code %}selected{% endif %}>{{ plan.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <select name="subscription_status" form="{{ row_form_id }}">
+                                        <option value="">ohne Status</option>
+                                        {% for status in edit_statuses %}
+                                            <option value="{{ status }}" {% if user.subscription_status == status %}selected{% endif %}>{{ status }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="role" form="{{ row_form_id }}" {% if not can_manage_roles %}disabled{% endif %}>
+                                        {% for role in edit_roles %}
+                                            <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>{{ role }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if not can_manage_roles %}
+                                        <input type="hidden" name="role" value="{{ user.role }}" form="{{ row_form_id }}">
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-chip {% if user.is_active %}status-chip--ok{% else %}status-chip--danger{% endif %}">
+                                        {{ 'aktiv' if user.is_active else 'gesperrt' }}
+                                    </span>
+                                    {% if user.subscription_status %}
+                                        <span class="status-chip status-chip--ghost">{{ user.subscription_status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="admin-action-stack">
+                                        <button type="submit" form="{{ row_form_id }}" class="admin-btn admin-btn--primary">Speichern</button>
+                                        <form method="post" action="{{ url_for('admin.toggle_user_ban', user_id=user.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                            <button type="submit" class="admin-btn {% if user.is_active %}admin-btn--danger{% else %}admin-btn--secondary{% endif %}">
+                                                {{ 'Bannen' if user.is_active else 'Entbannen' }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="admin-panel">
+            <div class="admin-panel__header">
+                <div>
+                    <h2>System-Flags</h2>
+                    <p>Typische Betriebsoptionen fuer Registrierung, Suche und Reviews.</p>
+                </div>
+            </div>
+            <form method="post" action="{{ url_for('admin.save_settings') }}" class="admin-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="toggle-row">
+                    <input type="checkbox" name="maintenance_mode" {% if admin_settings.maintenance_mode %}checked{% endif %}>
+                    <span>Maintenance Mode aktivieren</span>
+                </label>
+                <label class="toggle-row">
+                    <input type="checkbox" name="registrations_open" {% if admin_settings.registrations_open %}checked{% endif %}>
+                    <span>Neuregistrierungen erlauben</span>
+                </label>
+                <label class="toggle-row">
+                    <input type="checkbox" name="deepsearch_enabled" {% if admin_settings.deepsearch_enabled %}checked{% endif %}>
+                    <span>DeepSearch global freischalten</span>
+                </label>
+                <label class="toggle-row">
+                    <input type="checkbox" name="billing_enforced" {% if admin_settings.billing_enforced %}checked{% endif %}>
+                    <span>Billing-Gating strikt fahren</span>
+                </label>
+                <label class="toggle-row">
+                    <input type="checkbox" name="manual_review_required" {% if admin_settings.manual_review_required %}checked{% endif %}>
+                    <span>Manuelle Review fuer sensible Treffer</span>
+                </label>
+                <label class="toggle-row">
+                    <input type="checkbox" name="priority_alerts" {% if admin_settings.priority_alerts %}checked{% endif %}>
+                    <span>Priority Alerts fuer Team aktiv</span>
+                </label>
+                <button type="submit" class="admin-btn admin-btn--primary">Settings speichern</button>
+            </form>
+        </article>
+
+        <article class="admin-panel">
+            <div class="admin-panel__header">
+                <div>
+                    <h2>Wartungsnachricht</h2>
+                    <p>Kleine Push-/Statusbox fuer geplante Arbeiten oder Hinweise.</p>
+                </div>
+            </div>
+            <form method="post" action="{{ url_for('admin.save_maintenance_notice') }}" class="admin-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="text" name="title" placeholder="Titel" value="{{ maintenance_notice.title or '' }}">
+                <textarea name="body" rows="4" placeholder="Nachricht fuer Nutzer oder Team">{{ maintenance_notice.body or '' }}</textarea>
+                <div class="admin-form-grid">
+                    <select name="severity">
+                        <option value="info" {% if maintenance_notice.severity == 'info' %}selected{% endif %}>Info</option>
+                        <option value="warning" {% if maintenance_notice.severity == 'warning' %}selected{% endif %}>Warning</option>
+                        <option value="critical" {% if maintenance_notice.severity == 'critical' %}selected{% endif %}>Critical</option>
+                    </select>
+                    <select name="target">
+                        <option value="all" {% if maintenance_notice.target == 'all' %}selected{% endif %}>Alle Nutzer</option>
+                        <option value="paid" {% if maintenance_notice.target == 'paid' %}selected{% endif %}>Nur zahlende Nutzer</option>
+                        <option value="staff" {% if maintenance_notice.target == 'staff' %}selected{% endif %}>Nur Staff</option>
+                    </select>
+                </div>
+                <button type="submit" class="admin-btn admin-btn--primary">Nachricht sichern</button>
+            </form>
+            {% if maintenance_notice.title or maintenance_notice.body %}
+                <div class="admin-preview admin-preview--{{ maintenance_notice.severity or 'info' }}">
+                    <div class="admin-preview__title">{{ maintenance_notice.title or 'Aktive Nachricht' }}</div>
+                    <p>{{ maintenance_notice.body }}</p>
+                    <small>
+                        Ziel: {{ maintenance_notice.target or 'all' }}
+                        {% if maintenance_notice.updated_at %} | {{ maintenance_notice.updated_at }}{% endif %}
+                    </small>
+                </div>
+            {% endif %}
+        </article>
+
+        <article class="admin-panel">
+            <div class="admin-panel__header">
+                <div>
+                    <h2>Rabatte & Codes</h2>
+                    <p>Manuelle Rabattaktionen fuer Nutzer oder Kampagnen.</p>
+                </div>
+            </div>
+            <form method="post" action="{{ url_for('admin.create_discount') }}" class="admin-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div class="admin-form-grid">
+                    <input type="text" name="code" placeholder="Code, z. B. SHADOW25">
+                    <input type="number" name="percent" min="1" max="100" placeholder="Rabatt %">
+                </div>
+                <div class="admin-form-grid">
+                    <input type="text" name="target_user" placeholder="Zielnutzer oder Segment">
+                    <input type="text" name="expires_at" placeholder="Ablauf, z. B. 2026-05-01">
+                </div>
+                <button type="submit" class="admin-btn admin-btn--primary">Rabatt speichern</button>
+            </form>
+            <div class="discount-list">
+                {% if discount_entries %}
+                    {% for entry in discount_entries %}
+                        <div class="discount-card">
+                            <strong>{{ entry.code }}</strong>
+                            <span>{{ entry.percent }}% auf {{ entry.target_user }}</span>
+                            <small>bis {{ entry.expires_at }} | von {{ entry.created_by }}</small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">Noch keine Rabattaktionen hinterlegt.</div>
+                {% endif %}
+            </div>
+        </article>
+
+        <article class="admin-panel">
+            <div class="admin-panel__header">
+                <div>
+                    <h2>Verteilung</h2>
+                    <p>Rollen- und Planverteilung auf einen Blick.</p>
+                </div>
+            </div>
+            <div class="mini-stat-list">
+                <div class="mini-stat"><span>User</span><strong>{{ role_stats.get('user', 0) }}</strong></div>
+                <div class="mini-stat"><span>Moderatoren</span><strong>{{ role_stats.get('moderator', 0) }}</strong></div>
+                <div class="mini-stat"><span>Admins</span><strong>{{ role_stats.get('admin', 0) }}</strong></div>
+                <div class="mini-stat"><span>Super Admins</span><strong>{{ role_stats.get('super_admin', 0) }}</strong></div>
+                {% for code, plan in plan_definitions.items() %}
+                    <div class="mini-stat">
+                        <span>{{ plan.name }}</span>
+                        <strong>{{ plan_stats.get(code, 0) }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+</section>
 {% endblock %}

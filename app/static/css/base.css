@@ -135,6 +135,31 @@ main {
     padding: 28px 0 80px;
 }
 
+.flash-stack {
+    width: min(1180px, calc(100vw - 32px));
+    margin: 0 auto 18px;
+    display: grid;
+    gap: 10px;
+}
+
+.flash-pill {
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 0, 255, 0.24);
+    background: rgba(15, 15, 21, 0.92);
+    box-shadow: var(--glow-pink);
+}
+
+.flash-pill[data-level="success"] {
+    border-color: rgba(0, 255, 159, 0.28);
+    box-shadow: var(--glow-green);
+}
+
+.flash-pill[data-level="error"],
+.flash-pill[data-level="danger"] {
+    border-color: rgba(255, 0, 95, 0.42);
+}
+
 .assistant-fab {
     position: fixed;
     right: 24px;
@@ -220,6 +245,20 @@ main {
 
 .subscription-message[data-error="true"] {
     color: #ff7f9d;
+}
+
+#navbar-messages-link {
+    gap: 8px;
+}
+
+#navbar-messages-unread {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: rgba(255, 0, 255, 0.22);
+    color: #fff;
+    font-size: 0.78rem;
 }
 
 @media (max-width: 900px) {

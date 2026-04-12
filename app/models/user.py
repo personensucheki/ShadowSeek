@@ -17,6 +17,8 @@ class User(db.Model):
     profile_title = db.Column(db.String(120), nullable=True)
     birthdate = db.Column(db.Date, nullable=True)
     gender = db.Column(db.String(32), nullable=True)
+    country = db.Column(db.String(80), nullable=True, index=True)
+    city = db.Column(db.String(120), nullable=True)
     height_cm = db.Column(db.Integer, nullable=True)
     hobbies = db.Column(db.String(1000), nullable=True)
     interests = db.Column(db.String(1000), nullable=True)
@@ -26,6 +28,7 @@ class User(db.Model):
     donation_link = db.Column(db.String(255), nullable=True)
     avatar = db.Column(db.String(255), nullable=True)
     banner = db.Column(db.String(255), nullable=True)
+    last_seen_at = db.Column(db.DateTime, nullable=True, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Billing/Subscription
@@ -57,6 +60,21 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username} ({self.role})>'
 
+    @property
+    def age(self):
+        if not self.birthdate:
+            return None
+        today = datetime.utcnow().date()
+        return today.year - self.birthdate.year - (
+            (today.month, today.day) < (self.birthdate.month, self.birthdate.day)
+        )
+
+    @property
+    def is_online(self):
+        if not self.last_seen_at:
+            return False
+        return (datetime.utcnow() - self.last_seen_at).total_seconds() <= 300
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -66,7 +84,10 @@ class User(db.Model):
             "bio": self.bio,
             "profile_title": self.profile_title,
             "birthdate": self.birthdate.isoformat() if self.birthdate else None,
+            "age": self.age,
             "gender": self.gender,
+            "country": self.country,
+            "city": self.city,
             "height_cm": self.height_cm,
             "hobbies": self.hobbies,
             "interests": self.interests,
@@ -77,6 +98,8 @@ class User(db.Model):
             "avatar": self.avatar,
             "banner": self.banner,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_seen_at": self.last_seen_at.isoformat() if self.last_seen_at else None,
+            "is_online": self.is_online,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "is_active": self.is_active,
         }

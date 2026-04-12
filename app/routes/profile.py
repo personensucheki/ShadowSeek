@@ -5,12 +5,13 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models.user import User
 from app.services.search_service import list_platform_cards
+from app.services.media import resolve_user_avatar_url, resolve_user_banner_url
 
 
 profile_bp = Blueprint("profile", __name__)
@@ -32,7 +33,7 @@ def _normalize_text(value: str, max_len: int | None = None):
 
 
 def _ensure_upload_dir(folder_name: str) -> Path:
-    base_path = Path(__file__).resolve().parents[1] / "static" / "img"
+    base_path = Path(current_app.config["UPLOAD_DIRECTORY"])
     target = base_path / folder_name
     target.mkdir(parents=True, exist_ok=True)
     return target
@@ -53,8 +54,19 @@ def _save_image(file_obj, user_id: int, kind: str):
     target = folder / stored_name
     file_obj.save(target)
 
-    relative = "img/avatars" if kind == "avatar" else "img/banners"
+    relative = "avatars" if kind == "avatar" else "banners"
     return f"{relative}/{stored_name}"
+
+
+@profile_bp.route("/uploads/<path:filename>", methods=["GET"])
+def uploaded_file(filename: str):
+    """Serve uploaded media files.
+
+    On Render this MUST be backed by a persistent disk via UPLOAD_DIRECTORY,
+    otherwise images will disappear after restart.
+    """
+    upload_root = Path(current_app.config["UPLOAD_DIRECTORY"])
+    return send_from_directory(upload_root, filename, conditional=True)
 
 
 def _read_social_accounts(form_data):
@@ -83,11 +95,24 @@ def profile():
         except (ValueError, TypeError):
             social_accounts = {}
 
+    profile_avatar_url = resolve_user_avatar_url(user)
+    profile_banner_url = resolve_user_banner_url(user)
+    current_app.logger.debug(
+        "profile_media user_id=%s avatar=%r banner=%r resolved_avatar=%s resolved_banner=%s",
+        user.id,
+        user.avatar,
+        user.banner,
+        profile_avatar_url,
+        profile_banner_url,
+    )
+
     return render_template(
         "profile.html",
         current_user=user,
         profile_platforms=list_platform_cards(),
         social_accounts=social_accounts,
+        profile_avatar_url=profile_avatar_url,
+        profile_banner_url=profile_banner_url,
     )
 
 
@@ -106,6 +131,8 @@ def update_profile():
     bio = _normalize_text(data.get("bio", ""), 500)
     profile_title = _normalize_text(data.get("profile_title", ""), 120)
     gender = _normalize_text(data.get("gender", ""), 32)
+    country = _normalize_text(data.get("country", ""), 80)
+    city = _normalize_text(data.get("city", ""), 120)
     hobbies = _normalize_text(data.get("hobbies", ""), 1000)
     interests = _normalize_text(data.get("interests", ""), 1000)
     preferences = _normalize_text(data.get("preferences", ""), 1000)
@@ -167,6 +194,8 @@ def update_profile():
     user.profile_title = profile_title
     user.birthdate = birthdate
     user.gender = gender
+    user.country = country
+    user.city = city
     user.height_cm = height_cm
     user.hobbies = hobbies
     user.interests = interests

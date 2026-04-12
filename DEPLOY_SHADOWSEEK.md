@@ -12,6 +12,7 @@
 - `DATABASE_URL`
 - `PUBLIC_BASE_URL`
 - `APP_BASE_URL`
+- `UPLOAD_DIRECTORY=/data/uploads`
 - `BILLING_GATING_ENABLED=true`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
@@ -40,10 +41,17 @@
 ## Deploy order
 
 1. Set all Render environment variables.
-2. Run database migrations with `flask db upgrade`.
-3. Deploy the web service.
-4. Configure the Stripe webhook endpoint.
-5. Test checkout, portal return, webhook sync, and gated search access.
+2. Attach a Render Persistent Disk mounted at `/data`.
+3. Run database migrations with `flask db upgrade`.
+4. Deploy the web service.
+5. Configure the Stripe webhook endpoint.
+6. Test checkout, portal return, webhook sync, and gated search access.
+
+## Media persistence
+
+- Profile avatars and banners are expected under `UPLOAD_DIRECTORY`, which should point to `/data/uploads` on Render.
+- Without a mounted persistent disk, uploaded files will disappear after restart or redeploy.
+- Existing legacy paths under `app/static/img/...` remain readable, but new uploads should go to the persistent disk.
 
 ## Security note
 

@@ -1,0 +1,329 @@
+:root {
+    --community-panel: linear-gradient(180deg, rgba(12, 12, 18, 0.96), rgba(4, 18, 15, 0.96));
+    --community-border: rgba(0, 255, 159, 0.18);
+}
+
+.community-shell {
+    width: min(1220px, calc(100vw - 32px));
+    margin: 0 auto;
+    display: grid;
+    gap: 22px;
+}
+
+.community-hero,
+.community-panel,
+.member-card,
+.message-sidebar,
+.message-thread,
+.stats-grid article,
+.stats-list {
+    border: 1px solid var(--community-border);
+    border-radius: 24px;
+    background: var(--community-panel);
+    box-shadow: 0 0 28px rgba(0, 255, 159, 0.1), 0 0 38px rgba(255, 0, 255, 0.08);
+}
+
+.community-hero,
+.community-panel,
+.message-sidebar,
+.message-thread,
+.stats-list {
+    padding: 24px;
+}
+
+.community-hero h1,
+.community-panel h1,
+.community-panel h2,
+.message-thread h1,
+.stats-grid strong,
+.member-card h3 {
+    margin: 0;
+}
+
+.community-headline {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.community-headline p,
+.community-subtle,
+.member-meta,
+.message-meta,
+.empty-note,
+.stats-list li span {
+    color: var(--muted);
+}
+
+.community-kpis,
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+}
+
+.community-kpis article,
+.stats-grid article {
+    padding: 18px;
+}
+
+.community-kpis strong,
+.stats-grid strong {
+    display: block;
+    font-size: 1.8rem;
+    color: var(--green);
+    margin-top: 8px;
+}
+
+.member-filter-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.member-filter-form label,
+.message-compose label {
+    display: grid;
+    gap: 8px;
+    color: #d6d8de;
+    font-size: 0.95rem;
+}
+
+.member-filter-form input,
+.member-filter-form select,
+.message-compose select,
+.message-compose textarea {
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 13px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 0, 255, 0.18);
+    background: rgba(0, 0, 0, 0.48);
+    color: var(--text);
+}
+
+.message-compose textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.filter-actions,
+.message-compose__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.neon-button,
+.ghost-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.neon-button {
+    border: 0;
+    color: #050505;
+    background: linear-gradient(135deg, var(--pink), var(--green));
+    font-weight: 800;
+}
+
+.ghost-button {
+    border: 1px solid rgba(0, 255, 159, 0.2);
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.members-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.member-card {
+    padding: 18px;
+    display: grid;
+    gap: 14px;
+}
+
+.member-card__top,
+.contact-card,
+.message-row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.member-card img,
+.contact-card img,
+.message-row img,
+.stats-user img {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    object-fit: cover;
+    border: 1px solid rgba(0, 255, 159, 0.22);
+}
+
+.presence-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 999px;
+    display: inline-block;
+    margin-right: 8px;
+    box-shadow: 0 0 14px currentColor;
+}
+
+.presence-dot--online {
+    color: var(--green);
+    background: var(--green);
+}
+
+.presence-dot--offline {
+    color: #6d7385;
+    background: #6d7385;
+}
+
+.member-tags,
+.member-actions,
+.message-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.member-tag,
+.pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 0, 255, 0.08);
+    border: 1px solid rgba(255, 0, 255, 0.14);
+    font-size: 0.86rem;
+}
+
+.messages-layout {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 18px;
+}
+
+.message-sidebar {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+}
+
+.contact-list,
+.thread-list,
+.stats-list ul {
+    display: grid;
+    gap: 10px;
+}
+
+.contact-card {
+    padding: 12px;
+    border-radius: 18px;
+    text-decoration: none;
+    color: inherit;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid transparent;
+}
+
+.contact-card[data-active="true"] {
+    border-color: rgba(255, 0, 255, 0.24);
+    background: rgba(255, 0, 255, 0.08);
+}
+
+.contact-unread {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(255, 0, 255, 0.18);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+}
+
+.message-thread {
+    display: grid;
+    gap: 18px;
+}
+
+.thread-list {
+    max-height: 420px;
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.message-row {
+    padding: 12px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.message-row--mine {
+    border: 1px solid rgba(0, 255, 159, 0.2);
+}
+
+.message-row--theirs {
+    border: 1px solid rgba(255, 0, 255, 0.18);
+}
+
+.message-bubble {
+    display: grid;
+    gap: 6px;
+}
+
+.message-body {
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.stats-list ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.stats-list li,
+.stats-user {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.stats-list li:last-child,
+.stats-user:last-child {
+    border-bottom: 0;
+}
+
+.stats-user {
+    justify-content: flex-start;
+}
+
+.stats-user__meta {
+    display: grid;
+    gap: 4px;
+}
+
+@media (max-width: 960px) {
+    .messages-layout {
+        grid-template-columns: 1fr;
+    }
+}
