@@ -1,3 +1,11 @@
+#
+# External Database & Credential Hygiene
+#
+- Render Connect liefert die vollständige External Database URL (inkl. User, Passwort, Host, DB).
+- Diese URL muss exakt in `.env` als `DATABASE_URL` gesetzt werden (nur lokal/serverseitig, niemals ins Repo/Frontend/Chat).
+- Nach jedem Leak (z.B. versehentliche Veröffentlichung, Chat, Screenshot) **muss** das DB-Passwort/Secret rotiert werden.
+- Nach Rotation alte Zugangsdaten sofort deaktivieren.
+
 # ShadowSeek Deploy Guide
 
 ## Render service

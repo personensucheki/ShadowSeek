@@ -37,9 +37,10 @@ class BaseConfig:
     Inherit from this for Dev/Prod/Test configs.
     """
     SECRET_KEY = os.environ.get("SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = _normalize_database_uri(
-        os.environ.get("DATABASE_URL", "sqlite:///shadowseek.db")
-    )
+    _db_url = os.environ.get("DATABASE_URL")
+    if not _db_url:
+        raise RuntimeError("DATABASE_URL ist nicht gesetzt. Bitte .env prüfen und Datenbank-URL konfigurieren.")
+    SQLALCHEMY_DATABASE_URI = _normalize_database_uri(_db_url)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True

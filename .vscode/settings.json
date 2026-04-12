@@ -1,3 +1,15 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "chat.tools.terminal.autoApprove": {
+        // Entwicklungsbefehle gezielt erlauben
+        "^python(\s|$)": true,
+        "^flask(\s|$)": true,
+        "^git(\s|$)": true,
+        "^pip(\s|$)": true,
+        "^alembic(\s|$)": true,
+        "^pytest(\s|$)": true,
+        "^npm(\s|$)": true,
+        "^node(\s|$)": true
+        // Keine destruktiven oder globalen Freigaben!
+    }
 }

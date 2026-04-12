@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Feed Post - ShadowSeek{% endblock %}
+{% block content %}
+<section class="feed-shell">
+  <div class="feed-stage">
+    <section class="feed-card snap-section">
+      <div class="feed-media">
+        {% if item.media_type == 'photo' %}
+          <img src="{{ item.media_url }}" alt="Foto" style="width:100%;height:auto;">
+        {% else %}
+          <video src="{{ item.media_url }}" controls playsinline poster="{{ item.poster_url or '/static/images/default-poster.jpg' }}" style="width:100%;max-width:480px;"></video>
+        {% endif %}
+      </div>
+      <div class="feed-overlay">
+        <div class="feed-user">
+          <img class="feed-avatar" src="{{ item.avatar_url }}" alt="{{ item.username }}">
+          <a href="{{ item.profile_url }}">{{ item.display_name or item.username }}</a>
+        </div>
+        <div class="feed-caption">{{ item.caption }}</div>
+        <div class="feed-hashtags">{{ item.hashtags }}</div>
+        <div class="feed-meta">{{ item.category }} {{ item.location }}</div>
+      </div>
+    </section>
+  </div>
+</section>
+{% endblock %}

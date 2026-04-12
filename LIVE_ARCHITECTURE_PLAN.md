@@ -1,3 +1,72 @@
+# Security-Policy: DATABASE_URL und Credential-Leaks
+
+- Jede offengelegte `DATABASE_URL` mit Passwort/Secret gilt als kompromittiert.
+- Nach Leak (z.B. Chat, Screenshot, Upload) **muss** das DB-Passwort/Secret rotiert werden.
+- Neue Zugangsdaten **niemals** ins Repo, Frontend, Chat oder Uploads einbringen.
+- Die `.env` mit echter `DATABASE_URL` darf **nur** lokal/serverseitig verwendet werden.
+- Nach Rotation alte Secrets sofort deaktivieren.
+
+# Lokale .env und Konfigurationspflichten
+
+### Minimal erforderliche .env-Variablen (lokal und Produktion)
+
+**Pflichtfelder:**
+- SECRET_KEY
+- DATABASE_URL
+- PUBLIC_BASE_URL
+- APP_BASE_URL
+- UPLOAD_DIRECTORY
+- BILLING_GATING_ENABLED
+- GOOGLE_APPLICATION_CREDENTIALS
+- GOOGLE_CLOUD_PROJECT_ID
+- GOOGLE_CLOUD_OUTPUT_BUCKET
+- GOOGLE_CLOUD_LOCATION
+- GOOGLE_SERVICE_ACCOUNT_EMAIL
+
+**Stripe-Variablen** können lokal leer bleiben, wenn Billing nicht getestet wird.
+
+**Wichtig:**
+- Die Datei `.env` im Projekt-Root wird beim lokalen Start und Testen geladen (z.B. via python-dotenv oder Flask).
+- Die Variable `DATABASE_URL` **muss** gesetzt sein, sonst schlägt der App-Start und jede Migration fehl.
+- Google-Credentials und -Konfiguration **müssen** serverseitig gesetzt sein, sonst liefert der Provider-Adapter einen klaren Fehlerstatus.
+
+### Config-Loading und Priorität
+- `.env` im Projekt-Root wird zuerst geladen (lokal).
+- In Produktion werden Environment-Variablen (z.B. Render, Docker, CI) priorisiert.
+- Falls mehrere Config-Pfade existieren, gilt: **Environment > .env > Default**.
+
+### Fehlerfall-Handling
+- Fehlt `DATABASE_URL`, gibt das Backend einen klaren Fehler beim Start/Migration aus (kein späterer DB-Crash).
+- Fehlt Google-Config, liefert der Provider-Adapter einen klaren Fehlercode (`provider_not_configured`, `credentials_missing` etc.), aber kein globaler Import- oder App-Crash.
+
+### Sicherheit
+- Niemals Secrets ins Repo oder ins Frontend.
+- Service-Account-JSON **nur** serverseitig, niemals im Repo oder Frontend.
+
+---
+# Programmatische Google-Integration
+
+### Warum erfolgt die Google-Integration programmatisch?
+- Die Google Cloud Console bietet keinen stabilen, produktiven Klickpfad für Input/Channel-Erstellung.
+- ShadowSeek orchestriert Input Endpoint, Channel und Status **vollständig serverseitig** via Google Live Stream API.
+- Die gesamte Provisionierung (Input, Channel, Output, Status) erfolgt über das Backend – keine manuelle UI-Interaktion nötig.
+- Nur so ist eine sichere, nachvollziehbare und automatisierbare Bereitstellung von Livestreams möglich.
+
+### Warum ist der UI-Klickpfad nicht der Produktionsweg?
+- Die Google UI ist für Einzel-Setups und Testzwecke gedacht, nicht für skalierbare, automatisierte Livestream-Orchestrierung.
+- ShadowSeek benötigt eine API-gesteuerte, reproduzierbare Steuerung (z.B. für mehrere parallele Streams, Status-Checks, Fehlerbehandlung).
+
+### Orchestrierung durch ShadowSeek
+- ShadowSeek steuert Input Endpoint, Channel und Status **immer** serverseitig.
+- Die API liefert alle relevanten Provider- und Playback-Informationen strukturiert aus.
+- Status- und Fehlercodes werden klar und nachvollziehbar an das Frontend/API zurückgegeben.
+
+### OBS/RTMP bleibt Phase-1-Produktivpfad
+- Für die erste Produktivphase bleibt OBS/RTMP der empfohlene Weg für Broadcaster.
+- Die Google-Integration dient als orchestrierter, sicherer Backend-Provider.
+
+### Direct-PC bleibt vorerst nicht produktiv
+- Direkte PC-Streams ohne Provider/OBS werden **nicht** als produktiver Pfad unterstützt.
 # LIVE_ARCHITECTURE_PLAN
 
 ## Zielarchitektur

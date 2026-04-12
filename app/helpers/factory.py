@@ -24,6 +24,7 @@ def register_blueprints(app):
     from app.routes.live_api import live_api_bp
     from app.routes.query_api import query_api_bp
     from app.routes.feed import feed_bp
+    from app.routes.feed_api import feed_api_bp
     from app.routes.provider_status import provider_status_bp
 
     app.register_blueprint(admin_feedback_bp)
@@ -50,6 +51,7 @@ def register_blueprints(app):
     app.register_blueprint(live_api_bp)
     app.register_blueprint(query_api_bp)
     app.register_blueprint(feed_bp)
+    app.register_blueprint(feed_api_bp)
     app.register_blueprint(provider_status_bp)
 
 

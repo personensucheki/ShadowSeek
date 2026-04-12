@@ -1,4 +1,23 @@
 from __future__ import annotations
+from __future__ import annotations
+def feed_post_detail(post_id):
+    from app.models.media_post import MediaPost
+    from app.models import User
+    from app.services.media import resolve_user_avatar_url
+    post = MediaPost.query.get(post_id)
+    if not post:
+        return render_template("feed_post_not_found.html"), 404
+    user = User.query.get(post.user_id)
+    item = {
+        **post.to_dict(),
+        "username": user.username if user else "user",
+        "display_name": (user.display_name or user.username) if user else "User",
+        "avatar_url": resolve_user_avatar_url(user) if user else None,
+        "media_url": url_for("profile.uploaded_file", filename=post.file_path),
+        "profile_url": url_for("feed.public_profile", username=user.username) if user else None,
+    }
+    return render_template("feed_post_detail.html", item=item)
+
 
 from datetime import datetime
 from pathlib import Path
@@ -8,7 +27,7 @@ from werkzeug.utils import secure_filename
 
 from app.extensions.main import db
 from app.models import MediaPost, User
-from app.rbac_helpers import login_required
+from app.rbac_helpers import login_required 
 from app.services.media import resolve_user_avatar_url
 
 

@@ -4,6 +4,7 @@ from .search_log import SearchLog
 from .user import User
 
 from .assistant_feedback import AssistantFeedback
+from .post_interaction import PostLike, PostComment
 from .direct_message import DirectMessage
 from .einnahme_info import EinnahmeInfo
 from .processed_webhook_event import ProcessedWebhookEvent

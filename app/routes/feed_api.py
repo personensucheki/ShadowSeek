@@ -1,3 +1,90 @@
+
+from app.models.post_interaction import PostComment
+
+# Kommentare listen
+@feed_api_bp.route("/api/feed/<int:post_id>/comments", methods=["GET"])
+def get_comments(post_id):
+    post = MediaPost.query.get(post_id)
+    if not post:
+        return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
+    comments = PostComment.query.filter_by(post_id=post_id).order_by(PostComment.created_at.asc()).all()
+    items = []
+    for c in comments:
+        user = User.query.get(c.user_id)
+        items.append({
+            "id": c.id,
+            "user_id": c.user_id,
+            "username": user.username if user else "user",
+            "display_name": (user.display_name or user.username) if user else "User",
+            "content": c.content,
+            "created_at": c.created_at.isoformat(),
+        })
+    return jsonify({"success": True, "items": items})
+
+# Kommentar erstellen
+@feed_api_bp.route("/api/feed/<int:post_id>/comments", methods=["POST"])
+def post_comment(post_id):
+    user_id = session.get("user_id") or (request.json and request.json.get("user_id"))
+    if not user_id:
+        return jsonify({"success": False, "error": {"message": "Nicht eingeloggt.", "code": "not_authenticated"}}), 401
+    post = MediaPost.query.get(post_id)
+    if not post:
+        return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
+    data = request.get_json(force=True)
+    content = (data.get("content") or "").strip()
+    if not content:
+        return jsonify({"success": False, "error": {"message": "Kommentar darf nicht leer sein.", "code": "empty"}}), 400
+    comment = PostComment(post_id=post_id, user_id=user_id, content=content)
+    db.session.add(comment)
+    db.session.commit()
+    user = User.query.get(user_id)
+    return jsonify({
+        "success": True,
+        "comment": {
+            "id": comment.id,
+            "user_id": user_id,
+            "username": user.username if user else "user",
+            "display_name": (user.display_name or user.username) if user else "User",
+            "content": comment.content,
+            "created_at": comment.created_at.isoformat(),
+        }
+    })
+
+# --- Interaktions- und View-Tracking-API ---
+
+from flask import session
+from app.models.post_interaction import PostLike
+from app.models.media_post import MediaPost
+from app.models import User
+
+@feed_api_bp.route("/api/feed/<int:post_id>/like", methods=["POST"])
+def like_post(post_id):
+    user_id = session.get("user_id") or (request.json and request.json.get("user_id"))
+    if not user_id:
+        return jsonify({"success": False, "error": {"message": "Nicht eingeloggt.", "code": "not_authenticated"}}), 401
+    post = MediaPost.query.get(post_id)
+    if not post:
+        return jsonify({"success": False, "error": {"message": "Post nicht gefunden.", "code": "not_found"}}), 404
+    like = PostLike.query.filter_by(post_id=post_id, user_id=user_id).first()
+    liked = False
+    if like:
+        db.session.delete(like)
+        liked = False
+    else:
+        db.session.add(PostLike(post_id=post_id, user_id=user_id))
+        liked = True
+    # Like-Count aktualisieren
+    db.session.flush()
+    like_count = PostLike.query.filter_by(post_id=post_id).count()
+    post.like_count = like_count
+    db.session.commit()
+    return jsonify({"success": True, "liked": liked, "like_count": like_count, "post_id": post_id})
+
+@feed_api_bp.route("/api/feed/<int:post_id>/view", methods=["POST"])
+def view_post(post_id):
+    # TODO: Echte View-Logik
+    # Erwartet: { user_id: ... }
+    return jsonify({"success": True, "viewed": True, "post_id": post_id})
 """
 API-Routen für Feed, Live und Interaktionen
 """
@@ -17,8 +104,12 @@ def get_feed():
     user_id = request.args.get("user_id")
     feed_type = request.args.get("type", "discovery")
     location = request.args.get("location")
-    posts = feed_service.get_feed(user_id, feed_type, location)
-    return jsonify({"success": True, "items": posts})
+    dev_fallback = request.args.get("dev_fallback") == "1"
+    try:
+        items = feed_service.get_feed(user_id, feed_type, location, dev_fallback)
+        return jsonify({"success": True, "items": items})
+    except Exception as exc:
+        return jsonify({"success": False, "error": {"message": str(exc), "code": "feed_error"}}), 500
 
 @feed_api_bp.route("/api/live/recommended", methods=["GET"])
 def get_live_recommended():
