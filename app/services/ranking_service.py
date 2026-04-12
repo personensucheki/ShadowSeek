@@ -1,65 +1,45 @@
-from typing import List, Dict, Any
+"""
+Ranking-Service: Scoring und Sortierung von Posts und Livestreams
+"""
 
 class RankingService:
-    @staticmethod
-    def score_result(result: Dict[str, Any], query_variants: List[str], selected_platforms: List[str]) -> Dict[str, Any]:
+    def score_post(self, post, metrics, user_profile):
+        """
+        Berechnet einen heuristischen Score für einen Post.
+        Berücksichtigt: watch_time, completion_rate, rewatch_rate, shares, saves, comments_quality,
+        profile_click_rate, follow_conversion, skip_rate, report_rate, freshness_bonus, creator_diversity_bonus, exploration_bonus
+        """
         score = 0.0
-        match_reasons = []
-        quality_flags = []
-        username = result.get('username', '').lower()
-        platform = result.get('platform', '').lower()
-        evidence_count = result.get('evidence_count', 1)
-        confidence_hint = result.get('raw_confidence_hint', 0.0)
-        # 1. Exact username match
-        if username in [v.lower() for v in query_variants]:
-            score += 2.0
-            match_reasons.append('exact username match')
-        # 2. Normalized/variant match
-        elif any(username in v.lower() or v.lower() in username for v in query_variants):
-            score += 1.0
-            match_reasons.append('variant/normalized match')
-        # 3. Plattform gewählt
-        if platform in [p.lower() for p in selected_platforms]:
-            score += 0.7
-            match_reasons.append('selected platform match')
-        # 4. Evidence count
-        if evidence_count > 1:
-            score += min(0.5, 0.1 * (evidence_count-1))
-            match_reasons.append('corroborated by multiple sources')
-        # 5. Confidence hint
-        score += min(1.0, confidence_hint)
-        # 6. Profile URL vorhanden
-        if result.get('profile_url'):
-            score += 0.3
-            match_reasons.append('direct profile endpoint reachable')
-        # 7. Snippet/Titel-Plausibilität
-        if result.get('title') and result.get('snippet'):
-            score += 0.2
-        # 8. Quality flags
-        if evidence_count > 2:
-            quality_flags.append('strong evidence')
-        if confidence_hint < 0.3:
-            quality_flags.append('weak confidence')
-        # Confidence Level
-        if score >= 2.5:
-            confidence = 'high'
-        elif score >= 1.5:
-            confidence = 'medium'
-        else:
-            confidence = 'low'
-        return {
-            **result,
-            'score': round(score, 3),
-            'confidence': confidence,
-            'match_reasons': match_reasons,
-            'quality_flags': quality_flags
-        }
+        # Engagement
+        score += 2.0 * metrics.get('watch_time_seconds', 0) / max(metrics.get('duration', 1), 1)
+        score += 1.5 * metrics.get('completion_rate', 0)
+        score += 1.2 * metrics.get('rewatch_rate', 0)
+        score += 1.0 * metrics.get('shares', 0)
+        score += 0.8 * metrics.get('saves', 0)
+        score += 0.7 * metrics.get('comments_quality', 0)
+        score += 0.6 * metrics.get('profile_click_rate', 0)
+        score += 0.6 * metrics.get('follow_conversion', 0)
+        score -= 1.0 * metrics.get('skip_rate', 0)
+        score -= 1.5 * metrics.get('report_rate', 0)
+        # Boni
+        score += 0.5 * metrics.get('freshness_bonus', 0)
+        score += 0.3 * metrics.get('creator_diversity_bonus', 0)
+        score += 0.2 * metrics.get('exploration_bonus', 0)
+        return round(score, 4)
 
-    @staticmethod
-    def rank_results(results: List[Dict[str, Any]], query_variants: List[str], selected_platforms: List[str]) -> List[Dict[str, Any]]:
-        scored = [RankingService.score_result(r, query_variants, selected_platforms) for r in results]
-        return sorted(scored, key=lambda x: x['score'], reverse=True)
+    def score_live(self, session, metrics, user_profile):
+        """
+        Berechnet einen heuristischen Score für eine Live-Session.
+        Berücksichtigt: viewer_growth_rate, avg_watch_time, chat_activity, retention_3min, creator_loyalty_score, quality_score, recency
+        """
+        score = 0.0
+        score += 2.0 * metrics.get('viewer_growth_rate', 0)
+        score += 1.5 * metrics.get('avg_watch_time', 0)
+        score += 1.2 * metrics.get('chat_activity', 0)
+        score += 1.0 * metrics.get('retention_3min', 0)
+        score += 1.0 * metrics.get('creator_loyalty_score', 0)
+        score += 0.8 * metrics.get('quality_score', 0)
+        score += 0.5 * metrics.get('recency', 0)
+        return round(score, 4)
 
-# Beispiel-Nutzung:
-# ranked = RankingService.rank_results(deduped_results, [v['value'] for v in variants], ['github', 'twitter'])
-# print(ranked)
+ranking_service = RankingService()
