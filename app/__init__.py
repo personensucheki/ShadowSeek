@@ -106,6 +106,10 @@ def create_app(config_class=None):
     register_blueprints(app)
     register_live_socket_handlers(app)
 
+    # Optional: create/update a first owner account from env vars.
+    with app.app_context():
+        ensure_owner_account(app)
+
     @app.get("/healthz")
     def healthz():
         return {"ok": True, "app": "ShadowSeek"}

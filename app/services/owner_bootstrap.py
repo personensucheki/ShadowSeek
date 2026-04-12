@@ -10,10 +10,28 @@ def _is_enabled(raw_value) -> bool:
     return str(raw_value).strip().lower() in {"1", "true", "yes", "on"}
 
 
-
+def _ensure_tables_exist() -> None:
+    """
+    Fallback for first-boot scenarios where migrations haven't been applied yet.
+    Only used when the owner bootstrap hits an OperationalError.
+    """
+    try:
+        db.create_all()
+    except Exception:
+        db.session.rollback()
 
 
 def ensure_owner_account(app):
+    """
+    Creates/updates a single "owner" account (super_admin) from environment config.
+
+    Render/Prod setup (Environment Variables):
+    - OWNER_BOOTSTRAP_ENABLED=1
+    - OWNER_BOOTSTRAP_USERNAME=ADMIN
+    - OWNER_BOOTSTRAP_EMAIL=admin@example.com
+    - OWNER_BOOTSTRAP_PASSWORD=... (mind. 8 Zeichen)
+    """
+
     enabled = _is_enabled(app.config.get("OWNER_BOOTSTRAP_ENABLED"))
     if not enabled:
         return
@@ -23,7 +41,13 @@ def ensure_owner_account(app):
     password = app.config.get("OWNER_BOOTSTRAP_PASSWORD") or ""
 
     if not username or not email or not password:
-        app.logger.warning("Owner bootstrap enabled but username/email/password not fully configured.")
+        app.logger.warning(
+            "Owner bootstrap enabled but username/email/password not fully configured."
+        )
+        return
+
+    if len(password) < 8:
+        app.logger.warning("Owner bootstrap password too short; skipping.")
         return
 
     try:
@@ -41,7 +65,6 @@ def ensure_owner_account(app):
         db.session.commit()
     except OperationalError as exc:  # pragma: no cover
         db.session.rollback()
-        # Typischer Erststart-Fehler: Tabelle existiert noch nicht.
         app.logger.warning("Owner bootstrap hit DB error, trying create_all(): %s", exc)
         _ensure_tables_exist()
         try:
@@ -63,3 +86,4 @@ def ensure_owner_account(app):
     except Exception as exc:  # pragma: no cover
         db.session.rollback()
         app.logger.warning("Owner bootstrap skipped: %s", exc)
+
