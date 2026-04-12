@@ -77,12 +77,14 @@ class BaseConfig:
     GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
     REDDIT_USER_AGENT = os.environ.get("REDDIT_USER_AGENT", "ShadowSeek/1.0 (contact: admin@shadowseek.local)")
     APP_BASE_URL = os.environ.get("APP_BASE_URL", PUBLIC_BASE_URL or "http://localhost:5000").rstrip("/")
-    BILLING_GATING_ENABLED = os.environ.get("BILLING_GATING_ENABLED", "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    _billing_gate_raw = (os.environ.get("BILLING_GATING_ENABLED") or "").strip().lower()
+    # Wichtig: Wenn die Variable NICHT gesetzt ist, soll billing_enabled() automatisch auf
+    # STRIPE_SECRET_KEY zurückfallen. Deshalb hier None statt False.
+    BILLING_GATING_ENABLED = (
+        None
+        if not _billing_gate_raw
+        else _billing_gate_raw in {"1", "true", "yes", "on"}
+    )
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
     STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
     STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2025-03-31.basil")

@@ -115,6 +115,7 @@ def register_context_processors(app):
     from flask_wtf.csrf import generate_csrf
     from app.models.user import User
     from app.extensions.main import db
+    from app.services.billing import billing_enabled
 
     @app.context_processor
     def inject_csrf_token_and_user():
@@ -125,7 +126,7 @@ def register_context_processors(app):
         return {
             "csrf_token": generate_csrf(),
             "g": {"current_user": current_user},
-            "billing_enabled": bool(app.config.get("BILLING_GATING_ENABLED")),
+            "billing_enabled": billing_enabled(),
         }
 
 
