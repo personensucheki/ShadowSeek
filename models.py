@@ -26,6 +26,15 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Erweiterte Profilfelder
+    title = db.Column(db.String(120), default="SuperAdmin | Eigentümer | Support")
+    bio = db.Column(db.Text, default="Ich bin der Eigentümer von ShadowSeek, SuperAdmin und für Support zuständig. Bei Anliegen oder Spenden bitte direkt kontaktieren.")
+    avatar_url = db.Column(db.String(255), default="/static/avatar_admin.png")
+    banner_url = db.Column(db.String(255), default="/static/banner_admin.png")
+    support_contact = db.Column(db.String(120), default="personensucheki@gmail.com")
+    spenden_link = db.Column(db.String(255), default="https://paypal.me/personensucheki")
+    birthdate = db.Column(db.String(32), default="12.04.2026")
+    height_cm = db.Column(db.Integer, default=187)
 
     def __repr__(self):
         return f'<User {self.username}>'
