@@ -1,11 +1,3 @@
-@community_bp.route("/members/<string:username>", methods=["GET"])
-def member_profile(username):
-    user = User.query.filter_by(username=username, is_active=True).first_or_404()
-    payload = _member_payload(user)
-    return render_template(
-        "members/member_profile.html",
-        member=payload
-    )
 from __future__ import annotations
 
 from collections import Counter
@@ -194,6 +186,13 @@ def members():
         online_count=sum(1 for user in members_payload if user["is_online"]),
         total_count=len(members_payload),
     )
+
+
+@community_bp.route("/members/<string:username>", methods=["GET"])
+def member_profile(username):
+    user = User.query.filter_by(username=username, is_active=True).first_or_404()
+    payload = _member_payload(user)
+    return render_template("members/member_profile.html", member=payload)
 
 
 @community_bp.route("/messages", methods=["GET"])
