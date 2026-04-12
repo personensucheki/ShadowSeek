@@ -15,20 +15,43 @@
     <div class="live-layout">
         <article class="live-panel">
             <h2>Stream vorbereiten</h2>
-            <form class="live-form" id="live-setup-form">
+            <form class="live-form" id="live-setup-form" enctype="multipart/form-data">
                 <label for="live-title">Titel</label>
                 <input id="live-title" name="title" type="text" maxlength="120" placeholder="z. B. Late Night Gaming + Talk" required>
+
+                <label for="live-description">Beschreibung</label>
+                <textarea id="live-description" name="description" maxlength="500" placeholder="Beschreibe deinen Stream..." rows="3"></textarea>
 
                 <label for="live-category">Kategorie</label>
                 <select id="live-category" name="category" required>
                     <option value="">Kategorie auswählen</option>
-                    {% for category in categories %}
-                        <option value="{{ category }}">{{ category }}</option>
-                    {% endfor %}
+                    <option value="Games">Games</option>
+                    <option value="Just Talk">Just Talk</option>
+                    <option value="Dating">Dating</option>
+                    <option value="Friends">Friends</option>
                 </select>
 
-                <label for="live-game">Spiel / Thema</label>
-                <input id="live-game" name="game" type="text" maxlength="80" placeholder="z. B. Valorant, IRL, Dating Talk">
+                <div id="game-search-row" style="display:none;">
+                    <label for="live-game-search">Spiel</label>
+                    <input id="live-game-search" name="game_search" type="text" placeholder="Spiel suchen..." autocomplete="off">
+                    <div id="game-search-results" class="game-search-results"></div>
+                    <input type="hidden" id="live-game" name="game">
+                </div>
+                <div id="topic-row">
+                    <label for="live-topic">Thema</label>
+                    <input id="live-topic" name="topic" type="text" maxlength="80" placeholder="z. B. Talk, Dating, ...">
+                </div>
+
+                <label for="live-tags">Tags</label>
+                <input id="live-tags" name="tags" type="text" maxlength="120" placeholder="z. B. deutsch, talk, fun, 18+">
+
+                <label for="live-thumbnail">Thumbnail / Cover</label>
+                <input id="live-thumbnail" name="thumbnail" type="file" accept="image/*">
+
+                <div class="live-gifts-row">
+                    <input id="enable-gifts" name="enable_gifts" type="checkbox">
+                    <label for="enable-gifts">Geschenkefunktion aktivieren</label>
+                </div>
 
                 <div class="live-mode-switch" role="tablist" aria-label="Streaming Modus">
                     <button class="active" type="button" data-mode="obs">OBS / StreamKey</button>
@@ -70,88 +93,5 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/live.js') }}"></script>
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< HEAD
-=======
-{% endblock %}{% extends "base.html" %}
-{% block title %}Live Studio{% endblock %}
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/live.css') }}">
 {% endblock %}
-
-{% block content %}
-<section class="live-page">
-    <header class="live-page__header">
-        <p class="live-page__eyebrow">ShadowSeek Live</p>
-        <h1>Starte deinen Live-Stream</h1>
-        <p>Nutze OBS mit Stream-Key oder starte direkt über Kamera & Mikrofon am PC.</p>
-    </header>
-
-    <div class="live-layout">
-        <article class="live-panel">
-            <h2>Stream vorbereiten</h2>
-            <form class="live-form" id="live-setup-form">
-                <label for="live-title">Titel</label>
-                <input id="live-title" name="title" type="text" maxlength="120" placeholder="z. B. Late Night Gaming + Talk" required>
-
-                <label for="live-category">Kategorie</label>
-                <select id="live-category" name="category" required>
-                    <option value="">Kategorie auswählen</option>
-                    {% for category in categories %}
-                        <option value="{{ category }}">{{ category }}</option>
-                    {% endfor %}
-                </select>
-
-                <label for="live-game">Spiel / Thema</label>
-                <input id="live-game" name="game" type="text" maxlength="80" placeholder="z. B. Valorant, IRL, Dating Talk">
-
-                <div class="live-mode-switch" role="tablist" aria-label="Streaming Modus">
-                    <button class="active" type="button" data-mode="obs">OBS / StreamKey</button>
-                    <button type="button" data-mode="direct">Direkt vom PC</button>
-                </div>
-
-                <div class="live-mode-content active" id="mode-obs">
-                    <label for="live-ingest-url">Ingest URL</label>
-                    <input id="live-ingest-url" type="text" value="{{ ingest_url }}" readonly>
-                    <label for="live-stream-key">Stream Key</label>
-                    <div class="stream-key-row">
-                        <input id="live-stream-key" type="password" value="{{ stream_key }}" readonly>
-                        <button type="button" id="toggle-key">Anzeigen</button>
-                        <button type="button" id="copy-key">Kopieren</button>
-                    </div>
-                </div>
-
-                <div class="live-mode-content" id="mode-direct">
-                    <p class="live-hint">Aktiviere Kamera/Mikrofon für Direct-Live (USB-Cams und eingebaute Webcam werden unterstützt).</p>
-                    <div class="direct-actions">
-                        <button type="button" id="enable-camera">Kamera aktivieren</button>
-                        <button type="button" id="disable-camera">Kamera stoppen</button>
-                    </div>
-                </div>
-
-                <button class="live-start-btn" type="submit">Live-Setup speichern</button>
-                <p class="live-feedback" id="live-feedback" aria-live="polite"></p>
-            </form>
-        </article>
-
-        <aside class="live-preview">
-            <h2>Vorschau</h2>
-            <video id="live-preview-video" autoplay muted playsinline></video>
-            <p class="live-preview__note">Kein Stream aktiv? Du kannst trotzdem mit OBS über den Stream-Key senden.</p>
-        </aside>
-    </div>
-</section>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/live.js') }}"></script>
->>>>>>> ca53806 (Login reperatur)
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 {% endblock %}

@@ -175,6 +175,7 @@ def create_app(config_class=None):
     from .routes.pulse import bp as pulse_bp
     from .routes.oauth_connect import oauth_bp
     from .routes.live import live_bp
+    from .routes.games_api import games_api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(community_bp)
@@ -192,6 +193,7 @@ def create_app(config_class=None):
     app.register_blueprint(pulse_bp)
     app.register_blueprint(oauth_bp)
     app.register_blueprint(live_bp)
+    app.register_blueprint(games_api_bp)
     from .routes.einnahmen_api import api_bp
     app.register_blueprint(api_bp)
     from .routes.live_api import live_api_bp

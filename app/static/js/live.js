@@ -1,3 +1,63 @@
+    // Kategorie-/Game-Suchfeld-Logik
+    const categorySelect = document.getElementById("live-category");
+    const gameSearchRow = document.getElementById("game-search-row");
+    const topicRow = document.getElementById("topic-row");
+    if (categorySelect && gameSearchRow && topicRow) {
+        function updateGameTopicVisibility() {
+            if (categorySelect.value === "Games") {
+                gameSearchRow.style.display = "block";
+                topicRow.style.display = "none";
+            } else {
+                gameSearchRow.style.display = "none";
+                topicRow.style.display = "block";
+            }
+        }
+        categorySelect.addEventListener("change", updateGameTopicVisibility);
+        updateGameTopicVisibility();
+    }
+
+    // Dynamische Game-Suche
+    const gameSearchInput = document.getElementById("live-game-search");
+    const gameSearchResults = document.getElementById("game-search-results");
+    const gameHiddenInput = document.getElementById("live-game");
+    if (gameSearchInput && gameSearchResults && gameHiddenInput) {
+        let lastQuery = "";
+        let debounceTimeout = null;
+        gameSearchInput.addEventListener("input", function() {
+            const q = gameSearchInput.value.trim();
+            if (q.length < 2) {
+                gameSearchResults.innerHTML = "";
+                return;
+            }
+            if (debounceTimeout) clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                fetch(`/api/games/search?q=${encodeURIComponent(q)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.success) return;
+                        gameSearchResults.innerHTML = "";
+                        data.results.forEach(game => {
+                            const div = document.createElement("div");
+                            div.className = "game-search-result";
+                            div.innerHTML = `
+                                <span class="game-name">${game.name}</span>
+                                ${game.cover ? `<img src="${game.cover}" alt="${game.name}" class="game-cover">` : ""}
+                            `;
+                            div.addEventListener("click", () => {
+                                gameSearchInput.value = game.name;
+                                gameHiddenInput.value = game.id;
+                                gameSearchResults.innerHTML = "";
+                            });
+                            gameSearchResults.appendChild(div);
+                        });
+                    });
+            }, 180);
+        });
+        // Reset hidden input if user changes text
+        gameSearchInput.addEventListener("input", function() {
+            gameHiddenInput.value = "";
+        });
+    }
 document.addEventListener("DOMContentLoaded", () => {
     const modeButtons = document.querySelectorAll("[data-mode]");
     const modeObs = document.getElementById("mode-obs");
