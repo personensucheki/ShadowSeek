@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.extensions import db
+from app.extensions.main import db
 
 
 class ProcessedWebhookEvent(db.Model):

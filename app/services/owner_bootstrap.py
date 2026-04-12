@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.exc import OperationalError
 
-from app.extensions import db
+from app.extensions.main import db
 from app.models.user import User
 
 

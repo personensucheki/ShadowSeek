@@ -1,5 +1,5 @@
 from datetime import datetime
-from ..extensions import db
+from app.extensions.main import db
 
 from werkzeug.security import generate_password_hash, check_password_hash
 

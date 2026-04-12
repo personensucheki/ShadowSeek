@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.utils import secure_filename
 
-from app.extensions import db
+from app.extensions.main import db
 from app.models.user import User
 from app.services.search_service import list_platform_cards
 from app.services.media import resolve_user_avatar_url, resolve_user_banner_url

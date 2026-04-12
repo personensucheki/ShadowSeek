@@ -7,8 +7,8 @@ from flask import Flask, jsonify, request, session
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import RequestEntityTooLarge
 
-from .extensions import csrf, db, migrate
-from .extensions.socketio import create_socketio
+from .extensions.main import csrf, db, migrate
+from .extensions.socketio import socketio, init_socketio
 from .services.billing import build_configured_plans
 from .services.owner_bootstrap import ensure_owner_account
 from .sockets import live_socket
@@ -58,6 +58,7 @@ def _resolve_default_config():
 def create_app(config_class=None):
     app = Flask(__name__, instance_relative_config=True)
 
+
     if config_class:
         app.config.from_object(config_class)
     else:
@@ -77,11 +78,12 @@ def create_app(config_class=None):
     if not app.config.get("SECRET_KEY") and not app.config.get("TESTING"):
         raise RuntimeError("SECRET_KEY must be configured for ShadowSeek.")
 
+
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
-    # SocketIO initialisieren (Option A, MVP, Redis vorbereitet)
-    socketio = create_socketio(app)
+    # SocketIO initialisieren (global, ENV-ready)
+    init_socketio(app)
     app.socketio = socketio  # Referenz für späteren Import
 
     # SocketIO-Events für Live-Streams

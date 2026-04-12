@@ -1,6 +1,8 @@
-    # SocketIO/Redis
-    REDIS_URL = os.environ.get("REDIS_URL")
-    SOCKETIO_ASYNC_MODE = os.environ.get("SOCKETIO_ASYNC_MODE", "eventlet")
+import os
+
+# SocketIO/Redis
+REDIS_URL = os.environ.get("REDIS_URL")
+SOCKETIO_ASYNC_MODE = os.environ.get("SOCKETIO_ASYNC_MODE", "eventlet")
 import os
 
 
@@ -114,3 +116,23 @@ class DevConfig(BaseConfig):
 
 class ProdConfig(BaseConfig):
     DEBUG = False
+
+
+# --- TestConfig für pytest ---
+class TestConfig:
+    TESTING = True
+    SECRET_KEY = "test-secret"
+    SQLALCHEMY_DATABASE_URI = (
+        os.environ.get("TEST_DATABASE_URL") or "sqlite:///:memory:"
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    WTF_CSRF_ENABLED = False
+    SOCKETIO_ASYNC_MODE = os.environ.get("SOCKETIO_ASYNC_MODE", "threading")
+
+
+class TestConfig(BaseConfig):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = "test-secret"
+    WTF_CSRF_ENABLED = False

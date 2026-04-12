@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from ..extensions import db
+from app.extensions.main import db
 
 
 class OAuthToken(db.Model):
     __tablename__ = "oauth_tokens"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     provider = db.Column(db.String(32), nullable=False, index=True)
 
     access_token_enc = db.Column(db.Text, nullable=False)

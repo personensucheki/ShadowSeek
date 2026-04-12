@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import and_, case, func, or_
 
-from app.extensions import db
+from app.extensions.main import db
 from app.models import DirectMessage, User
 from app.rbac_helpers import login_required, role_required
 from app.services.media import resolve_user_avatar_url

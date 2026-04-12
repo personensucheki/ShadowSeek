@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, abort, session
-from app.extensions import db
+from app.extensions.main import db
 from app.models import LiveStream, LiveLike, LiveChatMessage, LiveGift, User
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime

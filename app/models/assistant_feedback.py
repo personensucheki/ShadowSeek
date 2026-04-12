@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.extensions import db
+from app.extensions.main import db
 
 class AssistantFeedback(db.Model):
     __tablename__ = "assistant_feedback"

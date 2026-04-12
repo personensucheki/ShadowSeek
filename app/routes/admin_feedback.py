@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request
 from ..models.assistant_feedback import AssistantFeedback
-from ..extensions import db
+from app.extensions.main import db
 
 admin_feedback_bp = Blueprint("admin_feedback", __name__, url_prefix="/admin/feedback")
 

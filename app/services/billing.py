@@ -9,7 +9,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - depends on optional local dependency
     stripe = None
 
-from app.extensions import db
+from app.extensions.main import db
 from app.models import ProcessedWebhookEvent, User
 from app.services.search_service import PLATFORM_INDEX
 

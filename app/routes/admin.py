@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from flask import Blueprint, g, redirect, render_template, request, url_for
 from sqlalchemy import func
 
-from app.extensions import db
+from app.extensions.main import db
 from app.models import SearchLog, User
 from app.rbac_helpers import login_required, role_required
 from app.services.admin_console import (

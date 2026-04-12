@@ -1,5 +1,5 @@
 from datetime import datetime
-from ..extensions import db
+from app.extensions.main import db
 
 class PublicProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -4,8 +4,8 @@ import re
 
 from flask import Blueprint, jsonify, redirect, request, session, url_for
 
-from ..extensions import db
-from ..extensions import csrf
+from app.extensions.main import db
+from ..extensions.main import csrf
 from ..models.user import User
 
 

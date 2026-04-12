@@ -1,4 +1,4 @@
-from app.extensions import db
+from app.extensions.main import db
 from datetime import datetime
 
 from sqlalchemy.schema import UniqueConstraint

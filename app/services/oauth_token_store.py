@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import requests
 from flask import current_app
 
-from ..extensions import db
+from app.extensions.main import db
 from ..models.oauth_token import OAuthToken
 from .token_crypto import decrypt_text, encrypt_text
 

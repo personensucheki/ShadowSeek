@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request, current_app
 
 from ..services.chatbot_service import ChatbotService
 from ..models.assistant_feedback import AssistantFeedback
-from ..extensions import db
+from app.extensions.main import db
 
 chatbot_bp = Blueprint("chatbot", __name__, url_prefix="/api/chatbot")
 
