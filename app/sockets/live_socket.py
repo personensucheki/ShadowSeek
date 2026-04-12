@@ -1,90 +1,101 @@
 
-# --- Imports & Konstanten ---
-from flask import session, request
-from flask_socketio import join_room, leave_room, emit, Namespace
-from collections import defaultdict
-import time
-
-# --- In-Memory Daten (MVP, später Redis) ---
-viewer_counts = defaultdict(int)
-socket_stream_map = {}
-
-STREAM_ROOM_PREFIX = "stream_"
-
-# --- Hilfsfunktionen ---
-def get_stream_room(stream_id):
-    return f"{STREAM_ROOM_PREFIX}{stream_id}"
-
-def handle_join_stream(socketio, sid, stream_id):
-    room = get_stream_room(stream_id)
-    join_room(room, sid=sid, namespace="/live")
-    viewer_counts[stream_id] += 1
-    if viewer_counts[stream_id] < 1:
-        viewer_counts[stream_id] = 1
-    socketio.emit("viewer_update", {"stream_id": stream_id, "viewer_count": viewer_counts[stream_id]}, room=room, namespace="/live")
-
-def handle_leave_stream(socketio, sid, stream_id):
-    room = get_stream_room(stream_id)
-    leave_room(room, sid=sid, namespace="/live")
-    viewer_counts[stream_id] = max(0, viewer_counts[stream_id] - 1)
-    socketio.emit("viewer_update", {"stream_id": stream_id, "viewer_count": viewer_counts[stream_id]}, room=room, namespace="/live")
-
-def validate_stream_id(stream_id):
-    return stream_id and isinstance(stream_id, str) and len(stream_id) <= 64
-
-def validate_message(msg):
-    return msg and isinstance(msg, str) and 0 < len(msg) <= 500
-
-def validate_gift_type(gift_type):
-    return gift_type and isinstance(gift_type, str) and len(gift_type) <= 32
-
-def validate_amount(amount):
-    try:
-        amt = int(amount)
-        return 1 <= amt <= 100
-    except Exception:
-        return False
-
-# --- Rate-Limit-Logik ---
-_rate_limits = defaultdict(lambda: defaultdict(list))
-def rate_limited(sid, event, max_calls, per_seconds):
-    now = time.time()
-    timestamps = _rate_limits[sid][event]
-    _rate_limits[sid][event] = [t for t in timestamps if now - t < per_seconds]
-    if len(_rate_limits[sid][event]) >= max_calls:
-        return True
-    _rate_limits[sid][event].append(now)
-    return False
-
-class LiveNamespace(Namespace):
-    def on_connect(self):
-        pass
-
-    def on_disconnect(self):
-        pass
-
-    def on_join_stream(self, data):
-        stream_id = data.get("stream_id")
-        sid = request.sid
-        if not validate_stream_id(stream_id):
-            return
-        handle_join_stream(self.server, sid, stream_id)
-        socket_stream_map[sid] = stream_id
-
-    def on_leave_stream(self, data):
-        stream_id = data.get("stream_id")
-        sid = request.sid
-        if not validate_stream_id(stream_id):
-            return
-        handle_leave_stream(self.server, sid, stream_id)
-        socket_stream_map.pop(sid, None)
-
-    def on_send_message(self, data):
-        stream_id = data.get("stream_id")
         message = (data.get("message") or "").strip()
-        sid = request.sid
-        user_id = session.get("user_id") or data.get("user_id")
+
+# --- Funktionsbasierte Handler ---
+from app.extensions.socketio import socketio
+
+def get_room(stream_id):
+    return f"stream_{stream_id}"
+
+viewer_counts = {}
+like_counts = {}
+
+@socketio.on("join_stream", namespace="/live")
+def handle_join_stream(data):
+    stream_id = (data or {}).get("stream_id")
+    if not stream_id:
+        return
+    room = get_room(stream_id)
+    join_room(room)
+    viewer_counts[stream_id] = viewer_counts.get(stream_id, 0) + 1
+    emit(
+        "viewer_update",
+        {"stream_id": stream_id, "viewer_count": viewer_counts[stream_id]},
+        to=room,
+        namespace="/live",
+    )
+
+@socketio.on("leave_stream", namespace="/live")
+def handle_leave_stream(data):
+    stream_id = (data or {}).get("stream_id")
+    if not stream_id:
+        return
+    room = get_room(stream_id)
+    leave_room(room)
+    viewer_counts[stream_id] = max(0, viewer_counts.get(stream_id, 0) - 1)
+    emit(
+        "viewer_update",
+        {"stream_id": stream_id, "viewer_count": viewer_counts[stream_id]},
+        to=room,
+        namespace="/live",
+    )
+
+@socketio.on("send_message", namespace="/live")
+def handle_send_message(data):
+    data = data or {}
+    stream_id = data.get("stream_id")
+    message = (data.get("message") or "").strip()
+    username = (data.get("username") or "Anonymous").strip()
+    if not stream_id or not message:
+        return
+    room = get_room(stream_id)
+    emit(
+        "new_message",
+        {"stream_id": stream_id, "username": username, "message": message},
+        to=room,
+        namespace="/live",
+    )
+
+@socketio.on("send_like", namespace="/live")
+def handle_send_like(data):
+    data = data or {}
+    stream_id = data.get("stream_id")
+    if not stream_id:
+        return
+    room = get_room(stream_id)
+    like_counts[stream_id] = like_counts.get(stream_id, 0) + 1
+    emit(
+        "new_like",
+        {"stream_id": stream_id, "likes": like_counts[stream_id]},
+        to=room,
+        namespace="/live",
+    )
+
+@socketio.on("send_gift", namespace="/live")
+def handle_send_gift(data):
+    data = data or {}
+    stream_id = data.get("stream_id")
+    gift_type = data.get("gift_type") or "unknown"
+    amount = data.get("amount") or 1
+    username = (data.get("username") or "Anonymous").strip()
+    if not stream_id:
+        return
+    room = get_room(stream_id)
+    emit(
+        "new_gift",
+        {
+            "stream_id": stream_id,
+            "gift_type": gift_type,
+            "amount": amount,
+            "username": username,
+        },
+        to=room,
+        namespace="/live",
+    )
+
         username = data.get("username", "testuser")
+    # Import triggers handler registration
+    pass
         if not user_id or not validate_stream_id(stream_id) or not validate_message(message):
             return
         if rate_limited(sid, "send_message", 5, 10):

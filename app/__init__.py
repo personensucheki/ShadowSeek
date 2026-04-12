@@ -11,7 +11,8 @@ from .extensions.main import csrf, db, migrate
 from .extensions.socketio import socketio, init_socketio
 from .services.billing import build_configured_plans
 from .services.owner_bootstrap import ensure_owner_account
-from .sockets import live_socket
+
+from app.sockets.live_socket import register_live_socket_handlers
 
 
 def _configure_database_uri(app):
@@ -79,6 +80,7 @@ def create_app(config_class=None):
         raise RuntimeError("SECRET_KEY must be configured for ShadowSeek.")
 
 
+
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
@@ -87,7 +89,7 @@ def create_app(config_class=None):
     app.socketio = socketio  # Referenz für späteren Import
 
     # SocketIO-Events für Live-Streams
-    live_socket.init_app(app)
+    register_live_socket_handlers()
 
     with app.app_context():
        from app.models.user import User
