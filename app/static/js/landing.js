@@ -1,14 +1,14 @@
-const SUGGESTIONS = [
-    "tiktok username finden",
-    "instagram email lookup",
-    "snapchat user suchen",
-    "twitch live einnahmen",
-    "youtube superchat analyse",
-    "osint tools",
-    "personen finden",
+const FALLBACK_SUGGESTIONS = [
+    "facebook",
+    "facebook login",
+    "instagram",
+    "tiktok",
+    "youtube",
+    "twitch",
+    "reddit",
+    "telegram",
     "reverse image search",
-    "deep web suche",
-    "telegram nutzer identifizieren",
+    "osint tools",
 ];
 
 const CATEGORIES = [
@@ -26,50 +26,121 @@ const MODIFIERS = [
     { label: "Praezise Treffer", value: "precision_mode" },
 ];
 
-function autocomplete(input, suggestions) {
-    let currentFocus = -1;
+function debounce(fn, waitMs) {
+    let timer = null;
+    return (...args) => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => fn(...args), waitMs);
+    };
+}
 
-    input.addEventListener("input", function () {
-        let item;
-        let match;
-        let index;
-        const value = this.value;
+function renderAutocompleteList(container, input, suggestions, query) {
+    container.innerHTML = "";
 
-        closeAllLists();
-        if (!value) {
-            return false;
+    if (!suggestions.length) {
+        container.style.display = "none";
+        return;
+    }
+
+    container.style.display = "block";
+
+    const iconSvg = (type) => {
+        if (type === "external") {
+            return `
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"></path>
+  <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z"></path>
+</svg>`.trim();
+        }
+        return `
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path d="M10 4a6 6 0 104.47 10.03l4.25 4.24 1.41-1.41-4.24-4.25A6 6 0 0010 4zm0 2a4 4 0 110 8 4 4 0 010-8z"></path>
+</svg>`.trim();
+    };
+
+    const looksLikeUrl = (text) => {
+        const value = (text || "").trim().toLowerCase();
+        return (
+            value.startsWith("http://") ||
+            value.startsWith("https://") ||
+            value.includes("site:") ||
+            /^[a-z0-9.-]+\.[a-z]{2,}($|\/|\s)/.test(value)
+        );
+    };
+
+    suggestions.forEach((text) => {
+        const item = document.createElement("div");
+        item.className = "autocomplete-item";
+        item.setAttribute("role", "option");
+
+        const icon = document.createElement("span");
+        icon.className = "autocomplete-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.innerHTML = iconSvg(looksLikeUrl(text) ? "external" : "search");
+
+        const label = document.createElement("span");
+        label.className = "autocomplete-label";
+
+        const safeQuery = (query || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        if (safeQuery) {
+            label.innerHTML = text.replace(new RegExp(safeQuery, "gi"), (found) => `<strong>${found}</strong>`);
+        } else {
+            label.textContent = text;
         }
 
-        currentFocus = -1;
-        item = document.createElement("div");
-        item.setAttribute("id", `${this.id}-autocomplete-list`);
-        item.setAttribute("class", "autocomplete-items");
-        this.parentNode.appendChild(item);
-
-        for (index = 0; index < suggestions.length; index += 1) {
-            if (!suggestions[index].toLowerCase().includes(value.toLowerCase())) {
-                continue;
-            }
-
-            match = document.createElement("div");
-            match.innerHTML = suggestions[index].replace(
-                new RegExp(value, "gi"),
-                (found) => `<strong>${found}</strong>`,
-            );
-            match.addEventListener("click", function () {
-                input.value = this.textContent;
-                closeAllLists();
-            });
-            item.appendChild(match);
-        }
-        return true;
+        item.append(icon, label);
+        item.addEventListener("click", () => {
+            input.value = item.textContent;
+            container.style.display = "none";
+            input.focus();
+        });
+        container.appendChild(item);
     });
+}
+
+async function fetchSuggestions(query, engine) {
+    const url = `/api/suggest?${new URLSearchParams({ q: query, engine: engine || "shadowseek" }).toString()}`;
+    const response = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
+    const payload = await response.json().catch(() => ({}));
+    const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions : [];
+    return suggestions.slice(0, 10);
+}
+
+function autocomplete(input, engineSelect, listContainer) {
+    let currentFocus = -1;
+    let lastSuggestions = [];
+
+    const closeAllLists = () => {
+        if (listContainer) {
+            listContainer.style.display = "none";
+            listContainer.innerHTML = "";
+        }
+        currentFocus = -1;
+    };
+
+    const requestAndRender = debounce(async () => {
+        const value = input.value.trim();
+        if (!value) {
+            closeAllLists();
+            return;
+        }
+
+        const engine = engineSelect?.value || "shadowseek";
+
+        try {
+            lastSuggestions = await fetchSuggestions(value, engine);
+        } catch {
+            lastSuggestions = FALLBACK_SUGGESTIONS.filter((s) => s.toLowerCase().includes(value.toLowerCase())).slice(0, 10);
+        }
+
+        renderAutocompleteList(listContainer, input, lastSuggestions, value);
+    }, 120);
+
+    input.addEventListener("input", requestAndRender);
+    engineSelect?.addEventListener("change", requestAndRender);
 
     input.addEventListener("keydown", function (event) {
-        let items = document.getElementById(`${this.id}-autocomplete-list`);
-        if (items) {
-            items = items.getElementsByTagName("div");
-        }
+        const items = listContainer ? Array.from(listContainer.getElementsByTagName("div")) : [];
 
         if (event.keyCode === 40) {
             currentFocus += 1;
@@ -78,8 +149,8 @@ function autocomplete(input, suggestions) {
             currentFocus -= 1;
             addActive(items);
         } else if (event.keyCode === 13) {
-            event.preventDefault();
-            if (currentFocus > -1 && items) {
+            if (listContainer && listContainer.style.display !== "none" && currentFocus > -1 && items[currentFocus]) {
+                event.preventDefault();
                 items[currentFocus].click();
             }
         }
@@ -105,17 +176,18 @@ function autocomplete(input, suggestions) {
         }
     }
 
-    function closeAllLists(element) {
-        const items = document.getElementsByClassName("autocomplete-items");
-        for (let index = 0; index < items.length; index += 1) {
-            if (element !== items[index] && element !== input) {
-                items[index].parentNode.removeChild(items[index]);
-            }
+    document.addEventListener("click", function(event) {
+        if (!listContainer) {
+            return;
         }
-    }
+        if (event.target === input || listContainer.contains(event.target)) {
+            return;
+        }
+        closeAllLists();
+    });
 
-    document.addEventListener("click", function (event) {
-        closeAllLists(event.target);
+    input.addEventListener("blur", () => {
+        window.setTimeout(closeAllLists, 120);
     });
 }
 
@@ -148,13 +220,19 @@ function setSelectedModifiers(values) {
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("landing-search-form");
     const input = document.getElementById("search-autocomplete");
+    const engineSelect = document.getElementById("engine-select");
+    const listContainer = document.getElementById("autocomplete-list") || document.querySelector(".autocomplete-items");
+    const resultsSection = document.getElementById("home-results");
+    const resultsQuery = document.getElementById("home-results-query");
+    const resultsMeta = document.getElementById("home-results-meta");
+    const resultsList = document.getElementById("home-results-list");
     const categoryBar = document.getElementById("category-bar");
     const modifierBar = document.getElementById("modifier-bar");
     let selectedCategories = getSelectedCategories();
     let selectedModifiers = getSelectedModifiers();
 
     if (input) {
-        autocomplete(input, SUGGESTIONS);
+        autocomplete(input, engineSelect, listContainer);
     }
 
     const renderChips = () => {
@@ -221,6 +299,63 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    const renderResults = (payload) => {
+        if (!resultsSection || !resultsList || !resultsQuery || !resultsMeta) {
+            return;
+        }
+
+        resultsList.innerHTML = "";
+        resultsSection.hidden = false;
+
+        const q = payload?.query || input.value.trim();
+        resultsQuery.textContent = q ? `Ergebnisse fuer: ${q}` : "Ergebnisse";
+        resultsMeta.textContent = payload?.provider ? `Quelle: ${payload.provider}` : "";
+
+        const items = Array.isArray(payload?.results) ? payload.results : [];
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.className = "empty-state";
+            empty.textContent = "Keine Ergebnisse gefunden. Versuche einen anderen Begriff.";
+            resultsList.appendChild(empty);
+            return;
+        }
+
+        items.forEach((item) => {
+            const url = (item?.url || "").trim();
+            const title = (item?.title || "").trim();
+            const snippet = (item?.snippet || "").trim();
+            if (!url || !title) {
+                return;
+            }
+
+            const card = document.createElement("article");
+            card.className = "home-result";
+
+            const urlLink = document.createElement("a");
+            urlLink.className = "home-result-url";
+            urlLink.href = url;
+            urlLink.target = "_blank";
+            urlLink.rel = "noopener noreferrer";
+            urlLink.textContent = url;
+
+            const h3 = document.createElement("h3");
+            h3.className = "home-result-title";
+            const titleLink = document.createElement("a");
+            titleLink.href = url;
+            titleLink.target = "_blank";
+            titleLink.rel = "noopener noreferrer";
+            titleLink.textContent = title;
+            h3.appendChild(titleLink);
+
+            const p = document.createElement("p");
+            p.className = "home-result-snippet";
+            p.textContent = snippet || "";
+
+            card.append(urlLink, h3, p);
+            resultsList.appendChild(card);
+        });
+    };
+
     form.addEventListener("submit", (event) => {
         event.preventDefault();
         const query = input.value.trim();
@@ -229,7 +364,31 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        const engine = engineSelect?.value || "shadowseek";
         input.value = query;
-        input.focus();
+
+        if (resultsSection) {
+            resultsSection.hidden = false;
+        }
+        if (resultsList) {
+            resultsList.innerHTML = "";
+        }
+        if (resultsQuery) {
+            resultsQuery.textContent = `Suche laeuft: ${query}`;
+        }
+        if (resultsMeta) {
+            resultsMeta.textContent = "";
+        }
+
+        fetch(`/api/websearch?${new URLSearchParams({ q: query, engine }).toString()}`, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+        })
+            .then((r) => r.json().catch(() => ({})))
+            .then((payload) => renderResults(payload))
+            .catch(() => renderResults({ query, provider: null, results: [] }))
+            .finally(() => {
+                resultsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
     });
 });

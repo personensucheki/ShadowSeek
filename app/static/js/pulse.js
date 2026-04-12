@@ -457,12 +457,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     realname: formData.get("realname"),
                     deepsearch: true
                 };
-                const res = await fetch("/api/pulse/search", {
+                const data = await fetchJson("/api/pulse/search", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify(payload),
                 });
-                const data = await res.json();
                 if (!data.success) {
                     setCreatorStatus(data.error || "Fehler bei der Suche", true);
                     renderCreatorKpis({ estimated_earnings_today_usd: 0, estimated_earnings_total_usd: 0, diamonds_today: 0, ranking_country: "-" });

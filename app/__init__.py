@@ -107,6 +107,8 @@ def create_app(config_class=None):
     from .routes.chatbot import chatbot_bp
     from .routes.health import health_bp
     from .routes.search import search_bp
+    from .routes.suggest import suggest_bp
+    from .routes.websearch import websearch_bp
     from .routes.billing import billing_bp
     from .routes.dashboard import dashboard_bp
     from .routes.export import export_bp
@@ -116,6 +118,8 @@ def create_app(config_class=None):
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(search_bp)
+    app.register_blueprint(suggest_bp)
+    app.register_blueprint(websearch_bp)
     app.register_blueprint(billing_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(health_bp)

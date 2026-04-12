@@ -2,7 +2,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const csrfToken =
         document.querySelector("meta[name='csrf-token']")?.getAttribute("content") || "";
     const widget = document.getElementById("chatbot-widget");
-    const fab = document.getElementById("chat-toggle");
+    const fab =
+        document.getElementById("chat-toggle") ||
+        document.querySelector(".assistant-fab[aria-controls='chatbot-widget']") ||
+        document.querySelector(".assistant-fab");
     const minimizeButton = document.getElementById("chatbot-minimize");
     const closeButton = document.getElementById("chatbot-close");
     const form = document.getElementById("chatbot-form");
@@ -93,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         appendMessage(
             "bot",
-            "Search ist live. Der Assistant beantwortet aktuell nur Basisanfragen.",
+            "Willkommen! Ich begleite dich durch Registrierung, Login und Profil – und ich kann auch ganz normal chatten. Womit soll ich dir helfen?",
         );
     };
 

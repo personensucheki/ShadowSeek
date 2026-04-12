@@ -706,7 +706,29 @@ def probe_profile(platform, variation, timeout):
             stream=True,
         )
         status_code = response.status_code
-        if status_code in {401, 403, 404, 410, 429} or status_code >= 500:
+        # Many major platforms respond with bot protection (401/403/429) even for
+        # valid profile URLs. Previously we treated these as "no hit", which
+        # makes Pulse/Profile-Scan look broken. Instead we still return the
+        # constructed profile URL with a low-confidence verification so the UI
+        # can show a direct link for manual follow-up.
+        if status_code in {401, 403, 429}:
+            final_url = normalize_result_url(response.url) or profile_url
+            return {
+                "platform": platform.name,
+                "platform_slug": platform.slug,
+                "category": platform.category,
+                "username": variation.username,
+                "profile_url": final_url,
+                "match_score": max(variation.score - 28, 40),
+                "verification": "blocked",
+                "match_reason": f"{variation.reason} (Plattform blockt automatisierte Pruefung: HTTP {status_code})",
+                "http_status": status_code,
+                "source": DIRECT_SOURCE,
+                "title": "",
+                "snippet": "",
+            }
+
+        if status_code in {404, 410} or status_code >= 500:
             return None
 
         preview = read_response_preview(response)

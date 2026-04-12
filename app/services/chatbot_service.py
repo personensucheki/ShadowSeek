@@ -28,6 +28,7 @@ class ChatbotService:
         api_key = self.openai_api_key
         if api_key:
             try:
+                model = (context or {}).get("model") or "gpt-5-mini"
                 prompt = self._build_prompt(message, context)
                 response = requests.post(
                     "https://api.openai.com/v1/chat/completions",
@@ -36,15 +37,17 @@ class ChatbotService:
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "gpt-4o",
+                        "model": model,
                         "messages": [
                             {
                                 "role": "system",
                                 "content": (
-                                    "Du bist ShadowSeek Assistant. Antworte natuerlich, "
-                                    "hilfreich und sachlich auf Deutsch. Wenn es um "
-                                    "Profilsuche, Social Media, OSINT oder Websuche geht, "
-                                    "gib konkrete Tipps."
+                                    "Du bist der ShadowSeek Assistant in einem Cyberpunk-OSINT Tool. "
+                                    "Antworte auf Deutsch, menschlich, freundlich und hilfreich. "
+                                    "Du kannst Smalltalk (Hallo, wie geht's etc.), aber bleib professionell. "
+                                    "Wenn es um Registrierung/Login/Profil geht: gib klare Schritt-fuer-Schritt Hilfe. "
+                                    "Wenn es um Profilsuche/OSINT geht: gib konkrete, legale Tipps und sichere Formulierungen. "
+                                    "Keine Anleitungen fuer illegales Hacking oder Umgehen von Plattform-Schutzmechanismen."
                                 ),
                             },
                             {"role": "user", "content": prompt},
@@ -92,7 +95,23 @@ class ChatbotService:
             self.session_memory["last_deepsearch"] = context["deepsearch"]
 
         if re.search(r"\b(hi|hallo|hello|hey|servus|guten tag|moin)\b", msg):
-            reply = "Hallo! Ich bin der ShadowSeek Assistant. Wie kann ich bei der Profilsuche helfen?"
+            reply = (
+                "Hey! Ich bin dein ShadowSeek Assistant. Wie geht's dir? "
+                "Wenn du magst: Sag mir, ob du Hilfe bei Login/Profil brauchst oder bei einer Suche."
+            )
+            self._remember_reply(reply)
+            return reply
+
+        if re.search(r"\b(wie geht|wie geht's|alles klar|was geht|na)\b", msg):
+            reply = (
+                "Mir geht's gut – bereit fuer den naechsten Scan. Und dir? "
+                "Wenn du willst, sag mir kurz dein Ziel (Login, Profil, Suche), dann fuehre ich dich durch."
+            )
+            self._remember_reply(reply)
+            return reply
+
+        if re.search(r"\b(danke|thx|merci)\b", msg):
+            reply = "Gern! Soll ich dir noch beim naechsten Schritt helfen?"
             self._remember_reply(reply)
             return reply
 
@@ -109,6 +128,24 @@ class ChatbotService:
                 "viele oder seltene Treffer brauchst."
             )
             self.session_memory["given_hints"].add("deepsearch")
+            self._remember_reply(reply)
+            return reply
+
+        if "login" in msg or "anmelden" in msg:
+            reply = (
+                "Klar. Wenn der Login fehlschlaegt: pruefe Benutzername/E-Mail und Passwort. "
+                "Falls du den Owner-Account nutzt, muss `OWNER_BOOTSTRAP_ENABLED=true` gesetzt sein "
+                "und die Daten muessen stimmen. Willst du dich als ADMIN anmelden oder als normaler User?"
+            )
+            self._remember_reply(reply)
+            return reply
+
+        if "registr" in msg:
+            reply = (
+                "Registrierung geht ueber 'Registrieren' oben rechts. "
+                "Du brauchst Benutzername, E-Mail und ein Passwort (mind. 8 Zeichen). "
+                "Wenn du eine Fehlermeldung siehst, sag mir kurz welche – dann sage ich dir genau, was zu tun ist."
+            )
             self._remember_reply(reply)
             return reply
 
