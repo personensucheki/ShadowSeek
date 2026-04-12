@@ -7,6 +7,7 @@ from dataclasses import dataclass
 PROVIDER_ERROR_CODES = {
     "credentials_missing",
     "invalid_credentials_format",
+    "validation_error",
     "provider_auth_failed",
     "provider_permission_denied",
     "provider_not_ready",

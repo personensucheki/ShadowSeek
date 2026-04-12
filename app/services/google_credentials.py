@@ -2,11 +2,58 @@ from __future__ import annotations
 
 import json
 import hashlib
+import re
 from pathlib import Path
 
 from flask import current_app
 
 from app.services.provider_errors import ProviderError
+
+
+_BUCKET_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$")
+_FORBIDDEN_BUCKET_SUBSTRINGS = ("gs://", "http://", "https://")
+
+
+def validate_gcs_bucket_name(value: str) -> str:
+    """
+    Validates that `value` is a plain GCS bucket name (no gs:// prefix, no URL, no object path).
+    Returns the trimmed bucket name when valid.
+    Raises ProviderError(validation_error/provider_not_configured) otherwise.
+    """
+    raw = (value or "").strip()
+    if not raw:
+        raise ProviderError(
+            "provider_not_configured",
+            "Google output bucket is not configured.",
+            detail={"missing_fields": ["GOOGLE_CLOUD_OUTPUT_BUCKET"]},
+        )
+
+    lowered = raw.lower()
+    if any(token in lowered for token in _FORBIDDEN_BUCKET_SUBSTRINGS):
+        raise ProviderError(
+            "validation_error",
+            "GOOGLE_CLOUD_OUTPUT_BUCKET must be a plain bucket name (no gs:// or URL).",
+            detail={"value": raw},
+        )
+    if "/" in raw or "\\" in raw:
+        raise ProviderError(
+            "validation_error",
+            "GOOGLE_CLOUD_OUTPUT_BUCKET must not include an object path or subdirectory.",
+            detail={"value": raw},
+        )
+    if ":" in raw:
+        raise ProviderError(
+            "validation_error",
+            "GOOGLE_CLOUD_OUTPUT_BUCKET must not include a scheme or port.",
+            detail={"value": raw},
+        )
+    if not _BUCKET_NAME_PATTERN.match(raw):
+        raise ProviderError(
+            "validation_error",
+            "GOOGLE_CLOUD_OUTPUT_BUCKET has an invalid bucket-name format.",
+            detail={"value": raw},
+        )
+    return raw
 
 
 def _normalize_credentials_path(raw: str) -> Path | None:
@@ -33,8 +80,16 @@ def google_credentials_status() -> dict:
         missing_fields.append("GOOGLE_CLOUD_PROJECT_ID")
     if not location:
         missing_fields.append("GOOGLE_CLOUD_LOCATION")
+    bucket_valid = False
+    bucket_error = None
     if not output_bucket:
         missing_fields.append("GOOGLE_CLOUD_OUTPUT_BUCKET")
+    else:
+        try:
+            validate_gcs_bucket_name(output_bucket)
+            bucket_valid = True
+        except ProviderError as exc:
+            bucket_error = exc.as_dict()
 
     cred_path = _normalize_credentials_path(cred_path_raw)
     if cred_path is None:
@@ -51,6 +106,8 @@ def google_credentials_status() -> dict:
         "project_id": project_id or None,
         "location": location or None,
         "output_bucket": output_bucket or None,
+        "output_bucket_valid": bucket_valid,
+        "output_bucket_error": bucket_error,
     }
 
 
@@ -67,6 +124,9 @@ def require_google_credentials() -> Path:
             "Google provider is not configured on this server.",
             detail={"missing_fields": status["missing_fields"]},
         )
+
+    # Validate bucket format early (no implicit conversions).
+    validate_gcs_bucket_name(current_app.config.get("GOOGLE_CLOUD_OUTPUT_BUCKET") or "")
 
     cred_path = _normalize_credentials_path(current_app.config.get("GOOGLE_APPLICATION_CREDENTIALS") or "")
     if not cred_path:

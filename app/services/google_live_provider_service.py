@@ -56,6 +56,8 @@ class GoogleLiveProviderService:
                     "project_id": cfg_status["project_id"],
                     "location": cfg_status["location"],
                     "output_bucket": cfg_status["output_bucket"],
+                    "output_bucket_valid": cfg_status.get("output_bucket_valid", False),
+                    "output_bucket_error": cfg_status.get("output_bucket_error"),
                     "service_account_email": cfg_status["service_account_email"],
                 },
             }
@@ -74,6 +76,7 @@ class GoogleLiveProviderService:
                 "project_id": cfg_status["project_id"],
                 "location": cfg_status["location"],
                 "output_bucket": cfg_status["output_bucket"],
+                "output_bucket_valid": cfg_status.get("output_bucket_valid", False),
                 "service_account_email": cfg_status["service_account_email"],
             },
         }

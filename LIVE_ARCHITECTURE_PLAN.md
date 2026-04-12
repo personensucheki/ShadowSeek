@@ -33,6 +33,15 @@
 - ShadowSeek speichert nur Referenzen auf Provider/HLS-Ressourcen
 - Kein direkter Upload/Playback im Backend
 
+### Output-Bucket Konvention
+- `GOOGLE_CLOUD_OUTPUT_BUCKET` ist **nur der Bucket-Name** (z.B. `shadowseek-hls-output`).
+  - kein `gs://` Prefix
+  - keine URL
+  - kein Unterpfad/Objektpfad
+- Hintergrund: Die Google Live Stream API schreibt die HLS-Ausgabe in **Google Cloud Storage**.
+  - ShadowSeek speichert/liest nur die **Bucket-Referenz** (Konfiguration) und später Playback-Referenzen (URLs).
+  - Der Output-Bucket ist Teil der Provider-Konfiguration und wird serverseitig validiert.
+
 ## Sicherheit & Orchestrierung
 - Backend bleibt zentrale Steuerung
 - Kein "fertig live"-Flow ohne echten Provider
