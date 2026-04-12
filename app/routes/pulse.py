@@ -199,6 +199,262 @@ def _parse_ymd(value: str, field: str) -> date:
         raise ValueError(f"Ungueltiges Datum fuer '{field}' (Format YYYY-MM-DD).") from exc
 
 
+def _twitch_headers(access_token: str) -> dict:
+    from flask import current_app
+
+    client_id = current_app.config.get("TWITCH_CLIENT_ID")
+    if not client_id:
+        raise ValueError("TWITCH_CLIENT_ID fehlt.")
+    return {"Client-Id": client_id, "Authorization": f"Bearer {access_token}"}
+
+
+def _twitch_get(path: str, headers: dict, params: dict) -> dict:
+    resp = requests.get(
+        f"https://api.twitch.tv/helix/{path.lstrip('/')}",
+        headers=headers,
+        params=params,
+        timeout=12,
+    )
+    resp.raise_for_status()
+    return resp.json() or {}
+
+
+@bp.route("/api/pulse/twitch/analytics", methods=["GET"])
+def twitch_analytics():
+    """
+    Twitch Analytics aus offiziellen Helix-Endpoints (OAuth erforderlich).
+
+    Achtung: Twitch stellt keine Revenue- oder Watchtime-Analytics via Helix fuer Drittapps bereit.
+    Wir liefern aggregierbare, oeffentliche Signale (Clips/VOD Views, Counts, Top Clips/VODs).
+
+    Query:
+      - range: "7" | "30" | "custom" (default 7)
+      - start/end: YYYY-MM-DD (bei custom)
+      - top: int (default 10, max 25)
+    """
+    try:
+        user_id = require_user_session_user_id(session)
+        token = get_valid_access_token(user_id, "twitch")
+        if not token:
+            return jsonify({"success": False, "error": "Twitch ist nicht verbunden."}), 400
+
+        range_key = (request.args.get("range") or "7").strip().lower()
+        top_n = request.args.get("top") or "10"
+        try:
+            top_n = max(1, min(25, int(top_n)))
+        except ValueError:
+            top_n = 10
+
+        today = datetime.utcnow().date()
+        if range_key in {"7", "last7", "week"}:
+            start_dt = today - timedelta(days=7)
+            end_dt = today
+        elif range_key in {"30", "last30", "month"}:
+            start_dt = today - timedelta(days=30)
+            end_dt = today
+        elif range_key == "custom":
+            start_raw = (request.args.get("start") or "").strip()
+            end_raw = (request.args.get("end") or "").strip()
+            if not start_raw or not end_raw:
+                return jsonify({"success": False, "error": "start und end sind Pflicht bei range=custom."}), 400
+            start_dt = _parse_ymd(start_raw, "start")
+            end_dt = _parse_ymd(end_raw, "end")
+        else:
+            return jsonify({"success": False, "error": "Ungueltige range. Nutze 7, 30 oder custom."}), 400
+
+        if start_dt > end_dt:
+            return jsonify({"success": False, "error": "start darf nicht nach end liegen."}), 400
+        if (end_dt - start_dt).days > 365:
+            return jsonify({"success": False, "error": "Custom Range zu gross (max 365 Tage)."}), 400
+
+        headers = _twitch_headers(token)
+
+        # Resolve broadcaster id via /users (token-bound)
+        me = _twitch_get("users", headers, {})
+        users = me.get("data") or []
+        if not users:
+            return jsonify({"success": False, "error": "Twitch User konnte nicht geladen werden."}), 400
+        broadcaster = users[0]
+        broadcaster_id = broadcaster.get("id")
+        if not broadcaster_id:
+            return jsonify({"success": False, "error": "Twitch User-ID fehlt."}), 400
+
+        # RFC3339 timestamps for clips
+        start_rfc = datetime.combine(start_dt, datetime.min.time()).isoformat() + "Z"
+        end_rfc = datetime.combine(end_dt + timedelta(days=1), datetime.min.time()).isoformat() + "Z"
+
+        # Collect clips with pagination (cap pages for performance)
+        clips = []
+        cursor = None
+        pages = 0
+        while pages < 5:
+            pages += 1
+            params = {
+                "broadcaster_id": broadcaster_id,
+                "started_at": start_rfc,
+                "ended_at": end_rfc,
+                "first": 100,
+            }
+            if cursor:
+                params["after"] = cursor
+            payload = _twitch_get("clips", headers, params)
+            batch = payload.get("data") or []
+            clips.extend(batch)
+            cursor = (payload.get("pagination") or {}).get("cursor")
+            if not cursor or not batch:
+                break
+
+        def day_key(value: str) -> str:
+            # Twitch returns ISO timestamps like 2020-01-01T00:00:00Z
+            try:
+                return value[:10]
+            except Exception:
+                return "-"
+
+        clip_daily = {}
+        for item in clips:
+            d = day_key(item.get("created_at") or "")
+            clip_daily.setdefault(d, {"clip_views": 0, "clip_count": 0})
+            clip_daily[d]["clip_count"] += 1
+            clip_daily[d]["clip_views"] += int(item.get("view_count") or 0)
+
+        top_clips = sorted(
+            [
+                {
+                    "id": item.get("id"),
+                    "url": item.get("url"),
+                    "title": item.get("title") or "",
+                    "created_at": item.get("created_at"),
+                    "views": int(item.get("view_count") or 0),
+                    "thumbnail_url": item.get("thumbnail_url"),
+                    "duration": item.get("duration"),
+                }
+                for item in clips
+                if item.get("url")
+            ],
+            key=lambda x: x["views"],
+            reverse=True,
+        )[:top_n]
+
+        # Collect recent VODs (videos) and filter by created_at
+        vods = []
+        cursor = None
+        pages = 0
+        while pages < 5:
+            pages += 1
+            params = {"user_id": broadcaster_id, "first": 100}
+            if cursor:
+                params["after"] = cursor
+            payload = _twitch_get("videos", headers, params)
+            batch = payload.get("data") or []
+            if not batch:
+                break
+
+            for item in batch:
+                created = item.get("created_at") or ""
+                if created and created[:10] < start_dt.strftime("%Y-%m-%d"):
+                    # We reached older videos; we can stop early.
+                    continue
+                vods.append(item)
+            cursor = (payload.get("pagination") or {}).get("cursor")
+            if not cursor:
+                break
+
+        vods_in_range = []
+        for item in vods:
+            created = item.get("created_at") or ""
+            if not created:
+                continue
+            d = created[:10]
+            if start_dt.strftime("%Y-%m-%d") <= d <= end_dt.strftime("%Y-%m-%d"):
+                vods_in_range.append(item)
+
+        vod_daily = {}
+        for item in vods_in_range:
+            d = day_key(item.get("created_at") or "")
+            vod_daily.setdefault(d, {"vod_views": 0, "vod_count": 0})
+            vod_daily[d]["vod_count"] += 1
+            vod_daily[d]["vod_views"] += int(item.get("view_count") or 0)
+
+        top_vods = sorted(
+            [
+                {
+                    "id": item.get("id"),
+                    "url": item.get("url"),
+                    "title": item.get("title") or "",
+                    "created_at": item.get("created_at"),
+                    "views": int(item.get("view_count") or 0),
+                    "thumbnail_url": item.get("thumbnail_url"),
+                    "duration": item.get("duration"),
+                    "type": item.get("type"),
+                }
+                for item in vods_in_range
+                if item.get("url")
+            ],
+            key=lambda x: x["views"],
+            reverse=True,
+        )[:top_n]
+
+        # Build full day series for chart rendering (fill missing days)
+        series = []
+        cur = start_dt
+        while cur <= end_dt:
+            key = cur.strftime("%Y-%m-%d")
+            c = clip_daily.get(key, {"clip_views": 0, "clip_count": 0})
+            v = vod_daily.get(key, {"vod_views": 0, "vod_count": 0})
+            series.append(
+                {
+                    "day": key,
+                    **c,
+                    **v,
+                }
+            )
+            cur += timedelta(days=1)
+
+        totals = {
+            "clip_views": sum(item["clip_views"] for item in series),
+            "clip_count": sum(item["clip_count"] for item in series),
+            "vod_views": sum(item["vod_views"] for item in series),
+            "vod_count": sum(item["vod_count"] for item in series),
+        }
+
+        return jsonify(
+            {
+                "success": True,
+                "range": {
+                    "start": start_dt.strftime("%Y-%m-%d"),
+                    "end": end_dt.strftime("%Y-%m-%d"),
+                    "mode": range_key,
+                    "top": top_n,
+                },
+                "creator": {
+                    "display_name": broadcaster.get("display_name") or broadcaster.get("login"),
+                    "username": broadcaster.get("login"),
+                    "profile_url": f"https://www.twitch.tv/{broadcaster.get('login')}" if broadcaster.get("login") else None,
+                    "avatar": broadcaster.get("profile_image_url"),
+                },
+                "totals": totals,
+                "timeseries": series,
+                "top_clips": top_clips,
+                "top_vods": top_vods,
+                "source": {
+                    "provider": "twitch_helix",
+                    "type": "oauth_user",
+                    "confidence": "high",
+                    "note": "Keine Revenue/Watchtime-Analytics via Helix verfuegbar; nur Clips/VOD Views/Counts.",
+                },
+            }
+        )
+    except PermissionError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 401
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except requests.RequestException:
+        return jsonify({"success": False, "error": "Twitch API Fehler (Token/Netzwerk)."}), 502
+    except Exception as ex:
+        return jsonify({"success": False, "error": "Internal error: " + str(ex)}), 500
+
+
 @bp.route("/api/pulse/youtube/analytics", methods=["GET"])
 def youtube_analytics():
     """

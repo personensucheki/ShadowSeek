@@ -50,6 +50,28 @@
                             <button type="button" id="oauth-me-twitch" class="pulse-btn pulse-btn--primary" style="display:none;">My Twitch</button>
                             <button type="button" id="oauth-me-youtube" class="pulse-btn pulse-btn--primary" style="display:none;">My YouTube</button>
                         </div>
+                        <div id="twitch-analytics-controls" style="display:none; margin-top:10px;">
+                            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+                                <label style="min-width:160px;">
+                                    Twitch Zeitraum
+                                    <select id="twitch-analytics-range" class="pulse-creator-input">
+                                        <option value="7">Letzte 7 Tage</option>
+                                        <option value="30">Letzte 30 Tage</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+                                </label>
+                                <label id="twitch-analytics-start-wrap" style="display:none; min-width:160px;">
+                                    Start
+                                    <input id="twitch-analytics-start" type="date" class="pulse-creator-input">
+                                </label>
+                                <label id="twitch-analytics-end-wrap" style="display:none; min-width:160px;">
+                                    Ende
+                                    <input id="twitch-analytics-end" type="date" class="pulse-creator-input">
+                                </label>
+                                <button type="button" id="twitch-analytics-load" class="pulse-btn pulse-btn--ghost">Twitch Analytics laden</button>
+                            </div>
+                            <div id="twitch-analytics-status" class="pulse-status" style="margin-top:8px;">Twitch Analytics: bereit</div>
+                        </div>
                         <div id="youtube-analytics-controls" style="display:none; margin-top:10px;">
                             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
                                 <label style="min-width:160px;">
@@ -103,6 +125,12 @@
                     <!-- YouTube Analytics wird per JS gerendert -->
                     <div style="margin-top:12px; height:220px;">
                         <canvas id="youtube-analytics-chart" aria-label="YouTube Analytics Chart" role="img"></canvas>
+                    </div>
+                </div>
+                <div class="pulse-creator-meta-box" id="twitch-analytics-box" style="display:none; margin-top:14px;">
+                    <!-- Twitch Analytics wird per JS gerendert -->
+                    <div style="margin-top:12px; height:220px;">
+                        <canvas id="twitch-analytics-chart" aria-label="Twitch Analytics Chart" role="img"></canvas>
                     </div>
                 </div>
             </div>

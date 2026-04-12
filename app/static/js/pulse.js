@@ -427,6 +427,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const ytBox = document.getElementById("youtube-analytics-box");
     const ytChartCanvas = document.getElementById("youtube-analytics-chart");
     let ytChart = null;
+
+    const twControls = document.getElementById("twitch-analytics-controls");
+    const twRange = document.getElementById("twitch-analytics-range");
+    const twStartWrap = document.getElementById("twitch-analytics-start-wrap");
+    const twEndWrap = document.getElementById("twitch-analytics-end-wrap");
+    const twStart = document.getElementById("twitch-analytics-start");
+    const twEnd = document.getElementById("twitch-analytics-end");
+    const twLoad = document.getElementById("twitch-analytics-load");
+    const twStatus = document.getElementById("twitch-analytics-status");
+    const twBox = document.getElementById("twitch-analytics-box");
+    const twChartCanvas = document.getElementById("twitch-analytics-chart");
+    let twChart = null;
     const kpiToday = document.getElementById("creator-kpi-today");
     const kpiTotal = document.getElementById("creator-kpi-total");
     kpiToday.textContent = "$0";
@@ -528,6 +540,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (ytControls) {
                 ytControls.style.display = con.google ? "block" : "none";
             }
+            if (twControls) {
+                twControls.style.display = con.twitch ? "block" : "none";
+            }
         } catch (err) {
             oauthStatus.textContent = "OAuth: nicht verfuegbar (bitte einloggen).";
             oauthStatus.style.color = "#ff00ff";
@@ -588,6 +603,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!ytStatus) return;
         ytStatus.textContent = message;
         ytStatus.style.color = error ? "#ff00ff" : "#00ff9f";
+    }
+
+    function setTwStatus(message, error = false) {
+        if (!twStatus) return;
+        twStatus.textContent = message;
+        twStatus.style.color = error ? "#ff00ff" : "#00ff9f";
     }
 
     function renderYouTubeAnalytics(data) {
@@ -744,10 +765,181 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function renderTwitchAnalytics(data) {
+        if (!twBox) return;
+        const totals = data.totals || {};
+        const topClips = Array.isArray(data.top_clips) ? data.top_clips : [];
+        const topVods = Array.isArray(data.top_vods) ? data.top_vods : [];
+        const series = Array.isArray(data.timeseries) ? data.timeseries : [];
+
+        const header = `
+            <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div>
+                    <div style="font-weight:700; color:#f6f7fb;">Twitch Analytics</div>
+                    <div style="color:#98a2b3; font-size:12px;">${escapeHtml(data.range?.start || "")} bis ${escapeHtml(data.range?.end || "")}</div>
+                    <div style="color:#98a2b3; font-size:12px;">${escapeHtml(data.source?.note || "")}</div>
+                </div>
+                <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                    <div><div style="color:#98a2b3; font-size:12px;">Clip Views</div><div style="font-weight:800;">${formatNumber(totals.clip_views)}</div></div>
+                    <div><div style="color:#98a2b3; font-size:12px;">Clips</div><div style="font-weight:800;">${formatNumber(totals.clip_count)}</div></div>
+                    <div><div style="color:#98a2b3; font-size:12px;">VOD Views</div><div style="font-weight:800;">${formatNumber(totals.vod_views)}</div></div>
+                    <div><div style="color:#98a2b3; font-size:12px;">VODs</div><div style="font-weight:800;">${formatNumber(totals.vod_count)}</div></div>
+                </div>
+            </div>
+        `;
+
+        const clipRows = topClips
+            .map((c) => {
+                const thumb = c.thumbnail_url ? `<img src="${escapeHtml(c.thumbnail_url)}" style="width:64px; height:36px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.08);" />` : "";
+                const title = escapeHtml(c.title || c.id);
+                const meta = `${formatNumber(c.views)} views • ${escapeHtml((c.created_at || '').slice(0,10))}`;
+                return `
+                    <div style="display:flex; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,0.06); align-items:center;">
+                        <div>${thumb}</div>
+                        <div style="min-width:0; flex:1;">
+                            <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:650;">
+                                <a href="${escapeHtml(c.url)}" target="_blank" rel="noopener" style="color:#00ff9f; text-decoration:none;">${title}</a>
+                            </div>
+                            <div style="color:#98a2b3; font-size:12px;">${meta}</div>
+                        </div>
+                    </div>
+                `;
+            })
+            .join("");
+
+        const vodRows = topVods
+            .map((v) => {
+                const thumb = v.thumbnail_url ? `<img src="${escapeHtml(v.thumbnail_url)}" style="width:64px; height:36px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.08);" />` : "";
+                const title = escapeHtml(v.title || v.id);
+                const meta = `${formatNumber(v.views)} views • ${escapeHtml((v.created_at || '').slice(0,10))}`;
+                return `
+                    <div style="display:flex; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,0.06); align-items:center;">
+                        <div>${thumb}</div>
+                        <div style="min-width:0; flex:1;">
+                            <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:650;">
+                                <a href="${escapeHtml(v.url)}" target="_blank" rel="noopener" style="color:#00ff9f; text-decoration:none;">${title}</a>
+                            </div>
+                            <div style="color:#98a2b3; font-size:12px;">${meta}</div>
+                        </div>
+                    </div>
+                `;
+            })
+            .join("");
+
+        twBox.innerHTML =
+            header +
+            `<div style="margin-top:10px;">` +
+            `<div style="color:#98a2b3; font-size:12px; margin-top:6px;">Top Clips</div>` +
+            `${clipRows || "<div style='color:#98a2b3;'>Keine Clips im Zeitraum.</div>"}` +
+            `<div style="color:#98a2b3; font-size:12px; margin-top:10px;">Top VODs</div>` +
+            `${vodRows || "<div style='color:#98a2b3;'>Keine VODs im Zeitraum.</div>"}` +
+            `</div>`;
+        twBox.style.display = "block";
+
+        renderTwitchChart(series);
+    }
+
+    function renderTwitchChart(series) {
+        if (!twChartCanvas || typeof Chart === "undefined") return;
+        if (!Array.isArray(series) || series.length === 0) return;
+
+        const labels = series.map((d) => d.day);
+        const clipViews = series.map((d) => Number(d.clip_views) || 0);
+        const vodViews = series.map((d) => Number(d.vod_views) || 0);
+        const clipCount = series.map((d) => Number(d.clip_count) || 0);
+
+        const data = {
+            labels,
+            datasets: [
+                {
+                    label: "Clip Views",
+                    data: clipViews,
+                    borderColor: "#00ff9f",
+                    backgroundColor: "rgba(0, 255, 159, 0.10)",
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2,
+                },
+                {
+                    label: "VOD Views",
+                    data: vodViews,
+                    borderColor: "#ff00ff",
+                    backgroundColor: "rgba(255, 0, 255, 0.08)",
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2,
+                },
+                {
+                    label: "Clips (count)",
+                    data: clipCount,
+                    borderColor: "#f6f7fb",
+                    backgroundColor: "rgba(246, 247, 251, 0.04)",
+                    fill: false,
+                    tension: 0.35,
+                    pointRadius: 2,
+                },
+            ],
+        };
+
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: "#f6f7fb" } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)}`,
+                    },
+                },
+            },
+            scales: {
+                x: { ticks: { color: "#98a2b3" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                y: { beginAtZero: true, ticks: { color: "#98a2b3" }, grid: { color: "rgba(255,255,255,0.05)" } },
+            },
+        };
+
+        if (twChart) {
+            twChart.data = data;
+            twChart.options = options;
+            twChart.update();
+            return;
+        }
+        twChart = new Chart(twChartCanvas.getContext("2d"), { type: "line", data, options });
+    }
+
     function syncYtRangeUi() {
         const isCustom = (ytRange?.value || "") === "custom";
         if (ytStartWrap) ytStartWrap.style.display = isCustom ? "block" : "none";
         if (ytEndWrap) ytEndWrap.style.display = isCustom ? "block" : "none";
+    }
+
+    async function loadTwitchAnalytics() {
+        if (!twRange) return;
+        setTwStatus("Twitch Analytics werden geladen ...");
+        try {
+            const mode = twRange.value || "7";
+            const url = new URL("/api/pulse/twitch/analytics", window.location.origin);
+            url.searchParams.set("range", mode);
+            if (mode === "custom") {
+                if (twStart?.value) url.searchParams.set("start", twStart.value);
+                if (twEnd?.value) url.searchParams.set("end", twEnd.value);
+            }
+            const data = await fetchJson(url.pathname + url.search, { cache: "no-store", credentials: "same-origin" });
+            if (!data.success) {
+                setTwStatus(data.error || "Twitch Analytics Fehler", true);
+                return;
+            }
+            setTwStatus("Twitch Analytics geladen");
+            renderTwitchAnalytics(data);
+        } catch (err) {
+            setTwStatus("Twitch Analytics konnten nicht geladen werden.", true);
+        }
+    }
+
+    function syncTwRangeUi() {
+        const isCustom = (twRange?.value || "") === "custom";
+        if (twStartWrap) twStartWrap.style.display = isCustom ? "block" : "none";
+        if (twEndWrap) twEndWrap.style.display = isCustom ? "block" : "none";
     }
 
     if (ytRange) {
@@ -758,5 +950,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (ytLoad) {
         ytLoad.addEventListener("click", () => void loadYouTubeAnalytics());
+    }
+
+    if (twRange) {
+        twRange.addEventListener("change", () => {
+            syncTwRangeUi();
+        });
+        syncTwRangeUi();
+    }
+    if (twLoad) {
+        twLoad.addEventListener("click", () => void loadTwitchAnalytics());
     }
 });
