@@ -3,15 +3,17 @@ from logging.config import fileConfig
 
 from flask import current_app
 
+
 from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+import os
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-fileConfig(config.config_file_name)
+# Logging-Konfiguration: Lade alembic.ini immer aus Projekt-Hauptverzeichnis
+config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic.ini")
+fileConfig(config_path)
 logger = logging.getLogger('alembic.env')
 
 

@@ -120,6 +120,19 @@ def api_upload():
     caption = (request.form.get("caption") or "").strip()[:500]
     is_public = str(request.form.get("is_public") or "true").strip().lower() in {"1", "true", "yes", "on"}
 
+    hashtags_raw = (request.form.get("hashtags") or "").strip()
+    hashtags = [h.lstrip("#").strip() for h in hashtags_raw.split() if h.strip()] if hashtags_raw else []
+    location = (request.form.get("location") or "").strip()[:120]
+
+    trim_start = request.form.get("trim_start")
+    trim_end = request.form.get("trim_end")
+    try:
+        trim_start = int(trim_start) if trim_start is not None else None
+        trim_end = int(trim_end) if trim_end is not None else None
+    except Exception:
+        trim_start = None
+        trim_end = None
+
     file_obj = request.files.get("file")
     try:
         stored_path = _save_media(file_obj, user_id=user.id, media_type=media_type)
@@ -132,6 +145,11 @@ def api_upload():
         file_path=stored_path,
         caption=caption or None,
         is_public=is_public,
+        # Erweiterte Felder
+        hashtags=hashtags if hashtags else None,
+        location=location or None,
+        trim_start=trim_start if (media_type=="video" and trim_start is not None) else None,
+        trim_end=trim_end if (media_type=="video" and trim_end is not None) else None,
     )
     db.session.add(post)
     db.session.commit()

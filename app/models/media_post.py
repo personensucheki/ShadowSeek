@@ -15,6 +15,11 @@ class MediaPost(db.Model):
     file_path = db.Column(db.String(255), nullable=False)  # relative to UPLOAD_DIRECTORY
     caption = db.Column(db.String(500), nullable=True)
 
+    hashtags = db.Column(db.String(400), nullable=True)  # Space-separierte Hashtags
+    location = db.Column(db.String(120), nullable=True)
+    trim_start = db.Column(db.Integer, nullable=True)
+    trim_end = db.Column(db.Integer, nullable=True)
+
     is_public = db.Column(db.Boolean, default=True, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
 
@@ -30,6 +35,10 @@ class MediaPost(db.Model):
             "media_type": self.media_type,
             "file_path": self.file_path,
             "caption": self.caption or "",
+            "hashtags": self.hashtags or "",
+            "location": self.location or "",
+            "trim_start": self.trim_start,
+            "trim_end": self.trim_end,
             "is_public": bool(self.is_public),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "like_count": int(self.like_count or 0),

@@ -8,33 +8,56 @@
 <section class="upload-shell">
     <header class="upload-head">
         <h1>Upload</h1>
-        <p>Video oder Foto hochladen – erscheint im Feed (falls öffentlich).</p>
+        <p>Modernes, mehrstufiges Upload- und Video-Editing – mobil, schnell, inspirierend.</p>
     </header>
 
-    <form id="upload-form" class="upload-form" enctype="multipart/form-data">
-        <label>Typ
-            <select name="media_type" id="media-type">
-                <option value="video">Video</option>
-                <option value="photo">Foto</option>
-            </select>
-        </label>
+    <div id="upload-flow">
+        <!-- Step 1: MediaPicker -->
+        <div class="upload-step" id="step-media-picker">
+            <h2>1. Datei wählen</h2>
+            <input type="file" id="media-file" accept="video/mp4,video/webm,video/quicktime,image/png,image/jpeg,image/webp,image/gif">
+            <div id="media-preview"></div>
+            <button id="to-editor" class="upload-next neon-btn" disabled>Weiter</button>
+        </div>
 
-        <label>Datei
-            <input type="file" name="file" id="upload-file" accept="video/mp4,video/webm,video/quicktime,image/png,image/jpeg,image/webp,image/gif" required>
-        </label>
+        <!-- Step 2: VideoEditor (nur für Videos) -->
+        <div class="upload-step" id="step-video-editor" style="display:none;">
+            <h2>2. Video bearbeiten</h2>
+            <div id="video-editor-ui">
+                <!-- Platzhalter für Trimmen, Vorschau, Zeitwahl, etc. -->
+                <video id="editor-video" controls style="max-width:100%;border-radius:12px;"></video>
+                <div class="editor-controls">
+                    <label>Trim Start: <input type="range" id="trim-start" min="0" max="100" value="0"></label>
+                    <label>Trim End: <input type="range" id="trim-end" min="0" max="100" value="100"></label>
+                </div>
+            </div>
+            <button id="to-publish" class="upload-next neon-btn">Weiter</button>
+            <button id="back-to-picker" class="upload-back">Zurück</button>
+        </div>
 
-        <label>Caption (optional)
-            <textarea name="caption" id="upload-caption" maxlength="500" placeholder="Beschreibe deinen Clip…"></textarea>
-        </label>
-
-        <label class="upload-toggle">
-            <input type="checkbox" name="is_public" value="true" checked>
-            Öffentlich im Feed anzeigen
-        </label>
-
-        <button type="submit" class="upload-submit">Upload</button>
-        <div class="upload-status" id="upload-status" aria-live="polite"></div>
-    </form>
+        <!-- Step 3: PublishScreen -->
+        <div class="upload-step" id="step-publish" style="display:none;">
+            <h2>3. Details & Veröffentlichen</h2>
+            <form id="publish-form">
+                <label>Caption
+                    <textarea id="publish-caption" maxlength="500" placeholder="Beschreibe deinen Clip…"></textarea>
+                </label>
+                <label>Hashtags
+                    <input type="text" id="publish-hashtags" placeholder="#hashtag1 #hashtag2">
+                </label>
+                <label>Location
+                    <input type="text" id="publish-location" placeholder="Ort hinzufügen (optional)">
+                </label>
+                <label class="upload-toggle">
+                    <input type="checkbox" id="publish-public" checked>
+                    Öffentlich im Feed anzeigen
+                </label>
+                <button type="submit" class="upload-submit neon-btn">Veröffentlichen</button>
+                <button id="back-to-editor" class="upload-back">Zurück</button>
+                <div class="upload-status" id="upload-status" aria-live="polite"></div>
+            </form>
+        </div>
+    </div>
 </section>
 {% endblock %}
 

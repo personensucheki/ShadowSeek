@@ -16,10 +16,12 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table("revenue_events", schema=None) as batch_op:
-        batch_op.create_unique_constraint(
-            "uq_revenue_event",
-            ["platform", "username", "captured_at", "source"]
-        )
+        conn = op.get_bind()
+        if conn.dialect.name != 'sqlite':
+            batch_op.create_unique_constraint(
+                "uq_revenue_event",
+                ["platform", "username", "captured_at", "source"]
+            )
 
 
 def downgrade():
