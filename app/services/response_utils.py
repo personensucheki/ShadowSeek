@@ -14,7 +14,8 @@ def api_success(data=None, message=None, status=200):
     return jsonify(resp), status
 
 def api_error(message, status=400, errors=None):
-    resp = {"success": False, "message": message}
+    # Backwards-compatible: some callers/tests expect `error`, newer code used `message`.
+    resp = {"success": False, "message": message, "error": message}
     if errors:
         resp["errors"] = errors
     return jsonify(resp), status

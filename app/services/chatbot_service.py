@@ -96,7 +96,7 @@ class ChatbotService:
 
         if re.search(r"\b(hi|hallo|hello|hey|servus|guten tag|moin)\b", msg):
             reply = (
-                "Hey! Ich bin dein ShadowSeek Assistant. Wie geht's dir? "
+                "Hallo! Ich bin dein ShadowSeek Assistant. Wie geht's dir? "
                 "Wenn du magst: Sag mir, ob du Hilfe bei Login/Profil brauchst oder bei einer Suche."
             )
             self._remember_reply(reply)

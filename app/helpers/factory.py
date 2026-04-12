@@ -43,7 +43,8 @@ def register_blueprints(app):
     app.register_blueprint(oauth_bp)
     app.register_blueprint(live_bp)
     app.register_blueprint(games_api_bp)
-    app.register_blueprint(live_api_v2_bp, url_prefix="/api")
+    # live_api_v2_bp already defines routes under /api/live/...; do not double-prefix.
+    app.register_blueprint(live_api_v2_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(live_api_bp)
     app.register_blueprint(query_api_bp)

@@ -150,3 +150,7 @@ class TestingConfig(BaseConfig):
     SESSION_COOKIE_SECURE = False
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024
     MAX_VIDEO_UPLOAD_BYTES = 10 * 1024 * 1024
+
+
+# Backwards-compatible alias (older tests/imports expect TestConfig).
+TestConfig = TestingConfig

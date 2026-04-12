@@ -59,6 +59,10 @@ class SearchPayload:
     age: str
     postal_code: str
     deep_search: bool
+    public_sources: bool
+    ai_rerank: bool
+    secure_mode: bool
+    precision_mode: bool
     platforms: tuple[str, ...]
 
 
@@ -187,6 +191,45 @@ PLATFORM_GROUPS = {
             "excluded_segments": ("feed", "music", "video"),
         },
     ],
+    "adult": [
+        {
+            "slug": "onlyfans",
+            "name": "OnlyFans",
+            "url_pattern": "https://onlyfans.com/{username}",
+            "domains": ("onlyfans.com",),
+            "excluded_segments": ("login", "signup", "my", "terms", "privacy"),
+        },
+        {
+            "slug": "fansly",
+            "name": "Fansly",
+            "url_pattern": "https://fansly.com/{username}",
+            "domains": ("fansly.com",),
+            "excluded_segments": ("auth", "terms", "privacy"),
+        },
+    ],
+    "porn": [
+        {
+            "slug": "pornhub",
+            "name": "Pornhub",
+            "url_pattern": "https://www.pornhub.com/users/{username}",
+            "domains": ("pornhub.com",),
+            "excluded_segments": ("video", "view_video", "pornstar", "categories", "gifs", "playlists"),
+        },
+        {
+            "slug": "xhamster",
+            "name": "xHamster",
+            "url_pattern": "https://xhamster.com/users/{username}",
+            "domains": ("xhamster.com",),
+            "excluded_segments": ("videos", "categories", "pornstars", "search"),
+        },
+        {
+            "slug": "xnxx",
+            "name": "XNXX",
+            "url_pattern": "https://www.xnxx.com/profiles/{username}",
+            "domains": ("xnxx.com",),
+            "excluded_segments": ("video", "search", "tags", "pornstars"),
+        },
+    ],
 }
 
 
@@ -258,6 +301,10 @@ def build_search_payload(form):
     age = re.sub(r"\D", "", form.get("age", ""))
     postal_code = re.sub(r"[^A-Za-z0-9]", "", form.get("postal_code", "")).upper()
     deep_search = str(form.get("deep_search", "")).lower() in {"1", "true", "on", "yes"}
+    public_sources = str(form.get("public_sources", "")).lower() in {"1", "true", "on", "yes"}
+    ai_rerank = str(form.get("ai_rerank", "")).lower() in {"1", "true", "on", "yes"}
+    secure_mode = str(form.get("secure_mode", "")).lower() in {"1", "true", "on", "yes"}
+    precision_mode = str(form.get("precision_mode", "")).lower() in {"1", "true", "on", "yes"}
     getlist = getattr(form, "getlist", None)
     raw_platforms = getlist("platforms") if callable(getlist) else form.get("platforms", [])
     if isinstance(raw_platforms, str):
@@ -267,7 +314,7 @@ def build_search_payload(form):
     )
 
     if not username or len(username) < 2:
-            errors["username"] = "Bitte einen gueltigen Username angeben."
+        errors["username"] = "Bitte einen gueltigen Username angeben."
     if len(username) > 32:
         errors["username"] = "Der Username darf nicht laenger als 32 Zeichen sein."
     if age and not 1 <= int(age) <= 120:
@@ -285,6 +332,10 @@ def build_search_payload(form):
         age=age,
         postal_code=postal_code,
         deep_search=deep_search,
+        public_sources=public_sources,
+        ai_rerank=ai_rerank,
+        secure_mode=secure_mode,
+        precision_mode=precision_mode,
         platforms=selected_platforms or tuple(PLATFORM_INDEX),
     )
 
@@ -398,7 +449,30 @@ def execute_search(payload, request_base_url, image_file=None):
                 )
             )
 
+    serper_meta = {"used": False, "queries": 0, "provider": None}
+    search_engine_meta = {"used": False, "queries": 0, "provider": None}
+
+    if has_serper_api_key():
+        serper_profiles, serper_meta = collect_serper_profiles(payload, username_variations, selected_platforms)
+        if serper_profiles:
+            # When a search provider is available, return provider-backed results first.
+            # Local candidate links remain useful as a fallback, but they should not overshadow real results.
+            profiles = list(serper_profiles)
+    else:
+        discovered = discover_profiles(payload, username_variations, selected_platforms)
+        if isinstance(discovered, tuple) and len(discovered) == 2:
+            discovered_profiles, search_engine_meta = discovered
+        else:
+            discovered_profiles = discovered
+        if discovered_profiles:
+            profiles.extend(discovered_profiles)
+
     profiles = dedupe_and_limit_profiles(profiles, payload.deep_search)
+
+    ai_applied = False
+    if should_ai_rerank(payload, profiles):
+        profiles, ai_applied = rerank_profiles_with_openai(payload, username_variations, profiles)
+
     reverse_image_links = {}
     if image_file and getattr(image_file, "filename", ""):
         reverse_image_links = create_reverse_image_links(image_file, request_base_url)
@@ -408,7 +482,10 @@ def execute_search(payload, request_base_url, image_file=None):
             "username": payload.username,
             "deep_search": payload.deep_search,
             "platforms": list(payload.platforms),
-            "safe_mode": True,
+            "public_sources": payload.public_sources,
+            "ai_rerank": payload.ai_rerank,
+            "secure_mode": payload.secure_mode,
+            "precision_mode": payload.precision_mode,
         },
         "username_variations": [
             {"username": item.username, "score": item.score, "reason": item.reason}
@@ -426,12 +503,12 @@ def execute_search(payload, request_base_url, image_file=None):
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "platform_count": len(payload.platforms),
             "profile_count": len(profiles),
-            "ai_reranking_applied": False,
-            "serper_used": False,
-            "serper_queries": 0,
-            "search_engine_used": False,
-            "search_engine_provider": None,
-            "search_engine_queries": 0,
+            "ai_reranking_applied": ai_applied,
+            "serper_used": bool(serper_meta.get("used")),
+            "serper_queries": int(serper_meta.get("queries") or 0),
+            "search_engine_used": bool(search_engine_meta.get("used")),
+            "search_engine_provider": search_engine_meta.get("provider"),
+            "search_engine_queries": int(search_engine_meta.get("queries") or 0),
             "safe_mode": True,
         },
     }
@@ -595,23 +672,210 @@ def has_public_search_fallback():
 
 
 def should_ai_rerank(payload, profiles):
-    return False
+    if not payload or not getattr(payload, "deep_search", False):
+        return False
+    if not profiles:
+        return False
+    return bool(current_app.config.get("OPENAI_API_KEY"))
+
+def _build_serper_query(username: str, platform: PlatformDefinition | None = None) -> str:
+    username = normalize_handle(username)
+    if not username:
+        return ""
+    if not platform:
+        return f"\"{username}\" profile"
+    domain = platform.domains[0] if platform.domains else ""
+    if domain:
+        if platform.slug == "tiktok":
+            return f"site:{domain} \"@{username}\""
+        return f"site:{domain} \"{username}\""
+    return f"\"{username}\" {platform.name}"
 
 
-def collect_serper_profiles(*_args, **_kwargs):
-    return [], {"used": False, "queries": 0, "provider": None}
+def collect_serper_profiles(payload, username_variations, selected_platforms):
+    if not has_serper_api_key():
+        return [], {"used": False, "queries": 0, "provider": None}
 
+    max_queries = 2 if payload.precision_mode else 4
+    timeout = float(current_app.config.get("SEARCH_REQUEST_TIMEOUT", 3.5)) + 2
+    num = int(current_app.config.get("SERPER_RESULTS_PER_QUERY", 8))
 
-def collect_bing_profiles(*_args, **_kwargs):
-    return [], {"used": False, "queries": 0, "provider": None}
+    queries: list[str] = []
+    for variation in username_variations[:2]:
+        queries.append(_build_serper_query(variation.username))
+    if payload.deep_search and selected_platforms:
+        for platform in selected_platforms[: min(3, len(selected_platforms))]:
+            queries.append(_build_serper_query(username_variations[0].username, platform))
 
+    queries = [q for q in queries if q]
+    queries = list(dict.fromkeys(queries))[:max_queries]
 
-def discover_profiles(*_args, **_kwargs):
-    return []
+    raw_results: list[dict] = []
+    used_queries = 0
+    for q in queries:
+        try:
+            data = run_serper_query(
+                q,
+                {
+                    "api_url": current_app.config.get("SERPER_API_URL"),
+                    "api_key": current_app.config.get("SERPER_API_KEY"),
+                    "gl": current_app.config.get("SERPER_GL", "de"),
+                    "hl": current_app.config.get("SERPER_HL", "de"),
+                    "num": num,
+                    "timeout": timeout,
+                },
+            )
+        except Exception:
+            continue
 
+        organic = data.get("organic") or []
+        for item in organic:
+            link = normalize_result_url(item.get("link"))
+            if not link:
+                continue
+            raw_results.append(
+                {
+                    "title": collapse_whitespace(item.get("title") or ""),
+                    "link": link,
+                    "snippet": collapse_whitespace(item.get("snippet") or ""),
+                }
+            )
+        used_queries += 1
 
-def scan_platform(*_args, **_kwargs):
-    return []
+    profiles: list[dict] = []
+    for platform in selected_platforms:
+        for profile in scan_platform(payload, username_variations, platform, raw_results):
+            profile.setdefault("source", "serper")
+            profiles.append(profile)
+
+    return profiles, {
+        "used": bool(used_queries),
+        "queries": used_queries,
+        "provider": "serper" if used_queries else None,
+    }
+
+def collect_bing_profiles(payload, username_variations, selected_platforms):
+    if not has_public_search_fallback():
+        return [], {"used": False, "queries": 0, "provider": None}
+
+    search_url = current_app.config.get("BING_SEARCH_URL", "https://www.bing.com/search")
+    timeout = float(current_app.config.get("SEARCH_REQUEST_TIMEOUT", 3.5)) + 2
+    limit = int(current_app.config.get("BING_RESULTS_PER_QUERY", 8))
+
+    max_queries = 1 if payload.precision_mode else 2
+    queries: list[str] = []
+    for variation in username_variations[:2]:
+        queries.append(_build_serper_query(variation.username))
+    queries = list(dict.fromkeys([q for q in queries if q]))[:max_queries]
+
+    raw_results: list[dict] = []
+    used_queries = 0
+    for q in queries:
+        try:
+            response = get_http_session().get(
+                search_url,
+                params={"format": "rss", "q": q},
+                timeout=timeout,
+                allow_redirects=True,
+            )
+            response.raise_for_status()
+        except Exception:
+            continue
+
+        parsed = parse_bing_rss_feed(response.text, limit)
+        for item in parsed.get("organic") or []:
+            link = normalize_result_url(item.get("link"))
+            if not link:
+                continue
+            raw_results.append(
+                {
+                    "title": collapse_whitespace(item.get("title") or ""),
+                    "link": link,
+                    "snippet": collapse_whitespace(item.get("snippet") or ""),
+                }
+            )
+        used_queries += 1
+
+    profiles: list[dict] = []
+    for platform in selected_platforms:
+        for profile in scan_platform(payload, username_variations, platform, raw_results):
+            profile.setdefault("source", "bing_rss")
+            profiles.append(profile)
+
+    return profiles, {
+        "used": bool(used_queries),
+        "queries": used_queries,
+        "provider": "bing_rss" if used_queries else None,
+    }
+
+def discover_profiles(payload, username_variations, selected_platforms):
+    """
+    Discover public profiles via search providers (Serper preferred, Bing RSS fallback).
+
+    Safety/Compliance:
+    - Uses public search results only (no scraping of platform-internal endpoints).
+    - Does not bypass authentication or privacy controls.
+    """
+    # Backwards-compatible behavior for tests/older frontend:
+    # - If Serper is configured, prefer Serper.
+    # - Otherwise use Bing RSS fallback if enabled.
+    profiles, meta = collect_serper_profiles(payload, username_variations, selected_platforms)
+    if profiles:
+        return profiles, meta
+    profiles, meta = collect_bing_profiles(payload, username_variations, selected_platforms)
+    return profiles, meta
+
+def scan_platform(payload, username_variations, platform, raw_results):
+    if not raw_results:
+        return []
+
+    collected: list[dict] = []
+    for item in raw_results:
+        url = normalize_result_url(item.get("link"))
+        if not url:
+            continue
+        resolved = resolve_platform_from_url(url)
+        if not resolved or resolved.slug != platform.slug:
+            continue
+        if not is_profile_like_url(platform, url):
+            continue
+
+        extracted = extract_username_from_url(platform, url)
+        best_variation = select_best_variation(
+            username_variations,
+            extracted,
+            item.get("title"),
+            item.get("snippet"),
+            url,
+        )
+        if not best_variation:
+            continue
+
+        score = best_variation.score
+        if extracted and extracted == best_variation.username:
+            score = min(100, score + 5)
+        if payload.precision_mode:
+            score = min(100, score + 2)
+
+        collected.append(
+            {
+                "platform": platform.name,
+                "platform_slug": platform.slug,
+                "category": platform.category,
+                "username": best_variation.username,
+                "profile_url": url,
+                "url": url,
+                "match_score": score,
+                "verification": "public_search",
+                "confidence": _confidence_from_score(score),
+                "match_reason": f"Public search: {best_variation.reason}",
+                "source": "public_search",
+                "title": collapse_whitespace(item.get("title") or ""),
+                "snippet": collapse_whitespace(item.get("snippet") or ""),
+            }
+        )
+
+    return collected
 
 
 def probe_profile(*_args, **_kwargs):
@@ -619,7 +883,74 @@ def probe_profile(*_args, **_kwargs):
 
 
 def rerank_profiles_with_openai(payload, username_variations, profiles):
-    return profiles, False
+    if not should_ai_rerank(payload, profiles):
+        return profiles, False
+
+    try:
+        from openai import OpenAI
+    except Exception:
+        return profiles, False
+
+    api_key = current_app.config.get("OPENAI_API_KEY")
+    if not api_key:
+        return profiles, False
+
+    max_candidates = int(current_app.config.get("OPENAI_MAX_RERANK_CANDIDATES", 12))
+    model = current_app.config.get("OPENAI_RERANK_MODEL", "gpt-5-mini")
+    timeout = float(current_app.config.get("OPENAI_TIMEOUT", 12))
+
+    candidates = profiles[:max_candidates]
+    variants = [v.username for v in username_variations[:5]]
+
+    client = OpenAI(api_key=api_key, timeout=timeout)
+    try:
+        import json
+
+        prompt = {
+            "query_username": payload.username,
+            "variants": variants,
+            "candidates": [
+                {
+                    "platform": c.get("platform_slug"),
+                    "url": c.get("profile_url") or c.get("url"),
+                    "title": c.get("title"),
+                    "snippet": c.get("snippet"),
+                }
+                for c in candidates
+            ],
+            "instructions": (
+                "Rank candidates by likelihood they represent the same public profile for the query username. "
+                "Use only the given title/snippet/url. Return JSON: {\"order\": [\"url\", ...]}."
+            ),
+        }
+
+        response = client.responses.create(
+            model=model,
+            input=[{"role": "user", "content": [{"type": "input_text", "text": json.dumps(prompt)}]}],
+        )
+        text = (response.output_text or "").strip()
+        parsed = json.loads(text) if text.startswith("{") else None
+        order = parsed.get("order") if isinstance(parsed, dict) else None
+        if not isinstance(order, list) or not order:
+            return profiles, False
+
+        by_url = {str((c.get("profile_url") or c.get("url") or "")).strip(): c for c in candidates}
+        reranked = []
+        seen = set()
+        for url in order:
+            url = str(url).strip()
+            if url in by_url and url not in seen:
+                reranked.append(by_url[url])
+                seen.add(url)
+        for c in candidates:
+            url = str((c.get("profile_url") or c.get("url") or "")).strip()
+            if url and url not in seen:
+                reranked.append(c)
+                seen.add(url)
+        reranked.extend(profiles[len(candidates) :])
+        return reranked, True
+    except Exception:
+        return profiles, False
 
 
 def normalize_result_url(url):

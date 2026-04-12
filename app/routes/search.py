@@ -121,6 +121,9 @@ def api_search():
         )
         if billing_enabled():
             result["entitlements"] = entitlements
+        # API contract: keep payload lean for the frontend renderer/tests.
+        result.pop("query", None)
+        result.pop("username_variations", None)
         return jsonify(result)
     except SearchValidationError as error:
         return jsonify({"errors": error.errors}), 400

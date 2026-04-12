@@ -2,26 +2,7 @@
 // Fügt sich als Overlay/Widget in bestehende Seiten ein
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Agent-Overlay einfügen
-    if (!document.getElementById('agent-support')) {
-        const agentDiv = document.createElement('div');
-        agentDiv.id = 'agent-support';
-        agentDiv.style.position = 'fixed';
-        agentDiv.style.bottom = '24px';
-        agentDiv.style.right = '24px';
-        agentDiv.style.width = '340px';
-        agentDiv.style.background = '#23272f';
-        agentDiv.style.color = '#fff';
-        agentDiv.style.borderRadius = '12px';
-        agentDiv.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-        agentDiv.style.zIndex = '9999';
-        agentDiv.style.fontFamily = 'Inter, Arial, sans-serif';
-        agentDiv.innerHTML = `
-            <div style="padding:18px 18px 12px 18px;font-size:1.1em;font-weight:600;">Willkommen! Ich begleite dich durch Registrierung, Login & Profil.</div>
-            <div id="agent-messages" style="min-height:48px;padding:0 18px 12px 18px;font-size:1em;"></div>
-        `;
-        document.body.appendChild(agentDiv);
-    }
+    // Agent-Overlay entfernt – keine Box/kein AIBOT mehr
 
     // Utility: Feedback anzeigen
     function agentMessage(msg, type = 'info') {

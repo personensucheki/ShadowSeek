@@ -530,6 +530,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     const platformGrid = form?.querySelector(".platform-grid");
     const platformCheckboxes = () => Array.from(form.querySelectorAll('input[name="platforms"]'));
 
+    const ensureHiddenField = (name) => {
+        let input = form.querySelector(`input[type="hidden"][name="${name}"]`);
+        if (!input) {
+            input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            form.appendChild(input);
+        }
+        return input;
+    };
+
+    const syncModifierFields = () => {
+        // These fields are consumed by the backend to enable optional features.
+        const modifierToField = {
+            public_sources: "public_sources",
+            ai_rerank: "ai_rerank",
+            secure_mode: "secure_mode",
+            precision_mode: "precision_mode",
+        };
+
+        Object.values(modifierToField).forEach((field) => ensureHiddenField(field));
+
+        Object.entries(modifierToField).forEach(([modifier, field]) => {
+            const input = ensureHiddenField(field);
+            input.value = selectedModifiers.includes(modifier) ? "true" : "";
+        });
+    };
+
     const renderPlatformTiles = (platforms) => {
         if (!platformGrid) {
             return;
@@ -606,6 +634,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
                 writeJsonStorage("shadowseek_modifiers", selectedModifiers);
                 renderModifierChips();
+                syncModifierFields();
             };
         });
     };
@@ -655,6 +684,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             selectedModifiers = [...selectedModifiers, "deepsearch"];
         }
     };
+
+    // Ensure modifier fields exist before the first submit.
+    syncModifierFields();
 
     const saveInputs = () => {
         const data = {};
@@ -750,6 +782,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         overlayController = showScanOverlay(selectedPlatforms, Boolean(deepSearchToggle?.checked));
 
+        syncModifierFields();
         const formData = new FormData(form);
         const controller = new AbortController();
         const timeoutId = window.setTimeout(() => controller.abort(), 15000);

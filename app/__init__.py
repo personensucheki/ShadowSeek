@@ -45,6 +45,10 @@ def _resolve_default_config():
     """
     from .config import DevelopmentConfig, ProductionConfig, TestingConfig
 
+    # Render should always force production defaults, even if FLASK_ENV is still "development".
+    if os.environ.get("RENDER") or os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+        return ProductionConfig
+
     environment = (
         os.environ.get("SHADOWSEEK_ENV")
         or os.environ.get("FLASK_ENV")
@@ -55,8 +59,6 @@ def _resolve_default_config():
     if environment in {"test", "testing"}:
         return TestingConfig
     if environment in {"prod", "production"}:
-        return ProductionConfig
-    if os.environ.get("RENDER") or os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
         return ProductionConfig
     return DevelopmentConfig
 

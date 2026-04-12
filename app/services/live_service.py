@@ -1,16 +1,42 @@
 """
-Live-Service: Verwaltung und Scoring von Livestreams
+Live-Service: Verwaltung und Scoring von Livestream-Kandidaten.
+
+Wichtig:
+- Dieses Modul liefert bewusst nur lokale Heuristiken und keine externen Plattform-Scrapes.
+- Es ist so gebaut, dass es **nicht** den App-Start bricht, auch wenn Live-Feeds noch nicht final sind.
 """
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
 
 from app.config_feed import FEED_CONFIG
 
-class LiveService:
 
-        def score_live_candidate(self, session, user_profile, session_state=None, return_breakdown=False):
-            """
-            Bewertet eine Live-Session nach gewichteter Formel, gibt Score und Breakdown zurück.
-            """
-            weights = FEED_CONFIG.get("LIVE_SCORE_WEIGHTS", {
+@dataclass(frozen=True)
+class LiveScoreResult:
+    score: float
+    breakdown: dict[str, float]
+
+
+class LiveService:
+    def score_live_candidate(
+        self,
+        session: Any,
+        user_profile: dict[str, Any] | None,
+        session_state: dict[str, Any] | None = None,
+        *,
+        return_breakdown: bool = False,
+    ):
+        """
+        Bewertet eine Live-Session nach gewichteter, lokaler Formel.
+        Erwartet `session` als dict oder Objekt mit Attributes.
+        """
+        user_profile = user_profile or {}
+        weights = FEED_CONFIG.get(
+            "LIVE_SCORE_WEIGHTS",
+            {
                 "viewer_growth_rate": 0.20,
                 "avg_watchtime": 0.18,
                 "retention_3min": 0.14,
@@ -25,44 +51,70 @@ class LiveService:
                 "early_exit_rate": -0.16,
                 "report_rate": -0.18,
                 "risk_penalty": -0.10,
-            })
-            f = lambda key, default=0.0: getattr(session, key, session.get(key, default)) if hasattr(session, key) or isinstance(session, dict) else default
-            breakdown = {}
-            score = 0.0
-            for feat, w in weights.items():
-                val = f(feat, 0.0)
-                # Affinitäten
-                if feat == "topic_match":
-                    val = self._topic_affinity(session, user_profile)
-                elif feat == "locality_match":
-                    val = self._locality_affinity(session, user_profile)
-                breakdown[feat] = val * w
-                score += val * w
-            if return_breakdown:
-                return round(score, 4), breakdown
-            return round(score, 4)
+            },
+        )
 
-        def _topic_affinity(self, session, user_profile):
-            topics = getattr(session, 'topics', getattr(session, 'topic', []))
-            if not topics:
-                return 0.0
-            profile = user_profile.get('categories', {})
-            if isinstance(topics, str):
-                topics = [topics]
-            return max([profile.get(t, 0.0) for t in topics if t in profile] or [0.0])
+        def read_feature(key: str, default: float = 0.0) -> float:
+            if hasattr(session, key):
+                try:
+                    return float(getattr(session, key))
+                except Exception:
+                    return default
+            if isinstance(session, dict):
+                try:
+                    return float(session.get(key, default))
+                except Exception:
+                    return default
+            return default
 
-        def _locality_affinity(self, session, user_profile):
-            location = getattr(session, 'location', None)
-            profile = user_profile.get('locations', {})
-            if location and location in profile:
-                return min(profile[location] / 10.0, 1.0)
+        breakdown: dict[str, float] = {}
+        score = 0.0
+        for feature, weight in weights.items():
+            value = read_feature(feature, 0.0)
+            if feature == "topic_match":
+                value = self._topic_affinity(session, user_profile)
+            elif feature == "locality_match":
+                value = self._locality_affinity(session, user_profile)
+            part = float(value) * float(weight)
+            breakdown[feature] = part
+            score += part
+
+        score = round(score, 4)
+        if return_breakdown:
+            return score, breakdown
+        return score
+
+    def _topic_affinity(self, session: Any, user_profile: dict[str, Any]) -> float:
+        topics = getattr(session, "topics", None)
+        if topics is None and isinstance(session, dict):
+            topics = session.get("topics") or session.get("topic")
+        if not topics:
             return 0.0
-    def get_recommended_live(self, user_id):
-        # TODO: Kandidaten holen und scoren
+        if isinstance(topics, str):
+            topics = [topics]
+        categories = user_profile.get("categories") or {}
+        if not isinstance(categories, dict):
+            return 0.0
+        return float(max([categories.get(topic, 0.0) for topic in topics] or [0.0]))
+
+    def _locality_affinity(self, session: Any, user_profile: dict[str, Any]) -> float:
+        location = getattr(session, "location", None)
+        if location is None and isinstance(session, dict):
+            location = session.get("location")
+        locations = user_profile.get("locations") or {}
+        if not location or not isinstance(locations, dict):
+            return 0.0
+        try:
+            return float(min(float(locations.get(location, 0.0)) / 10.0, 1.0))
+        except Exception:
+            return 0.0
+
+    def get_recommended_live(self, user_id: int):
+        """
+        Placeholder für echte Live-Recommendations (noch nicht produktiv).
+        """
         return []
 
-    def live_score(self, session, metrics, user_profile):
-        # TODO: Heuristik implementieren
-        return 0.0
 
 live_service = LiveService()
+
