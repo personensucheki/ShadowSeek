@@ -1,3 +1,40 @@
+// Live-Studio-Formular: Stream anlegen
+document.addEventListener("DOMContentLoaded", () => {
+    const setupForm = document.getElementById("live-setup-form");
+    if (setupForm) {
+        setupForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(setupForm);
+            const data = {
+                title: formData.get("title"),
+                description: formData.get("description"),
+                category: formData.get("category"),
+                game: formData.get("game"),
+                tags: formData.get("tags"),
+                allow_gifts: formData.get("enable_gifts") ? true : false
+            };
+            // Thumbnail/Cover wird vorerst nicht per API gesendet
+            try {
+                const res = await fetch("/api/live/stream", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    // Weiterleitung oder Feedback
+                    window.location.href = `/live/view/${result.stream_id}`;
+                } else {
+                    alert(result.error || "Fehler beim Anlegen des Streams.");
+                }
+            } catch (err) {
+                alert("Netzwerkfehler beim Anlegen des Streams.");
+            }
+        });
+    }
+});
+<<<<<<< ours
+<<<<<<< ours
     // Kategorie-/Game-Dropdown-Logik
     const categorySelect = document.getElementById("live-category");
     const gameRow = document.getElementById("game-row");
@@ -58,6 +95,10 @@
             gameHiddenInput.value = "";
         });
     }
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 document.addEventListener("DOMContentLoaded", () => {
     const modeButtons = document.querySelectorAll("[data-mode]");
     const modeObs = document.getElementById("mode-obs");
@@ -137,6 +178,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         feedback.textContent = "Live-Setup gespeichert. Als nächstes: Stream starten.";
     });
+<<<<<<< ours
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -222,6 +265,10 @@ document.addEventListener("DOMContentLoaded", () => {
         feedback.textContent = "Live-Setup gespeichert. Als nächstes: Stream starten.";
     });
 >>>>>>> ca53806 (Login reperatur)
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
