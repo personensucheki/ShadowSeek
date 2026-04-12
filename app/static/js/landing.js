@@ -8,7 +8,7 @@ const FALLBACK_SUGGESTIONS = [
     "reddit",
     "telegram",
     "reverse image search",
-    "osint tools",
+    "profile monitoring",
 ];
 
 const CATEGORIES = [
@@ -19,7 +19,7 @@ const CATEGORIES = [
 ];
 
 const MODIFIERS = [
-    { label: "Oeffentliche Quellen", value: "public_sources" },
+    { label: "Oeffentliche Signale", value: "public_sources" },
     { label: "Sicherer Suchmodus", value: "secure_mode" },
     { label: "KI-gestuetzte Bewertung", value: "ai_rerank" },
     { label: "DeepSearch bereit", value: "deepsearch" },
@@ -308,10 +308,10 @@ document.addEventListener("DOMContentLoaded", () => {
         resultsSection.hidden = false;
 
         const q = payload?.query || input.value.trim();
-        resultsQuery.textContent = q ? `Ergebnisse fuer: ${q}` : "Ergebnisse";
-        resultsMeta.textContent = payload?.provider ? `Quelle: ${payload.provider}` : "";
-
         const items = Array.isArray(payload?.results) ? payload.results : [];
+        resultsQuery.textContent = q ? `Ergebnisse fuer: ${q}` : "Ergebnisse";
+        resultsMeta.textContent = items.length ? `${items.length} Ergebnisse` : "";
+
         if (!items.length) {
             const empty = document.createElement("div");
             empty.className = "empty-state";
@@ -386,7 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })
             .then((r) => r.json().catch(() => ({})))
             .then((payload) => renderResults(payload))
-            .catch(() => renderResults({ query, provider: null, results: [] }))
+            .catch(() => renderResults({ query, results: [] }))
             .finally(() => {
                 resultsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
             });

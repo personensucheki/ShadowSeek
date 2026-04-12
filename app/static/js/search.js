@@ -179,12 +179,16 @@ function renderMessages(payload, container) {
 
     if (payload?.meta?.profile_count !== undefined && payload.meta.profile_count !== null) {
         container.appendChild(
-            createMessage("green", `${payload.meta.profile_count} Profile gefunden`)
+            createMessage("green", `${payload.meta.profile_count} Link-Kandidaten erzeugt`)
         );
     }
 
     if (payload?.meta?.ai_reranking_applied) {
         container.appendChild(createMessage("cyan", "KI-Reranking aktiv"));
+    }
+
+    if (payload?.meta?.safe_mode) {
+        container.appendChild(createMessage("cyan", "Safe Mode aktiv"));
     }
 
     if (payload?.meta?.serper_used) {
@@ -242,9 +246,6 @@ function renderProfiles(profiles, container) {
             const confidenceChip = result.confidence
                 ? `<span class="chip chip--${result.confidence === "high" ? "green" : result.confidence === "medium" ? "cyan" : "pink"}">Confidence: ${escapeHtml(result.confidence)}</span>`
                 : "";
-            const sourceChip = result.source
-                ? `<span class="chip chip--cyan">Quelle: ${escapeHtml(result.source)}</span>`
-                : "";
             const scoreChip = result.match_score !== undefined && result.match_score !== null
                 ? `<span class="chip chip--variation">Score: ${escapeHtml(result.match_score)}</span>`
                 : "";
@@ -260,7 +261,6 @@ function renderProfiles(profiles, container) {
                         <div class="result-meta-row">
                             ${confidenceChip}
                             ${scoreChip}
-                            ${sourceChip}
                             ${reason ? `<span class="chip chip--green">${escapeHtml(reason)}</span>` : ""}
                         </div>
                         <a href="${escapeHtml(result.url || result.profile_url || "#")}" target="_blank" rel="noopener" class="result-link">Profil oeffnen</a>

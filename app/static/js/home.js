@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const detail = document.createElement("p");
             detail.className = "profile-subtitle";
-            detail.textContent = profile.snippet || `Quelle ${profile.source || "direct"}`;
+            detail.textContent = profile.snippet || "Oeffentlicher Link-Kandidat";
 
             content.append(platform, title, subtitle, detail);
 
@@ -192,7 +192,8 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         renderMeta(payload);
         renderVariations(payload.username_variations || []);
-        renderReverseLinks(payload.reverse_image_links || {});
+        // Backend liefert `reverse_image_search` (nicht `reverse_image_links`)
+        renderReverseLinks(payload.reverse_image_search || {});
         renderProfiles(payload.profiles || []);
     };
 
