@@ -1,57 +1,51 @@
-# ShadowSeek – Start & Deploy Anleitung (Stand: 2026-04-12)
+# ShadowSeek Deploy Guide
 
-## 1. Voraussetzungen
-- Python 3.10+
-- pip, venv
-- Stripe-Account (API Keys)
-- SQLite (oder kompatible DB)
+## Render service
 
-## 2. Setup
+- Build command: `pip install -r requirements.txt`
+- Start command: `gunicorn run:app`
+- Health path: `/health`
 
-```bash
-# Repository klonen
-# cd ShadowSeek
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-pip install -r requirements.txt
+## Required environment variables
 
-# .env anlegen (siehe .env.example)
-# STRIPE_SECRET_KEY=...
-# STRIPE_WEBHOOK_SECRET=...
-# APP_BASE_URL=...
-# DATABASE_PATH=shadowseek.db
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `PUBLIC_BASE_URL`
+- `APP_BASE_URL`
+- `BILLING_GATING_ENABLED=true`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_ID_ABO_1`
+- `STRIPE_PRICE_ID_ABO_2`
+- `STRIPE_PRICE_ID_ABO_3`
+- `STRIPE_PRICE_ID_ABO_4`
 
-# Datenbank initialisieren
-flask db upgrade  # oder: python scripts/show_tables.py
+## Optional integrations
 
-# (Optional) Admin-User anlegen
-python scripts/bootstrap_admin.py
-```
+- `OPENAI_API_KEY`
+- `SERPER_API_KEY`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
 
-## 3. Starten (lokal)
+## Stripe webhook
 
-```bash
-.venv\Scripts\activate
-flask run
-```
+- Endpoint: `https://<your-domain>/api/stripe/webhook`
+- Events:
+  - `checkout.session.completed`
+  - `invoice.paid`
+  - `invoice.payment_failed`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
 
-## 4. Stripe Webhook einrichten
+## Deploy order
 
-- Stripe Dashboard → Developers → Webhooks
-- Endpoint: `https://<deine-domain>/api/stripe/webhook`
-- Events: checkout.session.completed, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted
-- STRIPE_WEBHOOK_SECRET in .env eintragen
+1. Set all Render environment variables.
+2. Run database migrations with `flask db upgrade`.
+3. Deploy the web service.
+4. Configure the Stripe webhook endpoint.
+5. Test checkout, portal return, webhook sync, and gated search access.
 
-## 5. Wichtige Pfade
-- /admin/subscription – Abo/Upgrade-UI
-- /api/billing/* – Billing-API
-- /api/search – Feature-Gating aktiv
+## Security note
 
-## 6. Hinweise
-- Feature-Gating: UI und API prüfen Entitlements
-- Bei Problemen: Logs und SHADOWSEEK_CODE_AUDIT.md konsultieren
-- Für Produktion: HTTPS, sichere .env, Stripe-Live-Keys nutzen
-
----
-
-Siehe auch: SHADOWSEEK_CODE_AUDIT.md, README_SEARCH_TECH.md
+- Rotate any Stripe keys that were exposed in screenshots or chat.
+- Never commit live secrets into the repository.

@@ -40,6 +40,20 @@ class BaseConfig:
     OPENAI_RERANK_MODEL = os.environ.get("OPENAI_RERANK_MODEL", "gpt-5-mini")
     OPENAI_TIMEOUT = float(os.environ.get("OPENAI_TIMEOUT", 12))
     OPENAI_MAX_RERANK_CANDIDATES = int(os.environ.get("OPENAI_MAX_RERANK_CANDIDATES", 12))
+    APP_BASE_URL = os.environ.get("APP_BASE_URL", PUBLIC_BASE_URL or "http://localhost:5000").rstrip("/")
+    BILLING_GATING_ENABLED = os.environ.get("BILLING_GATING_ENABLED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
+    STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+    STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2025-03-31.basil")
+    STRIPE_PRICE_ID_ABO_1 = os.environ.get("STRIPE_PRICE_ID_ABO_1", "")
+    STRIPE_PRICE_ID_ABO_2 = os.environ.get("STRIPE_PRICE_ID_ABO_2", "")
+    STRIPE_PRICE_ID_ABO_3 = os.environ.get("STRIPE_PRICE_ID_ABO_3", "")
+    STRIPE_PRICE_ID_ABO_4 = os.environ.get("STRIPE_PRICE_ID_ABO_4", "")
 
 
 

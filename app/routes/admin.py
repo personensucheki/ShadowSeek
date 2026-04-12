@@ -1,5 +1,5 @@
 
-from flask import Blueprint, flash, redirect, render_template, session, url_for, current_app
+from flask import Blueprint, redirect, render_template, url_for
 from app.rbac_helpers import login_required, role_required
 
 
@@ -10,8 +10,7 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 @admin_bp.route("/subscription")
 @login_required
 def subscription():
-    plans = current_app.config.get('PLANS', {})
-    return render_template('subscription.html', plans=plans)
+    return redirect(url_for("billing.billing_page"))
 
 
 @admin_bp.route("/")

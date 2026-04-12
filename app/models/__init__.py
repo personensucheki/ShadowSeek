@@ -5,5 +5,14 @@ from .user import User
 
 from .assistant_feedback import AssistantFeedback
 from .einnahme_info import EinnahmeInfo
+from .processed_webhook_event import ProcessedWebhookEvent
 
-__all__ = ["PublicProfile", "SavedQuery", "SearchLog", "User", "AssistantFeedback", "EinnahmeInfo"]
+__all__ = [
+    "PublicProfile",
+    "SavedQuery",
+    "SearchLog",
+    "User",
+    "AssistantFeedback",
+    "EinnahmeInfo",
+    "ProcessedWebhookEvent",
+]

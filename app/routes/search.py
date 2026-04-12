@@ -1,7 +1,7 @@
-from importlib import import_module
-
 from flask import Blueprint, jsonify, render_template, request, send_file, session
 
+from ..models import User
+from ..services.billing import billing_enabled, get_user_entitlements
 from ..services.search_service import (
     PLATFORM_INDEX,
     SearchValidationError,
@@ -30,59 +30,69 @@ def search():
         query=request.args.get("query", "").strip(),
     )
 
-def _billing_helpers():
-    try:
-        runtime_module = import_module("app.py")
-    except ModuleNotFoundError:
-        runtime_module = None
-    except Exception:
-        runtime_module = None
-
-    get_customer = getattr(runtime_module, "get_customer_record_by_user_id", None) if runtime_module else None
-    get_entitlements = getattr(runtime_module, "get_plan_entitlements", None) if runtime_module else None
-
-    if callable(get_customer) and callable(get_entitlements):
-        return get_customer, get_entitlements
-
-    default_platforms = list(PLATFORM_INDEX.keys())
-
-    def _default_get_customer_record_by_user_id(_user_id):
-        return None
-
-    def _default_get_plan_entitlements(_plan_code):
-        return {
-            "enabled_platforms": default_platforms,
-            "deepsearch_allowed": True,
-        }
-
-    return _default_get_customer_record_by_user_id, _default_get_plan_entitlements
 
 @search_bp.route("/api/search", methods=["POST"])
 def api_search():
     try:
         payload = build_search_payload(request.form)
-        get_customer_record_by_user_id, get_plan_entitlements = _billing_helpers()
         user_id = session.get("user_id")
-        entitlements = get_plan_entitlements(None)
-        if user_id:
-            row = get_customer_record_by_user_id(user_id)
-            if row:
-                entitlements = get_plan_entitlements(row["plan_code"])
-        # Feature-Gating: Prüfe alle angefragten Plattformen
-        for platform in payload.platforms:
-            if platform not in entitlements["enabled_platforms"]:
-                print(f"[Feature-Gating] User {user_id} hat keinen Zugriff auf Plattform: {platform}")
-                return jsonify({
-                    "error": f"Dein aktuelles Abo erlaubt keine Suche auf: {platform}.",
-                    "required": entitlements["enabled_platforms"],
-                    "missing": platform,
-                    "feature_gating": True
-                }), 403
+        user = User.query.get(user_id) if user_id else None
+        entitlements = get_user_entitlements(user)
+
+        if billing_enabled():
+            if not user:
+                return (
+                    jsonify(
+                        {
+                            "error": "Bitte melde dich an, um ShadowSeek zu nutzen.",
+                            "feature_gating": True,
+                        }
+                    ),
+                    401,
+                )
+            if not entitlements["search_allowed"]:
+                return (
+                    jsonify(
+                        {
+                            "error": "Dein aktuelles Abo erlaubt keine Username-Suche.",
+                            "feature_gating": True,
+                            "entitlements": entitlements,
+                        }
+                    ),
+                    403,
+                )
+            for platform in payload.platforms:
+                if platform not in entitlements["enabled_platforms"]:
+                    return (
+                        jsonify(
+                            {
+                                "error": f"Dein aktuelles Abo erlaubt keine Suche auf: {platform}.",
+                                "required": entitlements["enabled_platforms"],
+                                "missing": platform,
+                                "feature_gating": True,
+                            }
+                        ),
+                        403,
+                    )
+            if payload.deep_search and not entitlements["deepsearch_allowed"]:
+                return (
+                    jsonify(
+                        {
+                            "error": "DeepSearch ist in deinem aktuellen Abo nicht freigeschaltet.",
+                            "feature_gating": True,
+                            "entitlements": entitlements,
+                        }
+                    ),
+                    403,
+                )
+
         result = execute_search(
             payload,
             request.host_url,
             request.files.get("image"),
         )
+        if billing_enabled():
+            result["entitlements"] = entitlements
         return jsonify(result)
     except SearchValidationError as error:
         return jsonify({"errors": error.errors}), 400

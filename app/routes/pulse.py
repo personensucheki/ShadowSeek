@@ -1,11 +1,19 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
+from app.models import User
 from app.services.pulse_service import search_creator_service
+from app.services.billing import billing_enabled, get_user_entitlements
 
 bp = Blueprint("pulse", __name__)
 
 @bp.route("/api/pulse/search", methods=["POST"])
 def pulse_search():
     try:
+        if billing_enabled():
+            user_id = session.get("user_id")
+            user = User.query.get(user_id) if user_id else None
+            entitlements = get_user_entitlements(user)
+            if not entitlements["pulse_allowed"]:
+                return jsonify({"success": False, "error": "Pulse ist in deinem aktuellen Abo nicht freigeschaltet."}), 403
         data = request.get_json(force=True)
         username = data.get("username", "").strip()
         platform = data.get("platform", "").strip().lower()

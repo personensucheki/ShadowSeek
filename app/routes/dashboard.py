@@ -4,11 +4,12 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.models import EinnahmeInfo
+from app.models import EinnahmeInfo, User
+from app.services.billing import billing_enabled, get_user_entitlements
 from app.services.request_validation import ValidationError, parse_pagination
 from app.services.revenue_events import serialize_revenue_event
 
@@ -19,6 +20,12 @@ logger = logging.getLogger("pulse_dashboard")
 @dashboard_bp.route("/pulse")
 @dashboard_bp.route("/dashboard")
 def dashboard():
+    if billing_enabled():
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else None
+        entitlements = get_user_entitlements(user)
+        if not entitlements["pulse_allowed"]:
+            return redirect(url_for("billing.billing_page"))
     return render_template("pulse.html")
 
 

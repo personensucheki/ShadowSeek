@@ -7,6 +7,7 @@
     <title>{% block title %}ShadowSeek{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -14,28 +15,33 @@
     <main>
         {% block content %}{% endblock %}
     </main>
+
     {% include 'components/chatbot.html' %}
-    <button
-           <a href="/" class="nav-logo">ShadowSeek</a>
-           <a href="/admin/subscription" class="nav-link">Abo & Subscription</a>
-        type="button"
-        aria-label="ShadowSeek Assistant oeffnen"
-        aria-controls="chatbot-widget"
-        aria-expanded="false"
-        style="position:fixed;bottom:30px;right:30px;width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,#ff00ff,#00ff9f);color:#050505;border:none;font-size:18px;font-weight:800;letter-spacing:0.08em;box-shadow:0 0 30px rgba(255,0,255,0.34),0 0 40px rgba(0,255,159,0.18);cursor:pointer;z-index:999;"
-    >
-        AI
-    </button>
     {% include 'auth/login_modal.html' %}
     {% include 'auth/register_modal.html' %}
     {% include 'auth/forgot_password_modal.html' %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+
+    <button
+        type="button"
+        class="assistant-fab"
+        aria-label="ShadowSeek Assistant oeffnen"
+        aria-controls="chatbot-widget"
+        aria-expanded="false"
+    >
+        AI
+    </button>
+
+    <script>
+        window.SHADOWSEEK_USER_ID = {{ session.get('user_id')|tojson }};
+        window.SHADOWSEEK_IS_ADMIN = {{ session.get('is_admin', False)|tojson }};
+        window.SHADOWSEEK_BILLING_ENABLED = {{ billing_enabled|tojson }};
+    </script>
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
     <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
-    {% block extra_js %}{% endblock %}
     <script src="{{ url_for('static', filename='js/agent.js') }}"></script>
     <script src="{{ url_for('static', filename='js/billing_gating.js') }}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

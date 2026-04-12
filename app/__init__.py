@@ -6,6 +6,7 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from .extensions import csrf, db, migrate
+from .services.billing import build_configured_plans
 
 
 def _resolve_default_config():
@@ -34,6 +35,7 @@ def create_app(config_class=None):
         app.config.from_object(config_class)
     else:
         app.config.from_object(_resolve_default_config())
+    app.config["PLANS"] = build_configured_plans(app.config)
 
     upload_directory = app.config.get("UPLOAD_DIRECTORY")
     if not upload_directory:
@@ -71,7 +73,11 @@ def create_app(config_class=None):
         current_user = None
         if user_id:
             current_user = User.query.get(user_id)
-        return {"csrf_token": generate_csrf(), "g": {'current_user': current_user}}
+        return {
+            "csrf_token": generate_csrf(),
+            "g": {"current_user": current_user},
+            "billing_enabled": bool(app.config.get("BILLING_GATING_ENABLED")),
+        }
 
     @app.errorhandler(RequestEntityTooLarge)
     def handle_request_entity_too_large(error):
@@ -98,6 +104,7 @@ def create_app(config_class=None):
     from .routes.chatbot import chatbot_bp
     from .routes.health import health_bp
     from .routes.search import search_bp
+    from .routes.billing import billing_bp
     from .routes.dashboard import dashboard_bp
     from .routes.export import export_bp
     from .routes.profile import profile_bp
@@ -106,6 +113,7 @@ def create_app(config_class=None):
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(search_bp)
+    app.register_blueprint(billing_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(chatbot_bp)

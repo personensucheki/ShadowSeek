@@ -1,44 +1,117 @@
 {% extends "base.html" %}
-{% block title %}Abo & Subscription – ShadowSeek{% endblock %}
+{% block title %}Abo & Subscription - ShadowSeek{% endblock %}
 {% block content %}
-<div class="subscription-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px;max-width:1100px;margin:0 auto 48px auto;padding:32px 0;">
-  {% for code, plan in plans.items() %}
-  <div class="subscription-card" style="background:#111116;border-radius:18px;padding:32px 24px;box-shadow:0 0 32px #ff00ff22,0 0 44px #00ff9f18;border:1.5px solid #ff00ff44;display:flex;flex-direction:column;align-items:center;">
-    <h2 style="color:#ff00ff;text-shadow:0 0 18px #ff00ff88;">{{ plan.name }}</h2>
-    <div style="font-size:2.2rem;font-weight:900;color:#00ff9f;text-shadow:0 0 18px #00ff9f88;margin:12px 0 18px 0;">{{ plan.amount_eur|round(2) }} €</div>
-    <ul style="list-style:none;padding:0 0 18px 0;margin:0 0 18px 0;color:#f4f4f4;">
-      {% for feat in plan.features %}
-      <li style="margin-bottom:6px;">✔ {{ feat }}</li>
-      {% endfor %}
-    </ul>
-    <button class="subscribe-btn" data-plan="{{ code }}" style="background:linear-gradient(90deg,#ff00ff,#00ff9f);color:#050505;font-weight:800;font-size:1.1rem;padding:12px 32px;border:none;border-radius:999px;box-shadow:0 0 18px #ff00ff44,0 0 24px #00ff9f22;cursor:pointer;">Abo wählen</button>
-  </div>
-  {% endfor %}
-</div>
-<div id="subscription-message" style="text-align:center;font-size:1.1rem;color:#ff00ff;margin-top:18px;"></div>
+<section class="recon-dashboard">
+    <div class="recon-panel recon-panel--main recon-panel--head">
+        <div class="recon-head">
+            <div class="recon-branding">
+                <div class="recon-logo">ShadowSeek Billing</div>
+                <div class="recon-sub">Feature-Gating & Subscription Control</div>
+                <div class="recon-desc">
+                    Aktiviere Suchzugriffe, DeepSearch und Pulse gezielt ueber dein Abo.
+                </div>
+            </div>
+        </div>
+        <div class="recon-card recon-card--form">
+            <div class="results-title">Aktueller Status</div>
+            <div id="subscription-status-box" class="subscription-status-box">
+                {% if current_subscription.logged_in %}
+                    <div class="subscription-status-line">Plan: {{ current_subscription.plan_code or "kein aktives Abo" }}</div>
+                    <div class="subscription-status-line">Status: {{ current_subscription.subscription_status or "inaktiv" }}</div>
+                {% else %}
+                    <div class="subscription-status-line">Bitte zuerst anmelden.</div>
+                {% endif %}
+            </div>
+            <div id="subscription-message" class="subscription-message"></div>
+        </div>
+    </div>
+
+    <div class="subscription-grid">
+        {% for code, plan in plans.items() %}
+            <article class="subscription-card {% if current_subscription.plan_code == code %}subscription-card--active{% endif %}">
+                <div class="subscription-card__name">{{ plan.name }}</div>
+                <div class="subscription-card__price">{{ "%.2f"|format(plan.amount_eur) }} EUR / Monat</div>
+                <div class="subscription-card__features">
+                    <span class="chip chip--green">Plattformen: {{ plan.enabled_platforms|length }}</span>
+                    {% if 'pulse' in plan.ui_modules %}
+                        <span class="chip chip--cyan">Pulse</span>
+                    {% endif %}
+                    {% if plan.deepsearch_allowed %}
+                        <span class="chip chip--pink">DeepSearch</span>
+                    {% endif %}
+                </div>
+                <div class="subscription-card__platforms">
+                    {{ plan.enabled_platforms|join(", ") }}
+                </div>
+                <button class="btn-scan subscribe-btn" type="button" data-plan="{{ code }}" {% if not stripe_ready %}disabled{% endif %}>
+                    {% if current_subscription.plan_code == code %}Aktiver Plan{% else %}Abo waehlen{% endif %}
+                </button>
+            </article>
+        {% endfor %}
+    </div>
+
+    {% if current_subscription.logged_in %}
+        <div class="subscription-actions">
+            <button id="portal-btn" class="btn-reset" type="button" {% if not stripe_ready %}disabled{% endif %}>Billing-Portal</button>
+        </div>
+    {% endif %}
+</section>
 {% endblock %}
 {% block extra_js %}
 <script>
-document.querySelectorAll('.subscribe-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    const plan = this.getAttribute('data-plan');
-    fetch('/api/billing/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan_code: plan })
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.checkout_url) {
-        window.location = data.checkout_url;
-      } else {
-        document.getElementById('subscription-message').textContent = data.error || 'Fehler beim Erstellen der Checkout-Session.';
-      }
-    })
-    .catch(() => {
-      document.getElementById('subscription-message').textContent = 'Netzwerkfehler.';
+document.addEventListener("DOMContentLoaded", () => {
+    const messageBox = document.getElementById("subscription-message");
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+    function setMessage(text, error = false) {
+        if (!messageBox) return;
+        messageBox.textContent = text;
+        messageBox.dataset.error = error ? "true" : "false";
+    }
+
+    document.querySelectorAll(".subscribe-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const planCode = button.dataset.plan;
+            try {
+                const response = await fetch("/api/billing/create-checkout-session", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify({ plan_code: planCode }),
+                });
+                const payload = await response.json();
+                if (!response.ok || !payload.checkout_url) {
+                    throw new Error(payload.error || "Checkout konnte nicht gestartet werden.");
+                }
+                window.location.href = payload.checkout_url;
+            } catch (error) {
+                setMessage(error.message, true);
+            }
+        });
     });
-  });
+
+    const portalButton = document.getElementById("portal-btn");
+    if (portalButton) {
+        portalButton.addEventListener("click", async () => {
+            try {
+                const response = await fetch("/api/billing/create-portal-session", {
+                    method: "POST",
+                    headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},
+                    credentials: "same-origin",
+                });
+                const payload = await response.json();
+                if (!response.ok || !payload.portal_url) {
+                    throw new Error(payload.error || "Portal konnte nicht geoeffnet werden.");
+                }
+                window.location.href = payload.portal_url;
+            } catch (error) {
+                setMessage(error.message, true);
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

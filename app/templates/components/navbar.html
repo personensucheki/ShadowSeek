@@ -7,8 +7,8 @@
     </button>
     <div class="navbar-center" id="navbar-menu">
         <a href="/">Home</a>
-        <a href="/search">Suche</a>
-        <a href="/pulse">Pulse</a>
+        <a href="/search" data-feature="search">Suche</a>
+        <a href="/pulse" data-feature="pulse">Pulse</a>
         {% if session.get('is_admin') %}
             <a href="/admin">Admin</a>
         {% endif %}
@@ -18,6 +18,7 @@
             <button id="login-btn">Anmelden</button>
             <button id="register-btn">Registrieren</button>
         {% else %}
+            <a href="/billing">Abo</a>
             <a href="/profile">Profil</a>
             <a href="/auth/logout">Logout</a>
         {% endif %}

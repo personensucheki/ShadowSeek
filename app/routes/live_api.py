@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.models import EinnahmeInfo
+from app.models import EinnahmeInfo, User
+from app.services.billing import billing_enabled, get_user_entitlements
 from app.services.pulse_profile_scan import build_live_rows, run_creator_profile_scan
 from app.services.request_validation import ValidationError, parse_pagination
 from app.services.revenue_events import serialize_revenue_event
@@ -38,6 +39,12 @@ def live_platform(platform):
 
 @live_api_bp.route("/api/pulse/live/<platform>")
 def pulse_live_platform(platform):
+    if billing_enabled():
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else None
+        entitlements = get_user_entitlements(user)
+        if not entitlements["pulse_allowed"]:
+            return jsonify({"success": False, "error": "Pulse ist in deinem aktuellen Abo nicht freigeschaltet."}), 403
     creator_query = (request.args.get("creator") or "").strip()
     if creator_query:
         try:
