@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Live ansehen{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/live.css') }}">
+<style>
+.live-viewer {
+    max-width: 900px;
+    margin: 2.5rem auto 3rem;
+    padding: 0 1rem;
+    color: #e8f6ff;
+}
+.live-viewer-main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+    align-items: flex-start;
+}
+.live-player {
+    flex: 2 1 480px;
+    background: rgba(6,12,30,0.85);
+    border-radius: 18px;
+    box-shadow: 0 0 24px #00ffd44a;
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    position: relative;
+}
+.live-player video {
+    width: 100%;
+    border-radius: 14px;
+    background: #07070a;
+    min-height: 320px;
+}
+.live-like-btn {
+    position: absolute;
+    right: 2.2rem;
+    top: 2.2rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 2;
+}
+.live-like-btn .heart {
+    width: 44px;
+    height: 44px;
+    fill: #ff4d88;
+    filter: drop-shadow(0 0 8px #ff4d88cc);
+    transition: transform 0.18s;
+}
+.live-like-btn.liked .heart {
+    animation: popHeart 0.4s;
+    transform: scale(1.25);
+}
+@keyframes popHeart {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.35); }
+    100% { transform: scale(1.1); }
+}
+.live-meta {
+    margin: 1.2rem 0 0.7rem 0;
+    font-size: 1.1rem;
+    color: #7dfbd0;
+}
+.live-viewer-side {
+    flex: 1 1 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.live-chat {
+    background: rgba(10,18,38,0.92);
+    border-radius: 14px;
+    padding: 1rem;
+    min-height: 220px;
+    max-height: 340px;
+    overflow-y: auto;
+    font-size: 1.02rem;
+}
+.live-chat-input {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+}
+.live-chat-input input {
+    flex: 1;
+    border-radius: 10px;
+    border: 1px solid #3bf7bf44;
+    background: #0a1a2a;
+    color: #fff;
+    padding: 0.6rem 0.9rem;
+}
+.live-chat-input button {
+    border-radius: 10px;
+    border: 1px solid #3bf7bf99;
+    background: #1be6b6;
+    color: #0a1a2a;
+    font-weight: 600;
+    padding: 0.6rem 1.1rem;
+    cursor: pointer;
+}
+.live-supporters {
+    background: rgba(10,18,38,0.92);
+    border-radius: 14px;
+    padding: 1rem;
+}
+.live-supporters h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    color: #32f7b7;
+}
+.live-supporters-list {
+    margin: 0.5rem 0 0 0;
+    padding: 0;
+    list-style: none;
+}
+.live-supporters-list li {
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.live-supporter-rank {
+    font-weight: bold;
+    color: #ff4d88;
+    margin-right: 0.5rem;
+}
+.live-viewer-meta-row {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 0.7rem;
+}
+.live-viewer-meta-row .viewer-count {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.live-viewer-meta-row .viewer-count svg {
+    width: 22px;
+    height: 22px;
+    fill: #3bf7bf;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="live-viewer">
+    <div class="live-viewer-main">
+        <div class="live-player">
+            <video id="live-player-video" controls autoplay poster="/static/img/cover_default.jpg"></video>
+            <button class="live-like-btn" id="like-btn" title="Like">
+                <svg class="heart" viewBox="0 0 48 48"><path d="M24 43s-1.7-1.5-4.2-3.5C10.7 32.1 4 26.2 4 18.5 4 12.7 8.7 8 14.5 8c3.1 0 6.1 1.4 8 3.7C24.4 9.4 27.4 8 30.5 8 36.3 8 41 12.7 41 18.5c0 7.7-6.7 13.6-15.8 21C25.7 41.5 24 43 24 43z"/></svg>
+            </button>
+            <div class="live-meta">
+                <span id="live-title">{{ stream.title }}</span> &bull; <span id="live-category">{{ stream.category }}</span>
+            </div>
+            <div class="live-viewer-meta-row">
+                <span class="viewer-count"><svg viewBox="0 0 24 24"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg> <span id="viewer-count">{{ stream.viewer_count }}</span> Zuschauer</span>
+            </div>
+        </div>
+        <div class="live-viewer-side">
+            <div class="live-chat" id="live-chat">
+                <!-- Chat-Nachrichten -->
+            </div>
+            <form class="live-chat-input" id="live-chat-form" autocomplete="off">
+                <input type="text" id="chat-message" placeholder="Nachricht senden..." maxlength="200" required>
+                <button type="submit">Senden</button>
+            </form>
+            <div class="live-supporters">
+                <h3>Top Supporter</h3>
+                <ul class="live-supporters-list" id="supporters-list">
+                    {% for supporter in stream.supporters %}
+                    <li><span class="live-supporter-rank">{{ supporter.rank }}.</span> <span>{{ supporter.name }}</span> <span>🎁 {{ supporter.gifts }}</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Like-Animation
+const likeBtn = document.getElementById('like-btn');
+if (likeBtn) {
+    likeBtn.addEventListener('click', function() {
+        likeBtn.classList.add('liked');
+        setTimeout(() => likeBtn.classList.remove('liked'), 400);
+        // Hier später: Like an Backend senden
+    });
+}
+// Chat-Handler
+const chatForm = document.getElementById('live-chat-form');
+const chatBox = document.getElementById('live-chat');
+if (chatForm && chatBox) {
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const msg = chatForm.querySelector('#chat-message').value.trim();
+        if (!msg) return;
+        const msgDiv = document.createElement('div');
+        msgDiv.textContent = msg;
+        chatBox.appendChild(msgDiv);
+        chatForm.reset();
+        chatBox.scrollTop = chatBox.scrollHeight;
+        // Hier später: Nachricht an Backend senden
+    });
+}
+</script>
+{% endblock %}
