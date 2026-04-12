@@ -78,8 +78,16 @@ def create_app(config_class=None):
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
+
     with app.app_context():
-        ensure_owner_account(app)
+       # Modelle importieren, damit SQLAlchemy alle Tabellen kennt
+       from app.models.user import User
+
+       # Quick-Fix: Tabellen erstellen, falls sie noch fehlen
+       db.create_all()
+
+       # Erst DANACH Bootstrap ausführen
+       ensure_owner_account(app)
 
     @app.before_request
     def track_member_presence():
