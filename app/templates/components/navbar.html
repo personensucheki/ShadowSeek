@@ -16,6 +16,7 @@
         {% if session.get('user_id') %}
             <a href="/members" data-feature="members">Mitglieder</a>
         {% endif %}
+        <a href="/live" data-feature="live">Live</a>
     </div>
     <div class="navbar-right">
         {% if not session.get('user_id') %}
