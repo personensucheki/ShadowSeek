@@ -1,6 +1,7 @@
 Flask
 stripe
 Flask-SQLAlchemy
+psycopg[binary]
 Werkzeug
 python-dotenv
 openai

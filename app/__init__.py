@@ -20,6 +20,9 @@ def _configure_database_uri(app):
     if uri and uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
 
+    if uri and uri.startswith("postgresql://") and not uri.startswith("postgresql+"):
+        uri = uri.replace("postgresql://", "postgresql+psycopg://", 1)
+
     if uri:
         app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
