@@ -1,14 +1,14 @@
-    // Kategorie-/Game-Suchfeld-Logik
+    // Kategorie-/Game-Dropdown-Logik
     const categorySelect = document.getElementById("live-category");
-    const gameSearchRow = document.getElementById("game-search-row");
+    const gameRow = document.getElementById("game-row");
     const topicRow = document.getElementById("topic-row");
-    if (categorySelect && gameSearchRow && topicRow) {
+    if (categorySelect && gameRow && topicRow) {
         function updateGameTopicVisibility() {
             if (categorySelect.value === "Games") {
-                gameSearchRow.style.display = "block";
+                gameRow.style.display = "block";
                 topicRow.style.display = "none";
             } else {
-                gameSearchRow.style.display = "none";
+                gameRow.style.display = "none";
                 topicRow.style.display = "block";
             }
         }
