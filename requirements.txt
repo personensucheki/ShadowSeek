@@ -1,3 +1,4 @@
+
 Flask
 stripe
 Flask-SQLAlchemy
@@ -12,3 +13,4 @@ Flask-WTF
 Pillow
 ImageHash
 cryptography
+redis

@@ -1,3 +1,6 @@
+    # SocketIO/Redis
+    REDIS_URL = os.environ.get("REDIS_URL")
+    SOCKETIO_ASYNC_MODE = os.environ.get("SOCKETIO_ASYNC_MODE", "eventlet")
 import os
 
 
