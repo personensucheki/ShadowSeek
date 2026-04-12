@@ -19,15 +19,20 @@ from app.services.revenue_events import serialize_revenue_event
 dashboard_bp = Blueprint("dashboard", __name__)
 logger = logging.getLogger("pulse_dashboard")
 
+
 @dashboard_bp.route("/pulse")
 @dashboard_bp.route("/dashboard")
-@feature_required(FEATURE_PULSE)
 def dashboard():
-    # Fallback für lokale Setups ohne Billing-Gating: feature_required passt nur,
-    # wenn Permissions aus Plan kommen. Wenn Billing nicht aktiv ist, ist alles offen.
+    from app.services.permissions import resolve_effective_plan_code, PLAN_ABO_2, PLAN_ABO_3, PLAN_ABO_4
+    from flask import g
+    user = getattr(g, "current_user", None)
+    plan_code = resolve_effective_plan_code(user)
+    allowed_plans = {PLAN_ABO_2, PLAN_ABO_3, PLAN_ABO_4}
     if not billing_enabled():
         return render_template("pulse.html")
-    return render_template("pulse.html")
+    if plan_code not in allowed_plans:
+        return render_template("pulse.html", pulse_locked=True)
+    return render_template("pulse.html", pulse_locked=False)
 
 
 def _empty_summary_payload(labels, collector_status="waiting"):

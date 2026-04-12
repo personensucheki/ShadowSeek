@@ -15,7 +15,7 @@
         >
             {% if session.get('user_id') %}Meine Suche{% else %}Suche{% endif %}
         </a>
-        <a href="{{ url_for('dashboard.dashboard') }}" data-feature="pulse">Pulse</a>
+        <a href="{{ url_for('dashboard.dashboard') }}">Pulse</a>
         <a href="{{ url_for('community.members') }}">Mitglieder</a>
         <a href="{{ url_for('live.live_page') }}">Live</a>
     </div>
