@@ -10,6 +10,20 @@ from .services.billing import build_configured_plans
 from .services.owner_bootstrap import ensure_owner_account
 
 
+def _configure_database_uri(app):
+    # Runtime-Hinweis:
+    # DATABASE_URL kommt in Produktion von Render.
+    # Lokal in PowerShell nur testen, wenn $env:DATABASE_URL gesetzt wurde.
+    uri = os.environ.get("DATABASE_URL")
+    print("DATABASE_URL:", os.environ.get("DATABASE_URL"))
+
+    if uri and uri.startswith("postgres://"):
+        uri = uri.replace("postgres://", "postgresql://", 1)
+
+    if uri:
+        app.config["SQLALCHEMY_DATABASE_URI"] = uri
+
+
 def _resolve_default_config():
     from .config import DevConfig, ProdConfig
 
@@ -36,6 +50,8 @@ def create_app(config_class=None):
         app.config.from_object(config_class)
     else:
         app.config.from_object(_resolve_default_config())
+
+    _configure_database_uri(app)
     app.config["PLANS"] = build_configured_plans(app.config)
 
     upload_directory = app.config.get("UPLOAD_DIRECTORY")
