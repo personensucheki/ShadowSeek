@@ -7,7 +7,7 @@ import secrets
 from urllib.parse import urlencode
 
 import requests
-from flask import Blueprint, current_app, jsonify, redirect, request, session, url_for
+from flask import Blueprint, current_app, flash, jsonify, redirect, request, session, url_for
 
 from ..services.oauth_token_store import require_user_session_user_id, upsert_token
 
@@ -27,6 +27,19 @@ def _callback_url(provider: str) -> str:
     return url_for("oauth_connect.oauth_callback", provider=provider, _external=True)
 
 
+def _oauth_error(message: str, *, status_code: int = 400):
+    """
+    Einheitliches Fehlerverhalten:
+    - Browser-Navigation: Flash + Redirect zurück zum Dashboard (statt JSON-Fehlerseite)
+    - API/AJAX: JSON Fehler
+    """
+
+    if _wants_json():
+        return jsonify(success=False, error=message), status_code
+    flash(message, "danger")
+    return redirect(url_for("dashboard.dashboard"))
+
+
 @oauth_bp.route("/connect/<provider>", methods=["GET"])
 def connect(provider: str):
     provider = (provider or "").strip().lower()
@@ -35,7 +48,7 @@ def connect(provider: str):
     if provider == "twitch":
         client_id = current_app.config.get("TWITCH_CLIENT_ID")
         if not client_id:
-            return jsonify(success=False, error="TWITCH_CLIENT_ID fehlt."), 400
+            return _oauth_error("Twitch OAuth ist nicht konfiguriert (TWITCH_CLIENT_ID fehlt).")
 
         state = secrets.token_urlsafe(24)
         session["oauth_state:twitch"] = state
@@ -54,7 +67,7 @@ def connect(provider: str):
     if provider in {"google", "youtube"}:
         client_id = current_app.config.get("GOOGLE_OAUTH_CLIENT_ID")
         if not client_id:
-            return jsonify(success=False, error="GOOGLE_OAUTH_CLIENT_ID fehlt."), 400
+            return _oauth_error("Google OAuth ist nicht konfiguriert (GOOGLE_OAUTH_CLIENT_ID fehlt).")
 
         state = secrets.token_urlsafe(24)
         session["oauth_state:google"] = state
@@ -83,7 +96,7 @@ def connect(provider: str):
         }
         return redirect("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params))
 
-    return jsonify(success=False, error=f"Provider '{provider}' wird noch nicht unterstützt."), 400
+    return _oauth_error(f"Provider '{provider}' wird noch nicht unterstützt.")
 
 
 @oauth_bp.route("/callback/<provider>", methods=["GET"])
@@ -94,21 +107,21 @@ def oauth_callback(provider: str):
     error = request.args.get("error", "")
 
     if error:
-        return jsonify(success=False, error=error), 400
+        return _oauth_error(error)
     if not code:
-        return jsonify(success=False, error="Kein OAuth code erhalten."), 400
+        return _oauth_error("Kein OAuth code erhalten.")
 
     if provider == "twitch":
         if state != session.get("oauth_state:twitch"):
-            return jsonify(success=False, error="OAuth state mismatch."), 400
+            return _oauth_error("OAuth state mismatch.")
         user_id = session.get("oauth_user:twitch")
         if not user_id:
-            return jsonify(success=False, error="Session abgelaufen."), 400
+            return _oauth_error("Session abgelaufen. Bitte erneut verbinden.")
 
         client_id = current_app.config.get("TWITCH_CLIENT_ID")
         client_secret = current_app.config.get("TWITCH_CLIENT_SECRET")
         if not client_id or not client_secret:
-            return jsonify(success=False, error="Twitch OAuth nicht konfiguriert."), 400
+            return _oauth_error("Twitch OAuth nicht konfiguriert (Client ID/Secret fehlen).")
 
         token_res = requests.post(
             "https://id.twitch.tv/oauth2/token",
@@ -122,7 +135,7 @@ def oauth_callback(provider: str):
             timeout=10,
         )
         if token_res.status_code >= 400:
-            return jsonify(success=False, error="Twitch Token Exchange fehlgeschlagen."), 400
+            return _oauth_error("Twitch Token Exchange fehlgeschlagen.")
         payload = token_res.json()
         upsert_token(
             user_id=int(user_id),
@@ -137,20 +150,21 @@ def oauth_callback(provider: str):
         # cleanup
         session.pop("oauth_state:twitch", None)
         session.pop("oauth_user:twitch", None)
+        flash("Twitch erfolgreich verbunden.", "success")
         return redirect(url_for("dashboard.dashboard"))
 
     if provider in {"google", "youtube"}:
         if state != session.get("oauth_state:google"):
-            return jsonify(success=False, error="OAuth state mismatch."), 400
+            return _oauth_error("OAuth state mismatch.")
         user_id = session.get("oauth_user:google")
         verifier = session.get("oauth_pkce:google")
         if not user_id or not verifier:
-            return jsonify(success=False, error="Session abgelaufen."), 400
+            return _oauth_error("Session abgelaufen. Bitte erneut verbinden.")
 
         client_id = current_app.config.get("GOOGLE_OAUTH_CLIENT_ID")
         client_secret = current_app.config.get("GOOGLE_OAUTH_CLIENT_SECRET")
         if not client_id or not client_secret:
-            return jsonify(success=False, error="Google OAuth nicht konfiguriert."), 400
+            return _oauth_error("Google OAuth nicht konfiguriert (Client ID/Secret fehlen).")
 
         token_res = requests.post(
             "https://oauth2.googleapis.com/token",
@@ -165,7 +179,7 @@ def oauth_callback(provider: str):
             timeout=10,
         )
         if token_res.status_code >= 400:
-            return jsonify(success=False, error="Google Token Exchange fehlgeschlagen."), 400
+            return _oauth_error("Google Token Exchange fehlgeschlagen.")
         payload = token_res.json()
         upsert_token(
             user_id=int(user_id),
@@ -180,9 +194,10 @@ def oauth_callback(provider: str):
         session.pop("oauth_state:google", None)
         session.pop("oauth_user:google", None)
         session.pop("oauth_pkce:google", None)
+        flash("YouTube/Google erfolgreich verbunden.", "success")
         return redirect(url_for("dashboard.dashboard"))
 
-    return jsonify(success=False, error=f"Provider '{provider}' callback nicht unterstützt."), 400
+    return _oauth_error(f"Provider '{provider}' callback nicht unterstützt.")
 
 
 @oauth_bp.route("/connections", methods=["GET"])
