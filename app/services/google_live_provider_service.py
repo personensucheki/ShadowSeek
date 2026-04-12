@@ -26,7 +26,6 @@ class ProviderStatus:
 
 
 class GoogleLiveProviderService:
-
     """
     Orchestrates Google Live Stream API (Input, Channel, Status, Stop) using server-side credentials.
     """
@@ -40,18 +39,31 @@ class GoogleLiveProviderService:
         self.credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
     def _validate_config(self):
-        if not all([self.project_id, self.location, self.output_bucket, self.credentials_path]):
-            raise ProviderError("provider_not_configured", "Google provider config missing.")
-        require_google_credentials()
+        missing = []
+        if not self.project_id:
+            missing.append("GOOGLE_CLOUD_PROJECT_ID")
+        if not self.location:
+            missing.append("GOOGLE_CLOUD_LOCATION")
+        if not self.output_bucket:
+            missing.append("GOOGLE_CLOUD_OUTPUT_BUCKET")
+        if not self.credentials_path:
+            missing.append("GOOGLE_APPLICATION_CREDENTIALS")
+        if missing:
+            return False, missing
+        try:
+            require_google_credentials()
+        except ProviderError as exc:
+            return False, missing + [exc.code]
+        return True, None
 
     def _client(self):
         try:
             from google.cloud.video import live_stream_v1
             return live_stream_v1.LivestreamServiceClient.from_service_account_file(self.credentials_path)
         except ImportError:
-            raise ProviderError("provider_not_ready", "google-cloud-video-livestream not installed.")
-        except Exception as e:
-            raise ProviderError("provider_auth_failed", f"Google API client init failed: {e}")
+            return None
+        except Exception:
+            return None
 
     def create_input_endpoint(self, name: str) -> dict[str, Any]:
         self._validate_config()
@@ -119,19 +131,32 @@ class GoogleLiveProviderService:
 
     def status(self) -> dict[str, Any]:
         cfg_status = google_credentials_status()
-        try:
-            require_google_credentials()
-        except ProviderError as exc:
+        # Check for missing ENV/config
+        valid, missing = self._validate_config()
+        if not valid:
             return {
                 "provider": self.provider_name,
-                "ready": False,
-                "error": exc.as_dict(),
+                "provider_status": "disabled",
+                "enabled": False,
+                "reason": "missing_env",
+                "missing": missing,
+                "config": cfg_status,
+            }
+        # Check for missing dependency
+        client = self._client()
+        if client is None:
+            return {
+                "provider": self.provider_name,
+                "provider_status": "disabled",
+                "enabled": False,
+                "reason": "missing_dependency",
                 "config": cfg_status,
             }
         return {
             "provider": self.provider_name,
-            "ready": True,
-            "error": None,
+            "provider_status": "ok",
+            "enabled": True,
+            "reason": None,
             "config": cfg_status,
         }
 

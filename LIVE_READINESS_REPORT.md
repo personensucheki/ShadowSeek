@@ -50,3 +50,32 @@ Bewertung: **Ready with warnings**
 4) `D:\ShadowSeek\models.py` entfernen/archivieren.
 5) Production CORS streng konfigurieren (`API_CORS_ALLOWED_ORIGINS`).
 
+## April 2026 – Finaler Produktionscheck
+
+### Feed-API, Demo-Branch, Health-Check
+- Erfolgreich stabilisiert, Schema-/Migrationsdrift bei media_posts behoben.
+- Endpunkte liefern korrekte, konsistente Daten.
+
+### Provider-Status-API
+- /api/providers/status: Liefert aktuell 500 INTERNAL SERVER ERROR (kritischer Blocker, muss vor Launch behoben werden).
+
+### Pulse-/Revenue-API
+- /api/pulse, /api/revenue: 404 NOT FOUND (nicht implementiert oder Routing-Fehler, kein Blocker für Feed-Launch, aber für Pulse/Revenue-Features).
+
+### Upload-API
+- /api/upload: 405 METHOD NOT ALLOWED (POST-Only, GET nicht erlaubt, kein Fehler im Sinne der API-Spezifikation).
+
+### Health-Check
+- /health: {"status": "ok"}
+
+### Deploy/Start
+- flask db current: Migration auf head (20260412_9998)
+- gunicorn: Start auf Windows nicht möglich (fcntl fehlt, Linux-only, kein echter Blocker für Codequalität)
+- DATABASE_URL: korrekt gesetzt
+- UPLOAD_DIRECTORY: nicht gesetzt/leer (prüfen, ob Default greift)
+
+### Zusammenfassung
+- Feed-API: ready
+- API: nicht vollständig ready (Provider-Status-API kritisch)
+- Launch: nicht ready, solange Provider-Status-API 500 liefert
+

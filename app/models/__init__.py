@@ -10,6 +10,9 @@ from .einnahme_info import EinnahmeInfo
 from .processed_webhook_event import ProcessedWebhookEvent
 from .oauth_token import OAuthToken
 from .live_stream import LiveStream, LiveLike, LiveChatMessage, LiveGift
+
+from .swipe_action import SwipeAction
+from .match import Match
 from .media_post import MediaPost
 
 __all__ = [
@@ -27,4 +30,6 @@ __all__ = [
     "LiveChatMessage",
     "LiveGift",
     "MediaPost",
+    "SwipeAction",
+    "Match",
 ]

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}DATE/MATCH{% endblock %}
+{% block content %}
+<div class="date-match-shell">
+  <h1>DATE/MATCH</h1>
+  <div id="date-match-cards"></div>
+  <div id="date-match-empty" style="display:none;">Keine weiteren Nutzer gefunden.</div>
+  <div id="date-match-error" style="display:none;"></div>
+  <h2>Matches</h2>
+  <div id="date-match-matches"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/date_match.js') }}"></script>
+{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/date_match.css') }}">
+{% endblock %}

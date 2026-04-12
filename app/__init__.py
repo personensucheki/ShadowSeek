@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -64,8 +65,22 @@ def _resolve_default_config():
 
 
 def create_app(config_class=None):
+
+    # .env laden, bevor Flask/Provider initialisiert werden
+    load_dotenv()
+    import logging
+    from app.services.response_utils import api_error
+
     app = Flask(__name__, instance_relative_config=True)
 
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        logging.exception("Global unhandled exception: %s", e)
+        return api_error(
+            message="Internal server error",
+            status=500,
+            errors={"type": "internal_error"}
+        )
 
     if config_class:
         app.config.from_object(config_class)
@@ -85,8 +100,6 @@ def create_app(config_class=None):
 
     if not app.config.get("SECRET_KEY") and not app.config.get("TESTING"):
         raise RuntimeError("SECRET_KEY must be configured for ShadowSeek.")
-
-
 
     db.init_app(app)
     migrate.init_app(app, db)

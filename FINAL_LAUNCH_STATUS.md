@@ -43,3 +43,35 @@ Blocker/High-Risks:
 - Screenshot Deploy (Playwright) oder ehrliches Deaktivieren (P1/P2)
 - Legacy Cleanup (P2)
 
+---
+
+## April 2026 – Produktionsabnahme
+
+### Getestete Bereiche
+- Feed-API, Demo-Branch, UserPosts: erfolgreich, konsistente Daten, Mapping passt zum Frontend
+- Provider-Status-API: 500 INTERNAL SERVER ERROR (kritischer Blocker)
+- Pulse-/Revenue-API: 404 NOT FOUND (noch nicht implementiert)
+- Upload-API: 405 METHOD NOT ALLOWED (nur POST erlaubt, korrekt)
+- Health-Check: ok
+- Migrationen: auf head
+- gunicorn: Windows-Start nicht möglich (fcntl fehlt, Linux-only)
+- ENV: DATABASE_URL korrekt, UPLOAD_DIRECTORY nicht gesetzt/leer
+
+### Erfolgreiche Endpunkte
+- /api/feed
+- /api/feed?limit=1
+- /api/feed?demo=1
+- /api/u/ADMIN/posts
+- /health
+
+### Restprobleme
+- Provider-Status-API liefert 500 (kritisch)
+- Pulse-/Revenue-API nicht implementiert
+- UPLOAD_DIRECTORY nicht gesetzt/leer
+- gunicorn auf Windows nicht lauffähig (nur Linux)
+
+### Fazit
+- feed-ready: ja
+- api-ready: nein (Provider-Status-API blockiert)
+- launch-ready: nein (Blocker vorhanden)
+

@@ -1,0 +1,62 @@
+body {
+  background: #111;
+  color: #FF00FF;
+}
+.date-match-shell {
+  max-width: 500px;
+  margin: 2em auto;
+  background: #181818;
+  border-radius: 12px;
+  box-shadow: 0 0 24px #00FF9F44;
+  padding: 2em;
+}
+.date-match-card, .date-match-match {
+  background: #222;
+  border: 2px solid #FF00FF;
+  border-radius: 10px;
+  margin: 1em 0;
+  padding: 1em;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 0 8px #00FF9F88;
+}
+.date-match-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin-right: 1em;
+  border: 2px solid #00FF9F;
+}
+.date-match-info {
+  flex: 1;
+}
+.date-match-actions button {
+  background: #111;
+  color: #00FF9F;
+  border: 2px solid #FF00FF;
+  border-radius: 6px;
+  margin: 0 0.2em;
+  padding: 0.5em 1em;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.date-match-actions button.left {
+  color: #FF00FF;
+}
+.date-match-actions button.right {
+  color: #00FF9F;
+}
+.date-match-actions button.super {
+  color: #fff;
+  background: linear-gradient(90deg, #FF00FF, #00FF9F);
+}
+.date-match-actions button:hover {
+  background: #222;
+  color: #fff;
+}
+#date-match-empty, #date-match-error {
+  color: #FF00FF;
+  margin: 1em 0;
+  text-align: center;
+}

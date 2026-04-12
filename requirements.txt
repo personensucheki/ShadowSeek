@@ -1,4 +1,3 @@
-
 Flask
 Flask-SocketIO
 stripe
@@ -15,3 +14,6 @@ Pillow
 ImageHash
 cryptography
 redis
+google-cloud-video-livestream
+google-auth
+google-cloud-core

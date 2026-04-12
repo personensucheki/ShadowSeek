@@ -241,7 +241,7 @@ function renderProfiles(profiles, container) {
     }
 
     container.innerHTML = profiles
-        .map((result) => {
+        .map((result, idx) => {
             const tab = normalizeTabValue(result);
             const confidenceChip = result.confidence
                 ? `<span class="chip chip--${result.confidence === "high" ? "green" : result.confidence === "medium" ? "cyan" : "pink"}">Confidence: ${escapeHtml(result.confidence)}</span>`
@@ -252,8 +252,14 @@ function renderProfiles(profiles, container) {
             const reason = result.match_reason || result.match_reasons?.join(", ") || "";
             const title = result.title || result.bio || result.snippet || "";
 
+            // Nur einmal das Badge oben rechts im Ergebnisbereich
+            const aiBadge = result.confidence === "high"
+                ? `<div class="ai-badge">AI Ranked</div>`
+                : "";
+
             return `
                 <div class="result-card" data-tab="${escapeHtml(tab)}" data-platform="${escapeHtml(result.platform_slug || "")}">
+                    ${aiBadge}
                     <div class="result-info">
                         <div class="result-platform">${escapeHtml(result.platform || "Unbekannt")}</div>
                         <div class="result-title">${escapeHtml(result.category || "profile")}</div>
@@ -403,38 +409,7 @@ function resetAnalysisWidgets() {
     renderDeepSearchResponse(null);
 }
 
-function normalizeHandleInput(value) {
-    return String(value ?? "")
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, "")
-        .replace(/[^a-z0-9._-]/g, "")
-        .replace(/^[._-]+|[._-]+$/g, "");
-}
-
-function generateClientVariations(username, deepSearchEnabled) {
-    const base = normalizeHandleInput(username);
-    if (!base || base.length < 2) {
-        return [];
-    }
-
-    const compact = base.replace(/[._-]+/g, "");
-    const variants = [
-        base,
-        ...(compact && compact !== base ? [compact] : []),
-        `${base}official`,
-        `${base}tv`,
-        `${base}live`,
-    ];
-
-    if (deepSearchEnabled) {
-        variants.push(`${base}_official`, `${base}.official`, `${base}app`);
-    }
-
-    return Array.from(new Set(variants)).filter((item) => item.length >= 2 && item.length <= 32).slice(0, 10);
-}
-
-function buildDeepSearchPayload(searchPayload, queryContext = {}) {
+function buildDeepSearchPayload(searchPayload) {
     const profiles = Array.isArray(searchPayload?.profiles) ? searchPayload.profiles : [];
     const profileUrls = profiles
         .map((profile) => profile?.url || profile?.profile_url)
@@ -444,41 +419,27 @@ function buildDeepSearchPayload(searchPayload, queryContext = {}) {
         ? Math.max(...searchPayload.image_similarity.matches.map((item) => Number(item?.score) || 0), 0)
         : 0;
 
-    const rawUsername = String(queryContext?.username || "").trim();
-    const baseUsername = normalizeHandleInput(rawUsername);
-    const realName = String(queryContext?.real_name || "").trim();
-    const clanName = String(queryContext?.clan_name || "").trim();
-    const ageValue = String(queryContext?.age || "").replace(/\D/g, "");
-    const postalCode = String(queryContext?.postal_code || "").trim();
-
-    const candidates = generateClientVariations(baseUsername, true);
-
     return {
-        base_username: baseUsername,
-        candidates,
+        base_username: "",
+        candidates: [],
         profile_urls: profileUrls,
         reference_image: searchPayload?.reverse_image_search?.asset_url || null,
         gallery: [],
-        real_name: realName,
-        clan_name: clanName,
-        age: ageValue,
-        postal_code: postalCode,
         riskdata: {
-            has_real_name: Boolean(realName),
-            has_age: Boolean(ageValue),
-            has_location: Boolean(postalCode),
-            username_count: candidates.length,
+            has_real_name: false,
+            has_age: false,
+            username_count: 0,
             platform_count: profiles.length,
             has_reverse_image: Boolean(searchPayload?.reverse_image_search?.asset_url),
             image_reuse_score: maxImageScore,
         },
-        usernames: candidates,
+        usernames: [],
         profiles,
         reverse_image: searchPayload?.reverse_image_search || {},
     };
 }
 
-async function requestDeepSearchAnalysis(searchPayload, csrfToken, queryContext) {
+async function requestDeepSearchAnalysis(searchPayload, csrfToken) {
     const response = await fetch("/search/deepsearch", {
         method: "POST",
         headers: {
@@ -486,7 +447,7 @@ async function requestDeepSearchAnalysis(searchPayload, csrfToken, queryContext)
             ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
         },
         credentials: "same-origin",
-        body: JSON.stringify(buildDeepSearchPayload(searchPayload, queryContext)),
+        body: JSON.stringify(buildDeepSearchPayload(searchPayload)),
     });
 
     const contentType = response.headers.get("content-type") || "";
@@ -860,14 +821,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (deepSearchToggle?.checked) {
                 try {
-                    const queryContext = {
-                        username: form.querySelector('input[name="username"]')?.value || "",
-                        real_name: form.querySelector('input[name="real_name"]')?.value || "",
-                        clan_name: form.querySelector('input[name="clan_name"]')?.value || "",
-                        age: form.querySelector('input[name="age"]')?.value || "",
-                        postal_code: form.querySelector('input[name="postal_code"]')?.value || "",
-                    };
-                    const deepSearchPayload = await requestDeepSearchAnalysis(payload, csrfToken, queryContext);
+                    const deepSearchPayload = await requestDeepSearchAnalysis(payload, csrfToken);
                     renderDeepSearchResponse(deepSearchPayload);
                 } catch (deepSearchError) {
                     resetAnalysisWidgets();
@@ -902,7 +856,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (overlayController) {
                 const overlayMessage = error?.name === "AbortError"
                     ? "Zeitueberschreitung bei der Anfrage."
-                    : error.message || "Suche fehlgeschlagen";
+                    : error.message || "Suche fehlgeschlagen"
                 overlayController.error(overlayMessage);
                 overlayController = null;
             }
@@ -918,3 +872,18 @@ window.renderSimilarityResults = renderSimilarityResults;
 window.renderImageSimilarity = renderImageSimilarity;
 window.renderRiskScore = renderRiskScore;
 window.renderDeepSearchResponse = renderDeepSearchResponse;
+
+// Meta-Felder global speichern für renderProfiles
+    window.lastSearchMeta = response?.meta || {};
+    renderScreenshotResults(response.data.screenshots);
+    renderSimilarityResults(response.data.similarity);
+    renderImageSimilarity(response.data.image_similarity);
+    renderRiskScore(response.data.risk_score);
+
+// DeepSearch: AI-Ranking-Toggle Wert mitgeben
+    const aiRerankToggle = document.getElementById('ai-rerank-toggle');
+    if (aiRerankToggle && aiRerankToggle.checked) {
+        searchPayload.ai_rerank = true;
+    } else {
+        delete searchPayload.ai_rerank;
+    }
