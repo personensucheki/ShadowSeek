@@ -4,6 +4,8 @@ from ..extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
+    __tablename__ = "users"
+
     is_verified = db.Column(db.Boolean, default=False, nullable=False)
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
