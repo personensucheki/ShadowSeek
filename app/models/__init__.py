@@ -8,6 +8,7 @@ from .direct_message import DirectMessage
 from .einnahme_info import EinnahmeInfo
 from .processed_webhook_event import ProcessedWebhookEvent
 from .oauth_token import OAuthToken
+from .live_stream import LiveStream, LiveLike, LiveChatMessage, LiveGift
 
 __all__ = [
     "PublicProfile",
@@ -19,4 +20,8 @@ __all__ = [
     "EinnahmeInfo",
     "ProcessedWebhookEvent",
     "OAuthToken",
+    "LiveStream",
+    "LiveLike",
+    "LiveChatMessage",
+    "LiveGift",
 ]
