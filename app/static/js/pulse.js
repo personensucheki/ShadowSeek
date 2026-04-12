@@ -416,6 +416,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const oauthConnectGoogle = document.getElementById("oauth-connect-google");
     const oauthMeTwitch = document.getElementById("oauth-me-twitch");
     const oauthMeYouTube = document.getElementById("oauth-me-youtube");
+    const ytControls = document.getElementById("youtube-analytics-controls");
+    const ytRange = document.getElementById("youtube-analytics-range");
+    const ytStartWrap = document.getElementById("youtube-analytics-start-wrap");
+    const ytEndWrap = document.getElementById("youtube-analytics-end-wrap");
+    const ytStart = document.getElementById("youtube-analytics-start");
+    const ytEnd = document.getElementById("youtube-analytics-end");
+    const ytLoad = document.getElementById("youtube-analytics-load");
+    const ytStatus = document.getElementById("youtube-analytics-status");
+    const ytBox = document.getElementById("youtube-analytics-box");
+    const ytChartCanvas = document.getElementById("youtube-analytics-chart");
+    let ytChart = null;
     const kpiToday = document.getElementById("creator-kpi-today");
     const kpiTotal = document.getElementById("creator-kpi-total");
     kpiToday.textContent = "$0";
@@ -514,6 +525,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (oauthMeYouTube) {
                 oauthMeYouTube.style.display = con.google ? "inline-flex" : "none";
             }
+            if (ytControls) {
+                ytControls.style.display = con.google ? "block" : "none";
+            }
         } catch (err) {
             oauthStatus.textContent = "OAuth: nicht verfuegbar (bitte einloggen).";
             oauthStatus.style.color = "#ff00ff";
@@ -561,5 +575,188 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (oauthMeYouTube) {
         oauthMeYouTube.addEventListener("click", () => void loadMyConnected("youtube"));
+    }
+
+    function formatMinutes(minutes) {
+        const m = Number(minutes) || 0;
+        if (m < 60) return `${Math.round(m)}m`;
+        const h = m / 60;
+        return `${h.toFixed(1)}h`;
+    }
+
+    function setYtStatus(message, error = false) {
+        if (!ytStatus) return;
+        ytStatus.textContent = message;
+        ytStatus.style.color = error ? "#ff00ff" : "#00ff9f";
+    }
+
+    function renderYouTubeAnalytics(data) {
+        if (!ytBox) return;
+        const totals = data.totals || {};
+        const top = Array.isArray(data.top_videos) ? data.top_videos : [];
+        const series = Array.isArray(data.timeseries) ? data.timeseries : [];
+
+        const header = `
+            <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div>
+                    <div style="font-weight:700; color:#f6f7fb;">YouTube Analytics</div>
+                    <div style="color:#98a2b3; font-size:12px;">${escapeHtml(data.range?.start || "")} bis ${escapeHtml(data.range?.end || "")}</div>
+                </div>
+                <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                    <div><div style="color:#98a2b3; font-size:12px;">Views</div><div style="font-weight:800;">${formatNumber(totals.views)}</div></div>
+                    <div><div style="color:#98a2b3; font-size:12px;">Watchtime</div><div style="font-weight:800;">${escapeHtml(formatMinutes(totals.watch_minutes))}</div></div>
+                    <div><div style="color:#98a2b3; font-size:12px;">Subs (net)</div><div style="font-weight:800;">${formatNumber(totals.subs_net)}</div></div>
+                </div>
+            </div>
+        `;
+
+        const rows = top
+            .map((v) => {
+                const thumb = v.thumbnail ? `<img src="${escapeHtml(v.thumbnail)}" style="width:64px; height:36px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.08);" />` : "";
+                const title = escapeHtml(v.title || v.video_id);
+                const meta = `${formatNumber(v.views)} views • ${escapeHtml(formatMinutes(v.watch_minutes))}`;
+                const likes = v.like_count === null || v.like_count === undefined ? "" : ` • ${formatNumber(v.like_count)} likes`;
+                const comments = v.comment_count === null || v.comment_count === undefined ? "" : ` • ${formatNumber(v.comment_count)} comments`;
+                return `
+                    <div style="display:flex; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,0.06); align-items:center;">
+                        <div>${thumb}</div>
+                        <div style="min-width:0; flex:1;">
+                            <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:650;">
+                                <a href="${escapeHtml(v.url)}" target="_blank" rel="noopener" style="color:#00ff9f; text-decoration:none;">${title}</a>
+                            </div>
+                            <div style="color:#98a2b3; font-size:12px;">${meta}${likes}${comments}</div>
+                        </div>
+                    </div>
+                `;
+            })
+            .join("");
+
+        ytBox.innerHTML =
+            header +
+            `<div style="margin-top:10px;">${rows || "<div style='color:#98a2b3;'>Keine Top-Videos in diesem Zeitraum.</div>"}</div>`;
+        ytBox.style.display = "block";
+
+        renderYouTubeChart(series);
+    }
+
+    function renderYouTubeChart(series) {
+        if (!ytChartCanvas || typeof Chart === "undefined") return;
+        if (!Array.isArray(series) || series.length === 0) return;
+
+        const labels = series.map((d) => d.day);
+        const views = series.map((d) => Number(d.views) || 0);
+        const watch = series.map((d) => Number(d.watch_minutes) || 0);
+        const subs = series.map((d) => Number(d.subs_net) || 0);
+
+        const data = {
+            labels,
+            datasets: [
+                {
+                    label: "Views",
+                    data: views,
+                    borderColor: "#00ff9f",
+                    backgroundColor: "rgba(0, 255, 159, 0.10)",
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2,
+                },
+                {
+                    label: "Watchtime (min)",
+                    data: watch,
+                    borderColor: "#ff00ff",
+                    backgroundColor: "rgba(255, 0, 255, 0.08)",
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2,
+                },
+                {
+                    label: "Subs (net)",
+                    data: subs,
+                    borderColor: "#f6f7fb",
+                    backgroundColor: "rgba(246, 247, 251, 0.04)",
+                    fill: false,
+                    tension: 0.35,
+                    pointRadius: 2,
+                },
+            ],
+        };
+
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: "#f6f7fb" },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const label = ctx.dataset.label || "";
+                            const value = ctx.parsed.y;
+                            if (label.includes("Watchtime")) return `${label}: ${formatMinutes(value)}`;
+                            return `${label}: ${formatNumber(value)}`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    ticks: { color: "#98a2b3" },
+                    grid: { color: "rgba(255,255,255,0.05)" },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: "#98a2b3" },
+                    grid: { color: "rgba(255,255,255,0.05)" },
+                },
+            },
+        };
+
+        if (ytChart) {
+            ytChart.data = data;
+            ytChart.options = options;
+            ytChart.update();
+            return;
+        }
+        ytChart = new Chart(ytChartCanvas.getContext("2d"), { type: "line", data, options });
+    }
+
+    async function loadYouTubeAnalytics() {
+        if (!ytRange) return;
+        setYtStatus("Analytics werden geladen ...");
+        try {
+            const mode = ytRange.value || "7";
+            const url = new URL("/api/pulse/youtube/analytics", window.location.origin);
+            url.searchParams.set("range", mode);
+            if (mode === "custom") {
+                if (ytStart?.value) url.searchParams.set("start", ytStart.value);
+                if (ytEnd?.value) url.searchParams.set("end", ytEnd.value);
+            }
+            const data = await fetchJson(url.pathname + url.search, { cache: "no-store", credentials: "same-origin" });
+            if (!data.success) {
+                setYtStatus(data.error || "Analytics Fehler", true);
+                return;
+            }
+            setYtStatus("Analytics geladen");
+            renderYouTubeAnalytics(data);
+        } catch (err) {
+            setYtStatus("Analytics konnten nicht geladen werden.", true);
+        }
+    }
+
+    function syncYtRangeUi() {
+        const isCustom = (ytRange?.value || "") === "custom";
+        if (ytStartWrap) ytStartWrap.style.display = isCustom ? "block" : "none";
+        if (ytEndWrap) ytEndWrap.style.display = isCustom ? "block" : "none";
+    }
+
+    if (ytRange) {
+        ytRange.addEventListener("change", () => {
+            syncYtRangeUi();
+        });
+        syncYtRangeUi();
+    }
+    if (ytLoad) {
+        ytLoad.addEventListener("click", () => void loadYouTubeAnalytics());
     }
 });
