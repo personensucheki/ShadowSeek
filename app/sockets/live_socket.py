@@ -98,6 +98,20 @@ class LiveNamespace(Namespace):
         room = get_stream_room(stream_id)
         emit("new_gift", payload, room=room)
 
+    # Leaderboard-Update (Platzhalter, später DB)
+    def on_leaderboard_update(self, data):
+        stream_id = data.get("stream_id")
+        # Hier könnte die Leaderboard-Logik stehen
+        room = get_stream_room(stream_id)
+        emit("leaderboard_update", {"stream_id": stream_id, "leaderboard": []}, room=room)
+
+    # Stream-State-Update (Platzhalter)
+    def on_stream_state_update(self, data):
+        stream_id = data.get("stream_id")
+        state = data.get("state")
+        room = get_stream_room(stream_id)
+        emit("stream_state_update", {"stream_id": stream_id, "state": state}, room=room)
+
 def init_app(app):
     socketio = app.socketio
     socketio.on_namespace(LiveNamespace("/live"))
