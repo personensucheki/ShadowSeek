@@ -77,6 +77,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         feedback.textContent = "Live-Setup gespeichert. Als nächstes: Stream starten.";
     });
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
 <<<<<<< HEAD
 =======
 });document.addEventListener("DOMContentLoaded", () => {
@@ -159,4 +162,10 @@ document.addEventListener("DOMContentLoaded", () => {
         feedback.textContent = "Live-Setup gespeichert. Als nächstes: Stream starten.";
     });
 >>>>>>> ca53806 (Login reperatur)
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 });
