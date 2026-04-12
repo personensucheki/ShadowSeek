@@ -1,8 +1,11 @@
 const CATEGORIES = [
     { label: "Social Media", value: "social" },
+    { label: "Gaming", value: "gaming" },
     { label: "Dating", value: "dating" },
     { label: "Adult", value: "adult" },
+    { label: "Cam", value: "cam" },
     { label: "Porn", value: "porn" },
+    { label: "Forums", value: "forums" },
 ];
 
 const MODIFIERS = [
@@ -15,20 +18,20 @@ const MODIFIERS = [
 
 const TAB_CATEGORIES = {
     social: ["social", "instagram", "tiktok", "x", "twitter", "facebook", "linkedin", "snapchat", "clapper"],
-    dating: ["dating", "lovoo", "badoo", "knuddels"],
-    adult: ["adult", "stripchat", "onlyfans", "dirtyhobby", "subscription"],
+    dating: ["dating", "lovoo", "badoo", "knuddels", "bumble", "okcupid", "hinge", "jaumo", "tinder"],
+    adult: ["adult", "stripchat", "onlyfans", "dirtyhobby", "subscription", "fansly", "manyvids", "patreon"],
     porn: ["porn", "xhamster", "pornhub", "xnxx"],
-    web: ["web", "website", "domain", "developer", "github"],
-    forum: ["forum", "board", "reddit"],
+    web: ["web", "website", "domain", "developer", "github", "steam", "epic_games", "xbox", "playstation", "twitch", "kick"],
+    forum: ["forum", "board", "reddit", "discord", "vk", "weibo", "tumblr"],
     image: ["image", "imgur", "flickr", "photo"],
-    video: ["video", "youtube", "twitch", "vimeo", "streaming"],
+    video: ["video", "youtube", "twitch", "vimeo", "streaming", "cam", "chaturbate", "livejasmin", "camsoda", "bongacams"],
     news: ["news", "zeitung", "magazine"],
     community: ["community", "discord", "telegram", "messaging"],
 };
 
 const SCAN_STATUS_TEXTS = [
     "Query wird vorbereitet...",
-    "Username-Varianten werden erzeugt...",
+    "DeepSearch scannt Plattformen...",
     "Plattformen werden geprueft...",
     "Signale werden zusammengefuehrt...",
     "Ergebnisse werden bewertet...",
@@ -252,7 +255,7 @@ function renderProfiles(profiles, container) {
                 <div class="result-card" data-tab="${escapeHtml(tab)}" data-platform="${escapeHtml(result.platform_slug || "")}">
                     <div class="result-info">
                         <div class="result-platform">${escapeHtml(result.platform || "Unbekannt")}</div>
-                        <div class="result-title">${escapeHtml(result.username || "")}</div>
+                        <div class="result-title">${escapeHtml(result.category || "profile")}</div>
                         ${title ? `<div class="result-bio">${escapeHtml(title)}</div>` : ""}
                         <div class="result-meta-row">
                             ${confidenceChip}
@@ -260,7 +263,7 @@ function renderProfiles(profiles, container) {
                             ${sourceChip}
                             ${reason ? `<span class="chip chip--green">${escapeHtml(reason)}</span>` : ""}
                         </div>
-                        <a href="${escapeHtml(result.profile_url || "#")}" target="_blank" rel="noopener" class="result-link">Profil oeffnen</a>
+                        <a href="${escapeHtml(result.url || result.profile_url || "#")}" target="_blank" rel="noopener" class="result-link">Profil oeffnen</a>
                     </div>
                 </div>
             `;
@@ -402,11 +405,8 @@ function resetAnalysisWidgets() {
 
 function buildDeepSearchPayload(searchPayload) {
     const profiles = Array.isArray(searchPayload?.profiles) ? searchPayload.profiles : [];
-    const usernameVariations = Array.isArray(searchPayload?.username_variations)
-        ? searchPayload.username_variations
-        : [];
     const profileUrls = profiles
-        .map((profile) => profile?.profile_url)
+        .map((profile) => profile?.url || profile?.profile_url)
         .filter(Boolean);
 
     const maxImageScore = Array.isArray(searchPayload?.image_similarity?.matches)
@@ -414,26 +414,22 @@ function buildDeepSearchPayload(searchPayload) {
         : 0;
 
     return {
-        base_username: searchPayload?.query?.username || "",
-        candidates: usernameVariations
-            .map((variation) => variation?.username)
-            .filter(Boolean),
+        base_username: "",
+        candidates: [],
         profile_urls: profileUrls,
-        reference_image: searchPayload?.reverse_image_links?.asset_url || null,
+        reference_image: searchPayload?.reverse_image_search?.asset_url || null,
         gallery: [],
         riskdata: {
-            has_real_name: Boolean(searchPayload?.query?.real_name),
-            has_age: Boolean(searchPayload?.query?.age),
-            username_count: usernameVariations.length,
+            has_real_name: false,
+            has_age: false,
+            username_count: 0,
             platform_count: profiles.length,
-            has_reverse_image: Boolean(searchPayload?.reverse_image_links?.asset_url),
+            has_reverse_image: Boolean(searchPayload?.reverse_image_search?.asset_url),
             image_reuse_score: maxImageScore,
         },
-        usernames: usernameVariations
-            .map((variation) => variation?.username)
-            .filter(Boolean),
+        usernames: [],
         profiles,
-        reverse_image: searchPayload?.reverse_image_links || {},
+        reverse_image: searchPayload?.reverse_image_search || {},
     };
 }
 
@@ -510,7 +506,7 @@ function findPreferredTab(profiles) {
     return availableTabs.has("social") ? "social" : profiles.map((profile) => normalizeTabValue(profile))[0];
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const form = document.getElementById("search-form");
     const resultsList = document.getElementById("results-list");
     const reverseLinks = document.getElementById("reverse-links");
@@ -531,7 +527,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const fieldNames = ["username", "real_name", "clan_name", "age", "postal_code"];
+    const platformGrid = form?.querySelector(".platform-grid");
     const platformCheckboxes = () => Array.from(form.querySelectorAll('input[name="platforms"]'));
+
+    const renderPlatformTiles = (platforms) => {
+        if (!platformGrid) {
+            return;
+        }
+
+        platformGrid.innerHTML = "";
+        platforms.forEach((platform) => {
+            const tile = document.createElement("label");
+            tile.className = "platform-tile";
+            tile.innerHTML = `
+                <input type="checkbox" name="platforms" value="${escapeHtml(platform.slug)}" checked data-platform="${escapeHtml(platform.slug)}">
+                <span>${escapeHtml(platform.name)}</span>
+            `;
+            platformGrid.appendChild(tile);
+        });
+    };
+
+    const loadPlatforms = async () => {
+        try {
+            const response = await fetch("/platforms", { credentials: "same-origin" });
+            if (!response.ok) {
+                return;
+            }
+            const payload = await response.json();
+            if (!Array.isArray(payload) || payload.length === 0) {
+                return;
+            }
+            renderPlatformTiles(payload);
+        } catch {
+            // Keep server-rendered fallback tiles.
+        }
+    };
 
     const renderCategoryChips = () => {
         if (!categoryBar) {
@@ -664,6 +694,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.history.replaceState({}, "", window.location.pathname);
     };
 
+    await loadPlatforms();
     restoreInputs();
     renderCategoryChips();
     renderModifierChips();
@@ -745,7 +776,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             renderMessages(payload, messageBox);
-            renderReverseImageLinks(payload.reverse_image_links, reverseLinks);
+            renderReverseImageLinks(payload.reverse_image_search, reverseLinks);
             renderProfiles(payload.profiles, resultsList);
             resetAnalysisWidgets();
 
@@ -764,7 +795,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set("query", formData.get("username"));
             selectedModifiers.forEach((modifier) => newUrl.searchParams.set(modifier, "true"));
             if (selectedCategories.length > 0) {
                 newUrl.searchParams.set("categories", selectedCategories.join(","));

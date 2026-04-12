@@ -11,20 +11,11 @@ except ModuleNotFoundError:  # pragma: no cover - depends on optional local depe
 
 from app.extensions import db
 from app.models import ProcessedWebhookEvent, User
+from app.services.search_service import PLATFORM_INDEX
 
 
 SUBSCRIPTION_ACTIVE_STATUSES = {"active", "trialing"}
-ALL_SEARCH_PLATFORMS = (
-    "instagram",
-    "tiktok",
-    "x",
-    "youtube",
-    "twitch",
-    "reddit",
-    "telegram",
-    "onlyfans",
-    "github",
-)
+ALL_SEARCH_PLATFORMS = tuple(sorted(PLATFORM_INDEX.keys()))
 
 PLAN_DEFINITIONS = {
     "abo_1": {

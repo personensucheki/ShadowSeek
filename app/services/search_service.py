@@ -86,89 +86,105 @@ class RerankResponse(BaseModel):
     ranked: list[RerankCandidate]
 
 
-PLATFORMS = (
-    PlatformDefinition(
-        slug="instagram",
-        name="Instagram",
-        category="social",
-        profile_url="https://www.instagram.com/{username}/",
-        domains=("instagram.com",),
-        excluded_segments=("p", "reel", "reels", "stories", "explore", "accounts"),
-        not_found_markers=("page isn't available", "sorry, this page isn't available"),
-    ),
-    PlatformDefinition(
-        slug="tiktok",
-        name="TikTok",
-        category="social",
-        profile_url="https://www.tiktok.com/@{username}",
-        domains=("tiktok.com",),
-        excluded_segments=("discover", "tag", "search", "music"),
-        not_found_markers=("couldn't find this account",),
-    ),
-    PlatformDefinition(
-        slug="x",
-        name="Twitter/X",
-        category="social",
-        profile_url="https://x.com/{username}",
-        domains=("x.com", "twitter.com"),
-        excluded_segments=("home", "explore", "search", "i", "hashtag", "messages", "compose"),
-        not_found_markers=("this account doesn't exist",),
-    ),
-    PlatformDefinition(
-        slug="youtube",
-        name="YouTube",
-        category="video",
-        profile_url="https://www.youtube.com/@{username}",
-        domains=("youtube.com",),
-        excluded_segments=("watch", "results", "playlist", "shorts", "feed"),
-        not_found_markers=("this page isn't available",),
-    ),
-    PlatformDefinition(
-        slug="twitch",
-        name="Twitch",
-        category="streaming",
-        profile_url="https://www.twitch.tv/{username}",
-        domains=("twitch.tv",),
-        excluded_segments=("directory", "downloads", "jobs", "store", "settings"),
-        not_found_markers=("sorry. unless you've got a time machine",),
-    ),
-    PlatformDefinition(
-        slug="reddit",
-        name="Reddit",
-        category="community",
-        profile_url="https://www.reddit.com/user/{username}/",
-        domains=("reddit.com",),
-        excluded_segments=("r", "search", "media", "topics"),
-        not_found_markers=("nobody on reddit goes by that name",),
-    ),
-    PlatformDefinition(
-        slug="telegram",
-        name="Telegram",
-        category="messaging",
-        profile_url="https://t.me/{username}",
-        domains=("t.me", "telegram.me"),
-        excluded_segments=("share", "addstickers", "s", "blog"),
-    ),
-    PlatformDefinition(
-        slug="onlyfans",
-        name="OnlyFans",
-        category="subscription",
-        profile_url="https://onlyfans.com/{username}",
-        domains=("onlyfans.com",),
-        excluded_segments=("login", "signup", "my", "posts"),
-        not_found_markers=("page not found", "error code 404"),
-    ),
-    PlatformDefinition(
-        slug="github",
-        name="GitHub",
-        category="developer",
-        profile_url="https://github.com/{username}",
-        domains=("github.com",),
-        excluded_segments=("topics", "explore", "features", "marketplace", "orgs", "settings"),
-        not_found_markers=("not found",),
-    ),
-)
+PLATFORM_GROUPS = {
+    "social": [
+        {"slug": "instagram", "name": "Instagram", "url_pattern": "https://www.instagram.com/{username}/", "domains": ("instagram.com",), "excluded_segments": ("p", "reel", "reels", "stories", "explore", "accounts"), "not_found_markers": ("page isn't available", "sorry, this page isn't available")},
+        {"slug": "tiktok", "name": "TikTok", "url_pattern": "https://www.tiktok.com/@{username}", "domains": ("tiktok.com",), "excluded_segments": ("discover", "tag", "search", "music"), "not_found_markers": ("couldn't find this account",)},
+        {"slug": "x", "name": "Twitter/X", "url_pattern": "https://x.com/{username}", "domains": ("x.com", "twitter.com"), "excluded_segments": ("home", "explore", "search", "i", "hashtag", "messages", "compose"), "not_found_markers": ("this account doesn't exist",)},
+        {"slug": "youtube", "name": "YouTube", "url_pattern": "https://www.youtube.com/@{username}", "domains": ("youtube.com",), "excluded_segments": ("watch", "results", "playlist", "shorts", "feed"), "not_found_markers": ("this page isn't available",)},
+        {"slug": "reddit", "name": "Reddit", "url_pattern": "https://www.reddit.com/user/{username}/", "domains": ("reddit.com",), "excluded_segments": ("r", "search", "media", "topics"), "not_found_markers": ("nobody on reddit goes by that name",)},
+        {"slug": "telegram", "name": "Telegram", "url_pattern": "https://t.me/{username}", "domains": ("t.me", "telegram.me"), "excluded_segments": ("share", "addstickers", "s", "blog")},
+        {"slug": "github", "name": "GitHub", "url_pattern": "https://github.com/{username}", "domains": ("github.com",), "excluded_segments": ("topics", "explore", "features", "marketplace", "orgs", "settings"), "not_found_markers": ("not found",)},
+        {"slug": "facebook", "name": "Facebook", "url_pattern": "https://www.facebook.com/{username}", "domains": ("facebook.com",), "excluded_segments": ("watch", "marketplace", "groups", "events")},
+        {"slug": "pinterest", "name": "Pinterest", "url_pattern": "https://www.pinterest.com/{username}/", "domains": ("pinterest.com",), "excluded_segments": ("pin", "ideas", "search")},
+        {"slug": "snapchat", "name": "Snapchat", "url_pattern": "https://www.snapchat.com/add/{username}", "domains": ("snapchat.com",), "excluded_segments": ("discover", "spotlight", "lenses")},
+    ],
+    "gaming": [
+        {"slug": "twitch", "name": "Twitch", "url_pattern": "https://www.twitch.tv/{username}", "domains": ("twitch.tv",), "excluded_segments": ("directory", "downloads", "jobs", "store", "settings"), "not_found_markers": ("sorry. unless you've got a time machine",)},
+        {"slug": "kick", "name": "Kick", "url_pattern": "https://kick.com/{username}", "domains": ("kick.com",), "excluded_segments": ("browse", "categories", "following")},
+        {"slug": "steam", "name": "Steam", "url_pattern": "https://steamcommunity.com/id/{username}", "domains": ("steamcommunity.com",), "excluded_segments": ("app", "groups", "market", "workshop", "search")},
+        {"slug": "epic_games", "name": "Epic Games", "url_pattern": "https://store.epicgames.com/u/{username}", "domains": ("epicgames.com", "store.epicgames.com"), "excluded_segments": ("p", "news", "help")},
+        {"slug": "xbox", "name": "Xbox", "url_pattern": "https://account.xbox.com/en-us/profile?gamertag={username}", "domains": ("account.xbox.com", "xbox.com"), "excluded_segments": ("en-us", "play", "games")},
+        {"slug": "playstation", "name": "PlayStation", "url_pattern": "https://psnprofiles.com/{username}", "domains": ("psnprofiles.com",), "excluded_segments": ("guide", "leaderboard", "games")},
+    ],
+    "dating": [
+        {"slug": "tinder", "name": "Tinder", "url_pattern": "https://tinder.com/@{username}", "domains": ("tinder.com",), "excluded_segments": ("app", "download", "about")},
+        {"slug": "lovoo", "name": "Lovoo", "url_pattern": "https://www.lovoo.com/profile/{username}", "domains": ("lovoo.com",), "excluded_segments": ("about", "legal", "jobs")},
+        {"slug": "badoo", "name": "Badoo", "url_pattern": "https://badoo.com/profile/{username}", "domains": ("badoo.com",), "excluded_segments": ("download", "about", "help")},
+        {"slug": "bumble", "name": "Bumble", "url_pattern": "https://bumble.com/{username}", "domains": ("bumble.com",), "excluded_segments": ("en", "about", "app")},
+        {"slug": "okcupid", "name": "OkCupid", "url_pattern": "https://www.okcupid.com/profile/{username}", "domains": ("okcupid.com",), "excluded_segments": ("discover", "doubletake", "about")},
+        {"slug": "hinge", "name": "Hinge", "url_pattern": "https://hinge.co/{username}", "domains": ("hinge.co",), "excluded_segments": ("about", "app", "faq")},
+        {"slug": "jaumo", "name": "Jaumo", "url_pattern": "https://www.jaumo.com/profile/{username}", "domains": ("jaumo.com",), "excluded_segments": ("about", "help", "imprint")},
+        {"slug": "knuddels", "name": "Knuddels", "url_pattern": "https://www.knuddels.de/profile/{username}", "domains": ("knuddels.de",), "excluded_segments": ("forum", "hilfe", "shop")},
+    ],
+    "adult": [
+        {"slug": "onlyfans", "name": "OnlyFans", "url_pattern": "https://onlyfans.com/{username}", "domains": ("onlyfans.com",), "excluded_segments": ("login", "signup", "my", "posts"), "not_found_markers": ("page not found", "error code 404")},
+        {"slug": "fansly", "name": "Fansly", "url_pattern": "https://fansly.com/{username}", "domains": ("fansly.com",), "excluded_segments": ("discover", "explore", "about")},
+        {"slug": "mydirtyhobby", "name": "MyDirtyHobby", "url_pattern": "https://www.mydirtyhobby.com/profil/{username}", "domains": ("mydirtyhobby.com",), "excluded_segments": ("de", "faq", "support")},
+        {"slug": "manyvids", "name": "ManyVids", "url_pattern": "https://www.manyvids.com/Profile/{username}/", "domains": ("manyvids.com",), "excluded_segments": ("store", "categories", "help")},
+        {"slug": "patreon", "name": "Patreon", "url_pattern": "https://www.patreon.com/{username}", "domains": ("patreon.com",), "excluded_segments": ("home", "login", "join")},
+    ],
+    "porn": [
+        {"slug": "pornhub", "name": "Pornhub", "url_pattern": "https://www.pornhub.com/users/{username}", "domains": ("pornhub.com",), "excluded_segments": ("video", "categories", "model")},
+        {"slug": "xhamster", "name": "xHamster", "url_pattern": "https://xhamster.com/users/{username}", "domains": ("xhamster.com",), "excluded_segments": ("videos", "categories", "search")},
+        {"slug": "xnxx", "name": "XNXX", "url_pattern": "https://www.xnxx.com/profiles/{username}", "domains": ("xnxx.com",), "excluded_segments": ("video", "tags", "search")},
+        {"slug": "xvideos", "name": "XVideos", "url_pattern": "https://www.xvideos.com/profiles/{username}", "domains": ("xvideos.com",), "excluded_segments": ("video", "tags", "channels")},
+        {"slug": "redtube", "name": "RedTube", "url_pattern": "https://www.redtube.com/users/{username}", "domains": ("redtube.com",), "excluded_segments": ("videos", "channels", "categories")},
+        {"slug": "youporn", "name": "YouPorn", "url_pattern": "https://www.youporn.com/user/{username}", "domains": ("youporn.com",), "excluded_segments": ("watch", "categories", "pornstar")},
+        {"slug": "spankbang", "name": "SpankBang", "url_pattern": "https://spankbang.com/profile/{username}", "domains": ("spankbang.com",), "excluded_segments": ("category", "videos", "trending")},
+    ],
+    "cam": [
+        {"slug": "stripchat", "name": "Stripchat", "url_pattern": "https://stripchat.com/{username}", "domains": ("stripchat.com",), "excluded_segments": ("girls", "guys", "couples")},
+        {"slug": "chaturbate", "name": "Chaturbate", "url_pattern": "https://chaturbate.com/{username}/", "domains": ("chaturbate.com",), "excluded_segments": ("tag", "explore", "apps")},
+        {"slug": "livejasmin", "name": "LiveJasmin", "url_pattern": "https://www.livejasmin.com/en/chat/{username}", "domains": ("livejasmin.com",), "excluded_segments": ("en", "model", "support")},
+        {"slug": "camsoda", "name": "CamSoda", "url_pattern": "https://www.camsoda.com/{username}", "domains": ("camsoda.com",), "excluded_segments": ("female", "male", "couples")},
+        {"slug": "bongacams", "name": "BongaCams", "url_pattern": "https://bongacams.com/profile/{username}", "domains": ("bongacams.com",), "excluded_segments": ("girls", "boys", "couples")},
+    ],
+    "forums": [
+        {"slug": "discord", "name": "Discord", "url_pattern": "https://discord.gg/{username}", "domains": ("discord.gg", "discord.com"), "excluded_segments": ("app", "download", "channels")},
+        {"slug": "vk", "name": "VK", "url_pattern": "https://vk.com/{username}", "domains": ("vk.com",), "excluded_segments": ("feed", "music", "video")},
+        {"slug": "weibo", "name": "Weibo", "url_pattern": "https://weibo.com/{username}", "domains": ("weibo.com",), "excluded_segments": ("u", "hot", "login")},
+        {"slug": "tumblr", "name": "Tumblr", "url_pattern": "https://{username}.tumblr.com", "domains": ("tumblr.com",), "excluded_segments": ("explore", "search", "dashboard")},
+    ],
+}
+
+
+def _build_platform_definitions():
+    definitions = []
+    for category, platforms in PLATFORM_GROUPS.items():
+        for platform in platforms:
+            definitions.append(
+                PlatformDefinition(
+                    slug=platform["slug"],
+                    name=platform["name"],
+                    category=category,
+                    profile_url=platform["url_pattern"],
+                    domains=tuple(platform["domains"]),
+                    excluded_segments=tuple(platform.get("excluded_segments", ())),
+                    not_found_markers=tuple(
+                        marker.lower() for marker in platform.get("not_found_markers", ())
+                    ),
+                )
+            )
+    return tuple(definitions)
+
+
+PLATFORMS = _build_platform_definitions()
 PLATFORM_INDEX = {platform.slug: platform for platform in PLATFORMS}
+
+
+def list_platform_cards():
+    cards = []
+    for platform in PLATFORMS:
+        cards.append(
+            {
+                "slug": platform.slug,
+                "name": platform.name,
+                "category": platform.category,
+                "url_pattern": platform.profile_url,
+            }
+        )
+    return sorted(cards, key=lambda item: (item["category"], item["name"]))
 
 
 def build_search_payload(form):
@@ -260,6 +276,21 @@ def generate_username_variations(payload):
     return list(variants.values())[:limit]
 
 
+def _public_profile(profile):
+    return {
+        "platform": profile.get("platform"),
+        "platform_slug": profile.get("platform_slug"),
+        "category": profile.get("category"),
+        "url": profile.get("profile_url"),
+        "match_score": profile.get("match_score"),
+        "verification": profile.get("verification"),
+        "source": profile.get("source"),
+        "title": profile.get("title"),
+        "snippet": profile.get("snippet"),
+        "match_reason": profile.get("match_reason"),
+    }
+
+
 def execute_search(payload, request_base_url, image_file=None):
     username_variations = generate_username_variations(payload)
     reverse_image_links = {}
@@ -298,25 +329,8 @@ def execute_search(payload, request_base_url, image_file=None):
         search_provider = SERPER_SOURCE
 
     return {
-        "query": {
-            "username": payload.username,
-            "real_name": payload.real_name,
-            "clan_name": payload.clan_name,
-            "age": payload.age or None,
-            "postal_code": payload.postal_code or None,
-            "deep_search": payload.deep_search,
-            "platforms": list(payload.platforms),
-        },
-        "username_variations": [
-            {
-                "username": variation.username,
-                "score": variation.score,
-                "reason": variation.reason,
-            }
-            for variation in username_variations
-        ],
-        "profiles": profiles,
-        "reverse_image_links": reverse_image_links,
+        "profiles": [_public_profile(profile) for profile in profiles],
+        "reverse_image_search": reverse_image_links,
         "meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "platform_count": len(payload.platforms),

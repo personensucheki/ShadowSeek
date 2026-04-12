@@ -70,7 +70,7 @@
                 </div>
                 <div class="form-platforms">
                     <div class="platform-title">Plattformen</div>
-                    <div class="platform-grid">
+                    <div class="platform-grid" id="platform-container">
                         {% for platform in platforms %}
                             <label class="platform-tile">
                                 <input type="checkbox" name="platforms" value="{{ platform.slug }}" checked data-platform="{{ platform.slug }}">

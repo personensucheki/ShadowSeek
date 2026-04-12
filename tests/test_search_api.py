@@ -84,9 +84,10 @@ class SearchApiTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
-        self.assertEqual(payload["query"]["username"], "shadowseek")
-        self.assertLessEqual(len(payload["username_variations"]), 8)
+        self.assertNotIn("query", payload)
+        self.assertNotIn("username_variations", payload)
         self.assertEqual(payload["profiles"][0]["platform"], "Instagram")
+        self.assertIn("url", payload["profiles"][0])
 
     @patch("app.services.search_service.discover_profiles", return_value=[])
     def test_image_upload_returns_signed_reverse_image_links(self, _discover_profiles):
@@ -103,7 +104,7 @@ class SearchApiTestCase(unittest.TestCase):
         try:
             self.assertEqual(response.status_code, 200)
             payload = response.get_json()
-            asset_url = payload["reverse_image_links"]["asset_url"]
+            asset_url = payload["reverse_image_search"]["asset_url"]
             self.assertTrue(asset_url.startswith("https://shadowseek.example/api/reverse-image/"))
 
             asset_path = asset_url.replace("https://shadowseek.example", "")
@@ -243,6 +244,15 @@ class SearchApiTestCase(unittest.TestCase):
         self.assertIn(b'id="image-similarity-list"', response.data)
         self.assertIn(b'id="risk-score-box"', response.data)
         self.assertIn(b"No data available", response.data)
+
+    def test_platforms_endpoint_returns_flat_platform_catalog(self):
+        response = self.client.get("/platforms")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertIsInstance(payload, list)
+        self.assertTrue(any(item.get("slug") == "instagram" for item in payload))
+        self.assertTrue(any(item.get("slug") == "pornhub" for item in payload))
 
     @patch("app.services.search_service.discover_profiles", return_value=[])
     @patch("app.services.search_service.collect_serper_profiles")

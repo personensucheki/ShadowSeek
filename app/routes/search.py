@@ -7,6 +7,7 @@ from ..services.search_service import (
     SearchValidationError,
     build_search_payload,
     execute_search,
+    list_platform_cards,
     resolve_uploaded_image,
 )
 
@@ -29,6 +30,11 @@ def search():
         total_pages=None,
         query=request.args.get("query", "").strip(),
     )
+
+
+@search_bp.route("/platforms", methods=["GET"])
+def platforms():
+    return jsonify(list_platform_cards())
 
 
 @search_bp.route("/api/search", methods=["POST"])
