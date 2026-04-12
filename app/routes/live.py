@@ -1,6 +1,6 @@
 import secrets
 
-from flask import Blueprint, abort, render_template, request
+from flask import Blueprint, abort, current_app, render_template
 
 from app.models import LiveGift, LiveStream, User
 from app.rbac_helpers import login_required
@@ -17,13 +17,17 @@ def live_page():
         "Just Chatting",
         "Dating",
     ]
-    stream_key = secrets.token_urlsafe(18)
-    ingest_url = f"rtmp://{request.host}/live"
+
+    configured_key = current_app.config.get("LIVE_RTMP_STREAM_KEY") or ""
+    stream_key = configured_key or secrets.token_urlsafe(18)
+    ingest_url = (current_app.config.get("LIVE_RTMP_INGEST_URL") or "").strip()
+    live_ready = bool(ingest_url)
     return render_template(
         "live.html",
         categories=categories,
         stream_key=stream_key,
         ingest_url=ingest_url,
+        live_ready=live_ready,
     )
 
 
@@ -64,4 +68,3 @@ def live_viewer(stream_id: int):
         "supporters": supporters,
     }
     return render_template("live_viewer.html", stream=stream)
-

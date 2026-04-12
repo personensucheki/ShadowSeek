@@ -108,6 +108,12 @@ class BaseConfig:
     OWNER_BOOTSTRAP_EMAIL = os.environ.get("OWNER_BOOTSTRAP_EMAIL", "")
     OWNER_BOOTSTRAP_PASSWORD = os.environ.get("OWNER_BOOTSTRAP_PASSWORD", "")
 
+    # Live / OBS ingest (ShadowSeek itself does not implement an RTMP server).
+    # Configure an external RTMP ingest (e.g., nginx-rtmp, Mux, Cloudflare Stream, etc.)
+    LIVE_RTMP_INGEST_URL = os.environ.get("LIVE_RTMP_INGEST_URL", "").strip()
+    # Optional default stream key shown in the UI; per-stream keys can still be generated.
+    LIVE_RTMP_STREAM_KEY = os.environ.get("LIVE_RTMP_STREAM_KEY", "").strip()
+
 
 
 

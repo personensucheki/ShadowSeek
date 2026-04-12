@@ -9,7 +9,7 @@
     <header class="live-page__header">
         <p class="live-page__eyebrow">ShadowSeek Live</p>
         <h1>Starte deinen Live-Stream</h1>
-        <p>Nutze OBS mit Stream-Key oder starte direkt über Kamera & Mikrofon am PC.</p>
+        <p>Nutze OBS mit Stream-Key (über externen RTMP-Ingest) oder starte direkt die Vorschau über Kamera & Mikrofon am PC.</p>
     </header>
 
     <div class="live-layout">
@@ -72,6 +72,12 @@
                     </div>
 
                     <div class="live-mode-content active" id="mode-obs">
+                        {% if not live_ready %}
+                            <p class="live-hint" style="color: rgba(255,255,255,0.78);">
+                                Hinweis: ShadowSeek hostet selbst keinen RTMP-Server. Setze <code>LIVE_RTMP_INGEST_URL</code> (z. B. nginx-rtmp/Mux/Cloudflare Stream),
+                                damit OBS verbinden kann.
+                            </p>
+                        {% endif %}
                         <label for="live-ingest-url">Ingest URL</label>
                         <input id="live-ingest-url" type="text" value="{{ ingest_url }}" readonly>
                         <label for="live-stream-key">Stream Key</label>
@@ -101,7 +107,7 @@
         <aside class="live-preview">
             <h2>Vorschau</h2>
             <video id="live-preview-video" autoplay muted playsinline></video>
-            <p class="live-preview__note">Kein Stream aktiv? Du kannst trotzdem mit OBS über den Stream-Key senden.</p>
+            <p class="live-preview__note">Kein Stream aktiv? OBS benötigt einen externen RTMP-Ingest (siehe Hinweis).</p>
         </aside>
     </div>
 </section>
@@ -110,4 +116,3 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/live.js') }}"></script>
 {% endblock %}
-
