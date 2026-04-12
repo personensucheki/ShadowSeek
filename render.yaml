@@ -7,7 +7,7 @@ services:
     name: shadowseek
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app
+    startCommand: flask db upgrade && gunicorn run:app
     healthCheckPath: /health
     envVars:
       - key: UPLOAD_DIRECTORY

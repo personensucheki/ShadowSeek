@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from flask import Flask, jsonify, request, session
 from werkzeug.exceptions import HTTPException
@@ -16,7 +17,12 @@ def _configure_database_uri(app):
     # DATABASE_URL kommt in Produktion von Render.
     # Lokal in PowerShell nur testen, wenn $env:DATABASE_URL gesetzt wurde.
     uri = os.environ.get("DATABASE_URL")
-    print("DATABASE_URL:", os.environ.get("DATABASE_URL"))
+    if uri:
+        parsed = urlsplit(uri)
+        redacted_uri = f"{parsed.scheme}://{parsed.hostname or 'unknown'}{parsed.path or ''}"
+    else:
+        redacted_uri = None
+    print("DATABASE_URL:", redacted_uri)
 
     if uri and uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
