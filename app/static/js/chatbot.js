@@ -20,7 +20,20 @@ document.addEventListener("DOMContentLoaded", function() {
     const endpoint = form?.dataset.endpoint || "/api/chatbot";
 
     const setOpenState = function(isOpen) {
-        widget.hidden = !isOpen;
+        // Keep a CSS-friendly open flag and only use `hidden` for the fully closed state.
+        if (isOpen) {
+            widget.hidden = false;
+            widget.classList.add("is-open");
+        } else {
+            widget.classList.remove("is-open");
+            // allow transition to play, then hide completely
+            window.setTimeout(function() {
+                if (!widget.classList.contains("is-open")) {
+                    widget.hidden = true;
+                }
+            }, 180);
+        }
+
         widget.setAttribute("aria-hidden", String(!isOpen));
         fab.setAttribute("aria-expanded", String(isOpen));
 
@@ -101,6 +114,13 @@ document.addEventListener("DOMContentLoaded", function() {
     };
 
     fab.addEventListener("click", function() {
+        const isOpen = !widget.hidden && widget.classList.contains("is-open");
+        if (isOpen) {
+            widget.classList.remove("minimized");
+            setOpenState(false);
+            return;
+        }
+
         widget.classList.remove("minimized");
         setOpenState(true);
         seedWelcomeMessage();
