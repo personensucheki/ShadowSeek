@@ -1,5 +1,6 @@
 
 Flask
+Flask-SocketIO
 stripe
 Flask-SQLAlchemy
 psycopg[binary]
