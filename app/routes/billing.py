@@ -108,13 +108,26 @@ def create_checkout():
         return _json_unauthorized()
     if not billing_enabled():
         return jsonify({"success": False, "error": "Billing ist nicht aktiviert."}), 409
-    if not stripe_configured():
-        return jsonify({"success": False, "error": "Stripe ist nicht konfiguriert."}), 500
 
     data = request.get_json(silent=True) or {}
     plan_code = (data.get("plan_code") or data.get("plan") or "").strip().lower()
     if not plan_code:
         return jsonify({"success": False, "error": "Kein Plan ausgewaehlt."}), 400
+    plans = get_configured_plans()
+    plan = plans.get(plan_code)
+    if not plan:
+        return jsonify({"success": False, "error": "Ungueltiger Plan."}), 400
+
+    if not stripe_configured():
+        if plan.get("buy_link"):
+            return jsonify(
+                {
+                    "success": True,
+                    "checkout_url": plan["buy_link"],
+                    "mode": "payment_link",
+                }
+            )
+        return jsonify({"success": False, "error": "Stripe ist nicht konfiguriert."}), 500
 
     try:
         checkout_session = create_checkout_session(user, plan_code)
@@ -123,9 +136,23 @@ def create_checkout():
                 "success": True,
                 "checkout_url": checkout_session["url"],
                 "session_id": checkout_session["id"],
+                "mode": "checkout_session",
             }
         )
     except Exception as exc:
+        if plan.get("buy_link"):
+            current_app.logger.warning(
+                "Falling back to Stripe payment link for %s after checkout session error: %s",
+                plan_code,
+                exc,
+            )
+            return jsonify(
+                {
+                    "success": True,
+                    "checkout_url": plan["buy_link"],
+                    "mode": "payment_link",
+                }
+            )
         current_app.logger.exception("Stripe checkout session creation failed.")
         return jsonify({"success": False, "error": str(exc)}), 500
 

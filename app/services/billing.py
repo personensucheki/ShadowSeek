@@ -33,6 +33,7 @@ PLAN_DEFINITIONS = {
         "name": "ShadowSeek Abo 1",
         "amount_eur": 1.99,
         "price_id_env": "STRIPE_PRICE_ID_ABO_1",
+        "buy_link_env": "STRIPE_BUY_LINK_ABO_1",
         "ui_modules": ("search",),
         "enabled_platforms": ("instagram", "tiktok"),
         "deepsearch_allowed": False,
@@ -42,6 +43,7 @@ PLAN_DEFINITIONS = {
         "name": "ShadowSeek Abo 2",
         "amount_eur": 3.99,
         "price_id_env": "STRIPE_PRICE_ID_ABO_2",
+        "buy_link_env": "STRIPE_BUY_LINK_ABO_2",
         "ui_modules": ("search", "pulse"),
         "enabled_platforms": ALL_SEARCH_PLATFORMS,
         "deepsearch_allowed": False,
@@ -51,6 +53,7 @@ PLAN_DEFINITIONS = {
         "name": "ShadowSeek Abo 3",
         "amount_eur": 6.50,
         "price_id_env": "STRIPE_PRICE_ID_ABO_3",
+        "buy_link_env": "STRIPE_BUY_LINK_ABO_3",
         "ui_modules": ("search", "pulse"),
         "enabled_platforms": ALL_SEARCH_PLATFORMS,
         "deepsearch_allowed": False,
@@ -60,10 +63,18 @@ PLAN_DEFINITIONS = {
         "name": "ShadowSeek Abo 4",
         "amount_eur": 9.99,
         "price_id_env": "STRIPE_PRICE_ID_ABO_4",
+        "buy_link_env": "STRIPE_BUY_LINK_ABO_4",
         "ui_modules": ("search", "pulse", "deepsearch"),
         "enabled_platforms": ALL_SEARCH_PLATFORMS,
         "deepsearch_allowed": True,
     },
+}
+
+DEFAULT_BUY_LINKS = {
+    "abo_1": "https://buy.stripe.com/8x26oJbgkeTNeFA00p3cc00",
+    "abo_2": "https://buy.stripe.com/6oUeVffwAh1V694bJ73cc01",
+    "abo_3": "https://buy.stripe.com/dRmfZj3NS5jd2WS7sR3cc02",
+    "abo_4": "https://buy.stripe.com/aFa9AVbgkdPJgNI28x3cc03",
 }
 
 # Feste Price-IDs (wie im Projekt angelegt). Werden zusätzlich zu .env/config gemappt,
@@ -79,9 +90,11 @@ DEFAULT_PRICE_ID_TO_PLAN = {
 def build_configured_plans(config):
     plans = {}
     for code, plan in PLAN_DEFINITIONS.items():
+        buy_link = (config.get(plan["buy_link_env"]) or DEFAULT_BUY_LINKS.get(code) or "").strip()
         plans[code] = {
             **plan,
             "price_id": config.get(plan["price_id_env"]) or "",
+            "buy_link": buy_link,
         }
     return plans
 

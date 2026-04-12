@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, render_template, request, send_file, session
-from app.services.response_utils import api_success, api_error
+from app.services.response_utils import api_error
 
 from ..models import User
 from ..services.billing import billing_enabled, get_user_entitlements
@@ -70,6 +70,7 @@ def api_search():
         logging.warning("/api/search rate limit hit for IP %s", request.remote_addr)
         return api_error("Rate limit exceeded. Bitte warte kurz.", status=429)
     import logging
+    import os, logging
     try:
         payload = build_search_payload(request.form)
         user_id = session.get("user_id")
@@ -77,7 +78,11 @@ def api_search():
         user = db.session.get(User, user_id) if user_id else None
         entitlements = get_user_entitlements(user)
 
-        if billing_enabled():
+        SEARCH_DEV_BYPASS = os.environ.get("SEARCH_DEV_BYPASS", "false").lower() == "true"
+        if SEARCH_DEV_BYPASS:
+            logging.warning("SEARCH_DEV_BYPASS_ACTIVE: path=/api/search username=%r platforms=%r", payload.username, payload.platforms)
+
+        if billing_enabled() and not SEARCH_DEV_BYPASS:
             if not user:
                 return api_error("Bitte melde dich an, um ShadowSeek zu nutzen.", status=401, errors={"feature_gating": True})
             if not entitlements.get("enabled_platforms"):
@@ -94,19 +99,19 @@ def api_search():
             request.host_url,
             request.files.get("image"),
         )
-        if billing_enabled():
+        if billing_enabled() and not SEARCH_DEV_BYPASS:
             result["entitlements"] = entitlements
         # API contract: keep payload lean for the frontend renderer/tests.
         result.pop("query", None)
         result.pop("username_variations", None)
-        # Always wrap in normalized envelope
-        return api_success(result)
+        # Legacy API contract for frontend/tests: return payload directly.
+        return jsonify(result), 200
     except SearchValidationError as error:
         logging.warning(f"[Search] Validation error: {error.errors}")
         return api_error("Validation error", status=400, errors=error.errors)
     except Exception as exc:
         logging.exception(f"[Search] Unexpected error in /api/search: {exc}")
-        return api_error("Internal server error", status=500, errors={"exception": str(exc)})
+        return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
 @search_bp.route("/api/reverse-image/<token>", methods=["GET"])

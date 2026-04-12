@@ -65,9 +65,17 @@ def _resolve_default_config():
 
 
 def create_app(config_class=None):
-
-    # --- ENV VALIDATION LAYER (PHASE 1) ---
+    # .env laden, bevor Config/ENV-Validation ausgewertet wird
+    load_dotenv()
     import sys
+
+    selected_config = config_class or _resolve_default_config()
+    is_testing_mode = bool(getattr(selected_config, "TESTING", False)) or bool(
+        os.environ.get("PYTEST_CURRENT_TEST")
+    )
+    is_production_runtime = bool(os.environ.get("RENDER") or os.environ.get("RENDER_EXTERNAL_HOSTNAME"))
+
+    # --- ENV VALIDATION LAYER ---
     required_env = [
         "SECRET_KEY",
         "DATABASE_URL",
@@ -104,12 +112,21 @@ def create_app(config_class=None):
     if not os.environ.get("REDDIT_USER_AGENT"):
         disabled_features.append("Reddit integration")
 
-    if missing_required:
+    # Strict validation only in production runtime and not for tests.
+    if missing_required and is_production_runtime and not is_testing_mode:
         print("\n[ENV VALIDATION] FATAL: Missing required environment variables:", file=sys.stderr)
         for k in missing_required:
             print(f"  - {k}", file=sys.stderr)
         print("\n[ENV VALIDATION] Application startup aborted due to missing critical configuration.\n", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError("Missing required production environment variables.")
+    elif missing_required:
+        print(
+            "\n[ENV VALIDATION] WARNING: Missing required env for production, "
+            "but strict fail is skipped outside production runtime.",
+            file=sys.stderr,
+        )
+        for k in missing_required:
+            print(f"  - {k}", file=sys.stderr)
 
     if missing_optional:
         print("\n[ENV VALIDATION] WARNING: Missing optional environment variables:", file=sys.stderr)
@@ -121,10 +138,6 @@ def create_app(config_class=None):
         for feat in disabled_features:
             print(f"  - {feat}", file=sys.stderr)
 
-
-
-    # .env laden, bevor Flask/Provider initialisiert werden
-    load_dotenv()
     import logging
     from logging.handlers import RotatingFileHandler
     from app.services.response_utils import api_error
@@ -163,10 +176,7 @@ def create_app(config_class=None):
             errors={"type": "internal_error"}
         )
 
-    if config_class:
-        app.config.from_object(config_class)
-    else:
-        app.config.from_object(_resolve_default_config())
+    app.config.from_object(selected_config)
 
     _configure_database_uri(app)
     app.config["PLANS"] = build_configured_plans(app.config)
@@ -181,7 +191,7 @@ def create_app(config_class=None):
 
     if not app.config.get("SECRET_KEY") and not app.config.get("TESTING"):
         print("[ENV VALIDATION] FATAL: SECRET_KEY must be configured for ShadowSeek.", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError("SECRET_KEY must be configured for ShadowSeek.")
 
     db.init_app(app)
     migrate.init_app(app, db)

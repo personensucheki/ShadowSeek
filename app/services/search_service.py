@@ -305,13 +305,27 @@ def build_search_payload(form):
     ai_rerank = str(form.get("ai_rerank", "")).lower() in {"1", "true", "on", "yes"}
     secure_mode = str(form.get("secure_mode", "")).lower() in {"1", "true", "on", "yes"}
     precision_mode = str(form.get("precision_mode", "")).lower() in {"1", "true", "on", "yes"}
+    import logging
     getlist = getattr(form, "getlist", None)
     raw_platforms = getlist("platforms") if callable(getlist) else form.get("platforms", [])
+    logging.warning("SEARCH_RAW_PLATFORM_INPUT=%r", raw_platforms)
+    # Normalize platforms: handle single string, list, tuple, etc.
     if isinstance(raw_platforms, str):
-        raw_platforms = [raw_platforms]
+        # Could be comma-separated or single value
+        if "," in raw_platforms:
+            raw_platforms = [p.strip().lower() for p in raw_platforms.split(",") if p.strip()]
+        else:
+            raw_platforms = [raw_platforms.strip().lower()] if raw_platforms.strip() else []
+    elif isinstance(raw_platforms, (list, tuple)):
+        # Lowercase and trim all entries
+        raw_platforms = [str(p).strip().lower() for p in raw_platforms if str(p).strip()]
+    else:
+        raw_platforms = []
+    logging.warning("SEARCH_PAYLOAD_PLATFORMS=%r", raw_platforms)
     selected_platforms = tuple(
         slug for slug in dict.fromkeys(raw_platforms or []) if slug in PLATFORM_INDEX
     )
+    logging.warning("SEARCH_SELECTED_PLATFORMS=%r", selected_platforms)
 
     if not username or len(username) < 2:
         errors["username"] = "Bitte einen gueltigen Username angeben."
@@ -441,6 +455,7 @@ def execute_search(payload, request_base_url, image_file=None):
 
     import logging
     for platform in selected_platforms:
+        logging.warning("SEARCH_DISPATCH_DECISION: platform.slug=%r", platform.slug)
         if platform.slug == "tiktok":
             logging.warning("SEARCH_DISPATCH_TRACE: Attempting TikTok provider dispatch for username='%s'", payload.username)
             try:

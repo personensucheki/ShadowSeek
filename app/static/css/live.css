@@ -108,6 +108,8 @@ body,
     border-radius: 12px;
     padding: 0.65rem 0.9rem;
     cursor: pointer;
+    font-size: 0.98rem;
+    letter-spacing: 0.02em;
 }
 
 .live-mode-switch button.active {
@@ -140,6 +142,8 @@ body,
     border-radius: 12px;
     padding: 0.85rem 1rem;
     font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.03em;
     cursor: pointer;
     box-shadow: 0 0 18px rgba(255, 0, 255, 0.55);
 }
@@ -152,6 +156,7 @@ body,
     padding: 0.65rem 0.9rem;
     cursor: pointer;
     font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
 .live-broadcast-head {
@@ -222,6 +227,8 @@ body,
     background: rgba(10, 26, 42, 0.9);
     color: #e8f6ff;
     font-weight: 900;
+    font-size: 0.94rem;
+    letter-spacing: 0.02em;
     cursor: pointer;
 }
 
@@ -291,6 +298,7 @@ body,
     background: transparent;
     color: var(--neon-green);
     font-weight: 800;
+    letter-spacing: 0.02em;
     padding: 0.6rem 1.05rem;
     cursor: pointer;
 }

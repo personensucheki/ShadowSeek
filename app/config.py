@@ -106,6 +106,8 @@ class BaseConfig:
     STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2025-03-31.basil")
     STRIPE_PRICE_ID_ABO_1 = os.environ.get("STRIPE_PRICE_ID_ABO_1", "price_1TLIGpQOOkzbRZU4sLvRJF6t")
     STRIPE_PRICE_ID_ABO_2 = os.environ.get("STRIPE_PRICE_ID_ABO_2", "price_1TLILBQOOkzbRZU4RwLyMT05")
+    STRIPE_BUY_LINK_ABO_1 = os.environ.get("STRIPE_BUY_LINK_ABO_1", "")
+    STRIPE_BUY_LINK_ABO_2 = os.environ.get("STRIPE_BUY_LINK_ABO_2", "")
     # --- Multi-Plattform API Keys/Token ---
     FACEBOOK_API_KEY = os.environ.get("FACEBOOK_API_KEY")
     FACEBOOK_API_SECRET = os.environ.get("FACEBOOK_API_SECRET")
@@ -121,6 +123,8 @@ class BaseConfig:
     PORNHUB_API_KEY = os.environ.get("PORNHUB_API_KEY")
     STRIPE_PRICE_ID_ABO_3 = os.environ.get("STRIPE_PRICE_ID_ABO_3", "price_1TLILMQOOkzbRZU4722usbdC")
     STRIPE_PRICE_ID_ABO_4 = os.environ.get("STRIPE_PRICE_ID_ABO_4", "price_1TLILbQOOkzbRZU4i4ZZkaEv")
+    STRIPE_BUY_LINK_ABO_3 = os.environ.get("STRIPE_BUY_LINK_ABO_3", "")
+    STRIPE_BUY_LINK_ABO_4 = os.environ.get("STRIPE_BUY_LINK_ABO_4", "")
     OWNER_BOOTSTRAP_ENABLED = os.environ.get("OWNER_BOOTSTRAP_ENABLED", "false")
     OWNER_BOOTSTRAP_USERNAME = os.environ.get("OWNER_BOOTSTRAP_USERNAME", "")
     OWNER_BOOTSTRAP_EMAIL = os.environ.get("OWNER_BOOTSTRAP_EMAIL", "")

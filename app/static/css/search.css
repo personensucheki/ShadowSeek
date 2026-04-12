@@ -546,12 +546,14 @@ body {
 .utility-content {
     color: var(--recon-text);
     font-size: 0.98rem;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-        width: min(1280px, 100vw - 32px);
-        margin: 0 auto;
-        padding: 18px 0 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.utility-content .chip {
+    align-self: flex-start;
 }
 @media (max-width: 1024px) {
     .recon-dashboard {
@@ -569,10 +571,6 @@ body {
     .recon-dashboard {
         padding: 4px 0 24px;
     }
-}
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 4px;
 }
 .utility-empty {
     color: var(--recon-muted);

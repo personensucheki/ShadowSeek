@@ -6,11 +6,14 @@ s = requests.Session()
 
 # Utility to extract CSRF token from HTML
 CSRF_RE = re.compile(r'name="csrf_token" value="([^"]+)"')
+
+
 def get_csrf_token(html):
     m = CSRF_RE.search(html)
     return m.group(1) if m else None
 
-def test_route(name, form_url, post_url, post_data, expect_success_text=None):
+
+def run_route_check(name, form_url, post_url, post_data, expect_success_text=None):
     print(f"\n=== {name.upper()} ===")
     # 1. GET form to fetch CSRF token
     r = s.get(BASE + form_url)
@@ -31,32 +34,9 @@ def test_route(name, form_url, post_url, post_data, expect_success_text=None):
     if expect_success_text:
         print(f"Success text present: {expect_success_text in r_with_csrf.text}")
 
-test_route(
-    "login",
-    "/",  # Home page renders login modal
-    "/auth/login",
-    {"username": "idontexist", "password": "wrong"},
-    expect_success_text="Login fehlgeschlagen"
-)
-
-test_route(
-    "register",
-    "/",  # Home page renders register modal
-    "/auth/register",
-    {"username": "idontexist", "email": "idontexist@example.com", "password": "wrongpass", "password2": "wrongpass"},
-    expect_success_text="existiert"
-)
-
-test_route(
-    "forgot-password",
-    "/",  # Home page renders forgot modal
-    "/auth/forgot-password",
-    {"email": "idontexist@example.com"},
-    expect_success_text="Passwort-Reset"
-)
 
 # LOGOUT: must be POST, check both with and without CSRF
-def test_logout():
+def run_logout_check():
     print("\n=== LOGOUT ===")
     # Get CSRF token from home page
     r = s.get(BASE + "/")
@@ -69,4 +49,34 @@ def test_logout():
     r_with_csrf = s.post(BASE + "/auth/logout", data={"csrf_token": csrf_token}, allow_redirects=False)
     print(f"POST /auth/logout with CSRF: status={r_with_csrf.status_code}, body={r_with_csrf.text[:200]}")
 
-test_logout()
+
+def main():
+    run_route_check(
+        "login",
+        "/",  # Home page renders login modal
+        "/auth/login",
+        {"username": "idontexist", "password": "wrong"},
+        expect_success_text="Login fehlgeschlagen",
+    )
+
+    run_route_check(
+        "register",
+        "/",  # Home page renders register modal
+        "/auth/register",
+        {"username": "idontexist", "email": "idontexist@example.com", "password": "wrongpass", "password2": "wrongpass"},
+        expect_success_text="existiert",
+    )
+
+    run_route_check(
+        "forgot-password",
+        "/",  # Home page renders forgot modal
+        "/auth/forgot-password",
+        {"email": "idontexist@example.com"},
+        expect_success_text="Passwort-Reset",
+    )
+
+    run_logout_check()
+
+
+if __name__ == "__main__":
+    main()

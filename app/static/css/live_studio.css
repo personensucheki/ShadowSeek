@@ -29,8 +29,9 @@ body {
 }
 
 .live-studio-body {
-    font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     color: var(--ss-text);
+    line-height: 1.45;
     overflow: hidden;
 }
 
@@ -709,7 +710,8 @@ body {
 }
 
 .tab-switch__btn.is-active {
-    background: rgba(138, 73, 255, 0.3);
+    background: linear-gradient(90deg, rgba(255, 0, 255, 0.3), rgba(0, 255, 159, 0.22));
+    border: 1px solid rgba(255, 0, 255, 0.45);
     color: var(--ss-text);
 }
 

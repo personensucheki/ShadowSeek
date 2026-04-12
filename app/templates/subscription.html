@@ -28,6 +28,7 @@
 
     <div class="subscription-grid">
         {% for code, plan in plans.items() %}
+            {% set can_checkout = stripe_ready or plan.buy_link %}
             <article class="subscription-card {% if current_subscription.plan_code == code %}subscription-card--active{% endif %}">
                 <div class="subscription-card__name">{{ plan.name }}</div>
                 <div class="subscription-card__price">{{ "%.2f"|format(plan.amount_eur) }} EUR / Monat</div>
@@ -43,9 +44,15 @@
                 <div class="subscription-card__platforms">
                     {{ plan.enabled_platforms|join(", ") }}
                 </div>
-                <button class="btn-scan subscribe-btn" type="button" data-plan="{{ code }}" {% if not stripe_ready %}disabled{% endif %}>
+                <button class="btn-scan subscribe-btn" type="button" data-plan="{{ code }}" {% if not can_checkout %}disabled{% endif %}>
                     {% if current_subscription.plan_code == code %}Aktiver Plan{% else %}Abo waehlen{% endif %}
                 </button>
+                {% if plan.buy_link %}
+                    <div class="subscription-card__platforms">
+                        Direkter Checkout:
+                        <a href="{{ plan.buy_link }}" target="_blank" rel="noopener noreferrer">{{ plan.buy_link }}</a>
+                    </div>
+                {% endif %}
             </article>
         {% endfor %}
     </div>
