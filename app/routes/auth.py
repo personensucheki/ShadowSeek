@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from flask import Blueprint, jsonify, redirect, request, session, url_for
+from sqlalchemy import func
 
 from app.extensions.main import db
 from ..extensions.main import csrf
@@ -160,7 +161,12 @@ def login():
             status_code=400,
         )
 
-    user = User.query.filter((User.username == username) | (User.email == username)).first()
+    # Case-insensitive lookup so "ADMIN" and "admin" work the same (Render env vars / user input).
+    # Also matches email in a case-insensitive way.
+    needle = username.strip().lower()
+    user = User.query.filter(
+        (func.lower(User.username) == needle) | (func.lower(User.email) == needle)
+    ).first()
     if not user or not user.check_password(password):
         return _auth_response(
             False,
