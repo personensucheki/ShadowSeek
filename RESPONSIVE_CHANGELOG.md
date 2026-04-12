@@ -34,3 +34,30 @@
 ---
 
 **Letztes Update:** 12.04.2026
+
+# Config & Security Refactor (Mai 2024)
+
+## Config Structure
+- Split config into `DevelopmentConfig`, `ProductionConfig`, `TestingConfig` (all inherit from `BaseConfig`)
+- Hardened session and security settings (cookie flags, CSRF, session lifetime)
+- Centralized upload directory and `MAX_CONTENT_LENGTH` enforcement
+- All config values are environment-driven, with safe defaults
+
+## Upload Security
+- Only allows uploads to a dedicated directory (`UPLOAD_DIRECTORY`)
+- Enforces `MAX_CONTENT_LENGTH` for all uploads
+- Only allows image extensions: PNG, JPG, JPEG, WEBP, GIF
+- Uses `secure_filename` for all uploaded files
+
+## API Response Standardization
+- All API endpoints now use `api_success` and `api_error` from `app/services/response_utils.py`
+- Ensures consistent JSON structure for success/error
+
+## Smoke Tests
+- Added `tests/test_factory_smoke.py`, `tests/test_auth_smoke.py`, `tests/test_api_smoke.py`
+- Validate app factory, blueprint registration, auth, and basic API routes
+
+## Migration Notes
+- Remove legacy `DevConfig`, `ProdConfig`, `TestConfig` usage; use new class names
+- All config and upload security logic is now centralized and testable
+- No breaking changes for existing deployments (env vars and instance folder respected)

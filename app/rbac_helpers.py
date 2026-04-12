@@ -9,7 +9,8 @@ def login_required(f):
         if not user_id:
             flash('Bitte zuerst anmelden.', 'warning')
             return redirect(url_for('auth.login'))
-        user = User.query.get(user_id)
+        from app.extensions.main import db
+        user = db.session.get(User, user_id)
         if not user or not user.is_active:
             flash('Account nicht aktiv.', 'danger')
             return redirect(url_for('auth.login'))

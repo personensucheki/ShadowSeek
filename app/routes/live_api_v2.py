@@ -29,7 +29,8 @@ def create_stream():
 # Stream laden
 @live_api_v2_bp.route("/api/live/stream/<int:stream_id>", methods=["GET"])
 def get_stream(stream_id):
-    stream = LiveStream.query.get(stream_id)
+    from app.extensions.main import db
+    stream = db.session.get(LiveStream, stream_id)
     if not stream:
         abort(404)
     return jsonify({

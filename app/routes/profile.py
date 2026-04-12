@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, send_from_directory, session, url_for
+from app.services.response_utils import api_success, api_error
 from werkzeug.utils import secure_filename
 
 from app.extensions.main import db
@@ -21,8 +22,9 @@ URL_PATTERN = re.compile(r"^https?://", re.IGNORECASE)
 ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
-def _json_error(message: str, status_code: int = 400):
-    return jsonify(success=False, message=message), status_code
+
+def _json_error(message: str, status_code: int = 400, errors=None):
+    return api_error(message, status=status_code, errors=errors)
 
 
 def _normalize_text(value: str, max_len: int | None = None):
@@ -39,9 +41,18 @@ def _ensure_upload_dir(folder_name: str) -> Path:
     return target
 
 
+
 def _save_image(file_obj, user_id: int, kind: str):
     if not file_obj or not file_obj.filename:
         return None
+
+    # Enforce MAX_CONTENT_LENGTH
+    max_size = current_app.config.get("MAX_CONTENT_LENGTH", 5 * 1024 * 1024)
+    file_obj.stream.seek(0, 2)  # Seek to end
+    size = file_obj.stream.tell()
+    file_obj.stream.seek(0)
+    if size > max_size:
+        raise ValueError(f"Datei zu gross (max. {max_size // (1024*1024)} MB erlaubt).")
 
     filename = secure_filename(file_obj.filename)
     extension = Path(filename).suffix.lower()
@@ -84,7 +95,8 @@ def profile():
     if "user_id" not in session:
         return redirect(url_for("search.home"))
 
-    user = User.query.get(session["user_id"])
+    from app.extensions.main import db
+    user = db.session.get(User, session["user_id"])
     if not user:
         return redirect(url_for("search.home"))
 
@@ -121,7 +133,8 @@ def update_profile():
     if "user_id" not in session:
         return _json_error("Nicht eingeloggt.", 401)
 
-    user = User.query.get(session["user_id"])
+    from app.extensions.main import db
+    user = db.session.get(User, session["user_id"])
     if not user:
         return _json_error("Benutzer nicht gefunden.", 404)
 
@@ -180,11 +193,12 @@ def update_profile():
         if height_cm < 80 or height_cm > 260:
             return _json_error("Koerpergroesse muss zwischen 80 und 260 cm liegen.")
 
+
     try:
         avatar_path = _save_image(request.files.get("avatar_upload"), user.id, "avatar")
         banner_path = _save_image(request.files.get("banner_upload"), user.id, "banner")
     except ValueError as error:
-        return _json_error(str(error))
+        return api_error(str(error))
 
     if password:
         user.set_password(password)
@@ -209,4 +223,4 @@ def update_profile():
         user.banner = banner_path
 
     db.session.commit()
-    return jsonify(success=True, message="Profil erfolgreich aktualisiert.")
+    return api_success(message="Profil erfolgreich aktualisiert.")

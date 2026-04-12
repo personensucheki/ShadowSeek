@@ -10,21 +10,7 @@ def _is_enabled(raw_value) -> bool:
     return str(raw_value).strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _ensure_tables_exist() -> None:
-    """Best-effort table bootstrap for first runs.
 
-    Render/Prod Deployments können starten, bevor Migrationen ausgeführt wurden.
-    In diesem Fall würde der Owner-Account nicht angelegt werden und der Login
-    schlägt dauerhaft fehl. Wir versuchen daher einmalig, die Tabellen zu
-    erstellen (nur falls sie fehlen) und legen dann den Owner an.
-    """
-
-    try:
-        db.create_all()
-    except Exception:  # pragma: no cover
-        # create_all kann fehlschlagen (z.B. fehlende Rechte in Postgres).
-        # Das darf den App-Start nicht blockieren; Logging passiert im Caller.
-        return
 
 
 def ensure_owner_account(app):

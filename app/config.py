@@ -32,6 +32,10 @@ def _default_upload_directory():
 
 
 class BaseConfig:
+    """
+    Base configuration for ShadowSeek.
+    Inherit from this for Dev/Prod/Test configs.
+    """
     SECRET_KEY = os.environ.get("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = _normalize_database_uri(
         os.environ.get("DATABASE_URL", "sqlite:///shadowseek.db")
@@ -44,11 +48,13 @@ class BaseConfig:
     PERMANENT_SESSION_LIFETIME = 3600
     WTF_CSRF_ENABLED = True
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 5 * 1024 * 1024))
+    # Harden upload security: only allow specific upload dir
+    UPLOAD_DIRECTORY = _default_upload_directory()
+    # API/worker limits
     SEARCH_REQUEST_TIMEOUT = float(os.environ.get("SEARCH_REQUEST_TIMEOUT", 3.5))
     SEARCH_MAX_WORKERS = int(os.environ.get("SEARCH_MAX_WORKERS", 8))
     REVERSE_IMAGE_MAX_AGE = int(os.environ.get("REVERSE_IMAGE_MAX_AGE", 3600))
     PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
-    UPLOAD_DIRECTORY = _default_upload_directory()
     SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
     SERPER_API_URL = os.environ.get("SERPER_API_URL", "https://google.serper.dev/search")
     SERPER_RESULTS_PER_QUERY = int(os.environ.get("SERPER_RESULTS_PER_QUERY", 8))
@@ -105,7 +111,9 @@ class BaseConfig:
 
 
 
-class DevConfig(BaseConfig):
+
+class DevelopmentConfig(BaseConfig):
+    """Development config: debug, relaxed security."""
     DEBUG = True
     SECRET_KEY = BaseConfig.SECRET_KEY or "shadowseek-dev-secret"
     SESSION_COOKIE_SECURE = False
@@ -114,25 +122,21 @@ class DevConfig(BaseConfig):
 
 
 
-class ProdConfig(BaseConfig):
+
+class ProductionConfig(BaseConfig):
+    """Production config: strict security."""
     DEBUG = False
+    SESSION_COOKIE_SECURE = True
+    WTF_CSRF_ENABLED = True
 
 
-# --- TestConfig für pytest ---
-class TestConfig:
+
+class TestingConfig(BaseConfig):
+    """Testing config: in-memory DB, disables CSRF, etc."""
     TESTING = True
-    SECRET_KEY = "test-secret"
-    SQLALCHEMY_DATABASE_URI = (
-        os.environ.get("TEST_DATABASE_URL") or "sqlite:///:memory:"
-    )
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    WTF_CSRF_ENABLED = False
-    SOCKETIO_ASYNC_MODE = os.environ.get("SOCKETIO_ASYNC_MODE", "threading")
-
-
-class TestConfig(BaseConfig):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_DATABASE_URI = os.environ.get("TEST_DATABASE_URL") or "sqlite:///:memory:"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = "test-secret"
     WTF_CSRF_ENABLED = False
+    SESSION_COOKIE_SECURE = False
+    MAX_CONTENT_LENGTH = 2 * 1024 * 1024

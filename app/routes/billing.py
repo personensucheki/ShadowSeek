@@ -22,7 +22,8 @@ def _current_user():
     user_id = session.get("user_id")
     if not user_id:
         return None
-    return User.query.get(user_id)
+    from app.extensions.main import db
+    return db.session.get(User, user_id)
 
 
 def _json_unauthorized():
@@ -40,6 +41,12 @@ def billing_page():
         billing_enabled=billing_enabled(),
         stripe_ready=stripe_configured(),
     )
+
+
+@billing_bp.route("/subscription")
+@billing_bp.route("/abo")
+def billing_alias_page():
+    return redirect(url_for("billing.billing_page"))
 
 
 @billing_bp.route("/api/billing/plans", methods=["GET"])
@@ -88,7 +95,8 @@ def entitlements_by_user(user_id: int):
     if current_user.id != user_id and not current_user.is_admin():
         return jsonify({"success": False, "error": "Nicht erlaubt."}), 403
 
-    user = User.query.get(user_id)
+    from app.extensions.main import db
+    user = db.session.get(User, user_id)
     return jsonify(
         {
             "success": True,

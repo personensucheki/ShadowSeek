@@ -268,8 +268,9 @@ def _find_user_for_subscription(subscription):
     user_id = metadata.get("user_id")
 
     user = None
+    from app.extensions.main import db
     if user_id:
-        user = User.query.get(int(user_id))
+        user = db.session.get(User, int(user_id))
     if not user and subscription_id:
         user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
     if not user and customer_id:
@@ -315,7 +316,8 @@ def handle_checkout_completed(event):
     if not user_id:
         return
 
-    user = User.query.get(int(user_id))
+    from app.extensions.main import db
+    user = db.session.get(User, int(user_id))
     if not user:
         return
 

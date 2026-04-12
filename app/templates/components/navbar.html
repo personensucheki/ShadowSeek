@@ -1,40 +1,39 @@
 <nav class="navbar">
-    <a class="navbar-logo" href="/" aria-label="Zur ShadowSeek-Startseite">
+    <a class="navbar-logo" href="{{ url_for('search.home') }}" aria-label="Zur ShadowSeek-Startseite">
         ShadowSeek
     </a>
     <button class="navbar-hamburger" id="navbar-hamburger" aria-label="Menü öffnen" aria-controls="navbar-menu" aria-expanded="false">
         <span></span><span></span><span></span>
     </button>
     <div class="navbar-center" id="navbar-menu">
-        <a href="/">Home</a>
+        <a href="{{ url_for('search.home') }}">Home</a>
+        <a href="{{ url_for('search.search') }}" data-feature="search">
+            {% if session.get('user_id') %}Meine Suche{% else %}Suche{% endif %}
+        </a>
+        <a href="{{ url_for('dashboard.dashboard') }}" data-feature="pulse">Pulse</a>
         {% if session.get('user_id') %}
-            <a href="/search" data-feature="search">Meine Suche</a>
-        {% else %}
-            <a href="/search" data-feature="search">Suche</a>
+            <a href="{{ url_for('community.members') }}" data-feature="members">Mitglieder</a>
         {% endif %}
-        <a href="/pulse" data-feature="pulse">Pulse</a>
-        {% if session.get('user_id') %}
-            <a href="/members" data-feature="members">Mitglieder</a>
-        {% endif %}
-        <a href="/live" data-feature="live">Live</a>
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
-<<<<<<< HEAD
+        <a href="{{ url_for('live.live_page') }}" data-feature="live">Live</a>
 =======
         <a href="/live" data-feature="live">Live</a>
->>>>>>> ca53806 (Login reperatur)
-=======
 >>>>>>> theirs
 =======
+        <a href="/live" data-feature="live">Live</a>
 >>>>>>> theirs
 =======
+        <a href="/live" data-feature="live">Live</a>
 >>>>>>> theirs
 =======
+        <a href="/live" data-feature="live">Live</a>
 >>>>>>> theirs
 =======
+        <a href="/live" data-feature="live">Live</a>
 >>>>>>> theirs
     </div>
     <div class="navbar-right">
@@ -42,16 +41,14 @@
             <button id="login-btn">Anmelden</button>
             <button id="register-btn">Registrieren</button>
         {% else %}
-            <a href="/messages" id="navbar-messages-link">Nachrichten <span id="navbar-messages-unread" class="contact-unread" hidden></span></a>
+            <a href="{{ url_for('community.messages') }}" id="navbar-messages-link">Nachrichten <span id="navbar-messages-unread" class="contact-unread" hidden></span></a>
             {% if session.get('role') in ['super_admin', 'admin', 'moderator'] %}
-                <a href="/stats">Statistik</a>
+                <a href="{{ url_for('community.stats') }}">Statistik</a>
+                <a href="{{ url_for('admin.admin_dashboard') }}">Admin</a>
             {% endif %}
-            {% if session.get('role') in ['super_admin', 'admin', 'moderator'] %}
-                <a href="/admin">Admin</a>
-            {% endif %}
-            <a href="/billing">Abo</a>
-            <a href="/profile">Mein Profil</a>
-            <a href="/auth/logout">Logout</a>
+            <a href="{{ url_for('billing.billing_page') }}">Abo</a>
+            <a href="{{ url_for('profile.profile') }}">Mein Profil</a>
+            <a href="{{ url_for('auth.logout') }}">Logout</a>
         {% endif %}
     </div>
 </nav>

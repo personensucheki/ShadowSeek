@@ -1,20 +1,48 @@
-/* === CYBERPUNK NEON STYLES === */
-
 :root {
-    --neon-pink: #FF00FF;
-    --neon-green: #00FF9F;
+    --neon-pink: #ff00ff;
+    --neon-green: #00ff9f;
     --dark-bg: #07070a;
-    --panel-glass: rgba(10,18,38,0.92);
+    --panel-glass: rgba(10, 18, 38, 0.92);
     --panel-border: #1be6b6;
 }
 
-body, .live-page, .live-viewer {
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+body,
+.live-page,
+.live-viewer {
     background: var(--dark-bg) !important;
+<<<<<<< ours
+<<<<<<< ours
+=======
+.live-page,
+.live-viewer {
+    background: var(--dark-bg);
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+    color: #e8f6ff;
+}
+
+=======
     color: #e8f6ff;
 }
 
 /* Primary Button */
-.btn-primary, .live-start-btn, .live-like-btn .heart {
+.btn-primary,
+.live-start-btn,
+.live-like-btn .heart {
     background: var(--neon-pink);
     color: #fff;
     border: none;
@@ -24,17 +52,25 @@ body, .live-page, .live-viewer {
     letter-spacing: 0.03em;
     transition: box-shadow 0.13s, transform 0.13s, background 0.13s;
 }
-.btn-primary:hover, .live-start-btn:hover, .live-like-btn:hover .heart {
+
+.btn-primary:hover,
+.live-start-btn:hover,
+.live-like-btn:hover .heart {
     box-shadow: 0 0 32px 6px var(--neon-pink), 0 0 8px 0 #fff4;
     transform: translateY(-2px) scale(1.04);
 }
-.btn-primary:active, .live-start-btn:active, .live-like-btn:active .heart {
+
+.btn-primary:active,
+.live-start-btn:active,
+.live-like-btn:active .heart {
     box-shadow: 0 0 12px 2px var(--neon-pink);
     transform: scale(0.98);
 }
 
 /* Secondary Button */
-.btn-secondary, .live-mode-switch button:not(.active), .gift-btn {
+.btn-secondary,
+.live-mode-switch button:not(.active),
+.gift-btn {
     background: transparent;
     color: var(--neon-green);
     border: 1.5px solid var(--neon-green);
@@ -42,12 +78,18 @@ body, .live-page, .live-viewer {
     font-weight: 600;
     transition: background 0.13s, box-shadow 0.13s, color 0.13s;
 }
-.btn-secondary:hover, .live-mode-switch button:not(.active):hover, .gift-btn:hover {
+
+.btn-secondary:hover,
+.live-mode-switch button:not(.active):hover,
+.gift-btn:hover {
     background: var(--neon-green);
     color: #07070a;
     box-shadow: 0 0 18px 2px var(--neon-green);
 }
-.btn-secondary:active, .live-mode-switch button:not(.active):active, .gift-btn:active {
+
+.btn-secondary:active,
+.live-mode-switch button:not(.active):active,
+.gift-btn:active {
     background: #0a1a2a;
     color: var(--neon-green);
 }
@@ -62,7 +104,9 @@ body, .live-page, .live-viewer {
     border-radius: 10px;
     box-shadow: 0 0 0 0 var(--neon-pink);
     transition: box-shadow 0.13s, border 0.13s;
+    padding: 0.65rem 0.75rem;
 }
+
 .live-form input:focus,
 .live-form select:focus,
 .live-form textarea:focus {
@@ -72,18 +116,27 @@ body, .live-page, .live-viewer {
 }
 
 /* Panels / Cards */
-.live-panel, .live-preview, .live-viewer-side, .live-supporters, .live-chat {
+.live-panel,
+.live-preview,
+.live-viewer-side,
+.live-supporters,
+.live-chat {
     background: var(--panel-glass);
     border: 1.5px solid var(--panel-border);
     border-radius: 16px;
     box-shadow: 0 0 32px 0 #00ff9f22, 0 2px 24px 0 #ff00ff22;
     position: relative;
 }
-.live-panel:before, .live-viewer-side:before {
+
+.live-panel:before,
+.live-viewer-side:before {
     content: "";
     display: block;
     position: absolute;
-    left: 0; top: 0; right: 0; height: 3px;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 3px;
     background: linear-gradient(90deg, var(--neon-pink), var(--neon-green));
     border-radius: 16px 16px 0 0;
     opacity: 0.7;
@@ -94,6 +147,7 @@ body, .live-page, .live-viewer {
     fill: var(--neon-pink);
     filter: drop-shadow(0 0 12px var(--neon-pink));
 }
+
 .live-like-btn.liked .heart {
     animation: popHeart 0.4s;
     transform: scale(1.25);
@@ -116,6 +170,7 @@ body, .live-page, .live-viewer {
     font-weight: 600;
     transition: background 0.13s, color 0.13s, box-shadow 0.13s;
 }
+
 .live-chat-input button:hover {
     background: var(--neon-green);
     color: #07070a;
@@ -127,12 +182,14 @@ body, .live-page, .live-viewer {
     border: 1.5px solid var(--neon-pink);
     box-shadow: 0 0 18px 2px var(--neon-pink);
 }
+
 .live-supporter-rank {
     color: var(--neon-pink);
 }
 
 /* Glow-Badges */
-.viewer-count, .live-status-badge {
+.viewer-count,
+.live-status-badge {
     background: #0a1a2a;
     color: var(--neon-green);
     border: 1.5px solid var(--neon-green);
@@ -144,6 +201,7 @@ body, .live-page, .live-viewer {
     align-items: center;
     gap: 0.3em;
 }
+
 .live-status-badge {
     color: var(--neon-pink);
     border-color: var(--neon-pink);
@@ -159,31 +217,402 @@ body, .live-page, .live-viewer {
 }
 
 /* Animationen */
-.btn-primary, .btn-secondary, .live-start-btn, .live-like-btn, .gift-btn, .live-chat-input button {
+.btn-primary,
+.btn-secondary,
+.live-start-btn,
+.live-like-btn,
+.gift-btn,
+.live-chat-input button {
     transition: box-shadow 0.13s, transform 0.13s, background 0.13s, color 0.13s;
 }
 
-/* Mobile Anpassungen */
-@media (max-width: 700px) {
-    .live-layout {
-        grid-template-columns: 1fr;
-    }
-    .live-viewer-main {
-        flex-direction: column;
-    }
-    .live-viewer-side {
-        position: static;
-        min-width: unset;
-        max-width: unset;
-    }
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+.live-page {
+    max-width: 1140px;
+    margin: 2rem auto 4rem;
+    padding: 0 1rem;
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+    color: #e8f6ff;
+>>>>>>> theirs
 }
+
+.live-page__header h1 {
+    margin-bottom: 0.3rem;
+=======
+>>>>>>> theirs
+}
+
+.live-page__eyebrow {
+    color: #32f7b7;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.live-layout {
+    display: grid;
+    gap: 1.2rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    align-items: start;
+}
+
+.live-panel,
 <<<<<<< ours
 <<<<<<< ours
+.live-preview,
+.live-viewer-side,
+.live-supporters,
+.live-chat {
+    background: var(--panel-glass);
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+    border: 1.5px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 0 32px 0 #00ff9f22, 0 2px 24px 0 #ff00ff22;
+    position: relative;
+}
+
+.live-panel::before,
+.live-viewer-side::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--neon-pink), var(--neon-green));
+    border-radius: 16px 16px 0 0;
+    opacity: 0.7;
+=======
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 1rem;
+    box-shadow: 0 0 20px rgba(73, 255, 204, 0.12);
+>>>>>>> theirs
+=======
+    border: 1.5px solid var(--panel-border);
+    border-radius: 16px;
+    box-shadow: 0 0 32px 0 #00ff9f22, 0 2px 24px 0 #ff00ff22;
+}
+
+.live-panel,
+.live-preview {
+    padding: 1rem;
+>>>>>>> theirs
+=======
+    border: 1.5px solid var(--panel-border);
+    border-radius: 16px;
+    box-shadow: 0 0 32px 0 #00ff9f22, 0 2px 24px 0 #ff00ff22;
+}
+
+.live-panel,
+.live-preview {
+    padding: 1rem;
+>>>>>>> theirs
+=======
+.live-preview {
+    padding: 1rem;
+>>>>>>> theirs
+=======
+.live-preview {
+    padding: 1rem;
+>>>>>>> theirs
+}
+
+.live-form {
+    display: grid;
+<<<<<<< ours
+    gap: 0.65rem;
+}
+
+.live-form-section {
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 0.75rem;
+=======
+=======
+>>>>>>> theirs
+    border: 1px solid #ffffff2a;
+    border-radius: 12px;
+    padding: 0.8rem;
+    margin: 0;
+<<<<<<< ours
+=======
+}
+
+.live-form-section legend {
+    color: #9deed9;
+    padding: 0 0.25rem;
+    font-weight: 600;
+}
+
+.live-form input,
+.live-form select,
+.live-form textarea {
+    background: #07070a;
+    border: 1.5px solid #ff00ff44;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    transition: box-shadow 0.13s, border 0.13s;
+}
+
+.live-form input:focus,
+.live-form select:focus,
+.live-form textarea:focus {
+    outline: none;
+    border: 1.5px solid var(--neon-green);
+    box-shadow: 0 0 12px 2px var(--neon-green);
+}
+
+.live-gifts-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+=======
+=======
+>>>>>>> theirs
+    border: 1px solid rgba(112, 243, 255, 0.25);
+    border-radius: 12px;
+    padding: 0.8rem;
+    display: grid;
+    gap: 0.65rem;
+}
+
+.live-form-section legend {
+    color: #7dfbd0;
+    font-weight: 600;
+    padding: 0 0.35rem;
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+}
+
+.live-mode-switch {
+    display: inline-flex;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0.35rem 0;
+>>>>>>> theirs
+}
+
+.live-form-section legend {
+    color: #9deed9;
+    padding: 0 0.25rem;
+    font-weight: 600;
+}
+
+.live-form input,
+.live-form select,
+.live-form textarea {
+    background: #07070a;
+    border: 1.5px solid #ff00ff44;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    transition: box-shadow 0.13s, border 0.13s;
+}
+
+.live-form input:focus,
+.live-form select:focus,
+.live-form textarea:focus {
+    outline: none;
+    border: 1.5px solid var(--neon-green);
+    box-shadow: 0 0 12px 2px var(--neon-green);
+}
+
+.live-gifts-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+>>>>>>> theirs
+}
+
+.live-form input,
+.live-form select,
+.live-form textarea {
+    background: #07070a;
+    border: 1.5px solid #ff00ff44;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+}
+
+<<<<<<< ours
+.live-form input:focus,
+.live-form select:focus,
+.live-form textarea:focus {
+    outline: none;
+    border-color: var(--neon-green);
+    box-shadow: 0 0 12px 2px var(--neon-green);
+=======
+.stream-key-row button,
+.direct-actions button,
+.live-start-btn,
+.live-chat-input button,
+.gift-btn {
+    border: 1px solid rgba(91, 255, 217, 0.35);
+    background: rgba(22, 212, 178, 0.15);
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    cursor: pointer;
+    transition: box-shadow 0.13s, transform 0.13s, background 0.13s;
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+}
+
+.live-gifts-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+<<<<<<< ours
+=======
+    gap: 0.7rem;
+}
+
+.live-form-section {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 0.9rem;
+    display: grid;
+    gap: 0.6rem;
+}
+
+.live-form input,
+.live-form select,
+.live-form textarea {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: #fff;
+    padding: 0.65rem 0.75rem;
+>>>>>>> theirs
+=======
+    margin-top: 0.5rem;
+}
+
+.live-gifts-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cyberpunk-status {
+    margin-top: 0.6rem;
+    color: #7dfbd0;
+    font-size: 0.95rem;
+}
+
+.live-start-btn {
+    margin-top: 0.7rem;
+    font-weight: 700;
+    background: var(--neon-pink);
+    border: none;
+    box-shadow: 0 0 18px 2px var(--neon-pink);
+}
+
+.live-start-btn:hover {
+    box-shadow: 0 0 32px 6px var(--neon-pink);
+    transform: translateY(-2px) scale(1.02);
+}
+
+.cyber-btn.active {
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 14px 2px #ff00ff88;
+}
+
+.cyberpunk-status {
+    margin-top: 0.5rem;
+    color: #00ff9f;
+    min-height: 1.2rem;
+}
+
+.live-preview video {
+    width: 100%;
+    min-height: 230px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #07070a;
+}
+
+.live-preview__note,
+.live-feedback {
+    min-height: 1.2rem;
+    color: #7dfbd0;
+}
+
+<<<<<<< ours
+<<<<<<< ours
+.live-like-btn .heart {
+    fill: var(--neon-pink);
+    filter: drop-shadow(0 0 12px var(--neon-pink));
+}
+
+.live-like-btn.liked .heart {
+    transform: scale(1.25);
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+}
+
+.viewer-count,
+.live-status-badge {
+    background: #0a1a2a;
+    color: var(--neon-green);
+    border: 1.5px solid var(--neon-green);
+    border-radius: 12px;
+    padding: 0.2em 0.7em;
+    box-shadow: 0 0 12px 2px var(--neon-green);
+    font-weight: 700;
+    display: inline-flex;
+<<<<<<< ours
+<<<<<<< ours
+    border: 1px solid rgba(255, 255, 255, 0.18);
+=======
 /* Game-Suche für Live-Studio */
+#game-search-row {
+    position: relative;
+}
+
+=======
+/* Game-Suche für Live-Studio */
+#game-search-row {
+    position: relative;
+}
+
+>>>>>>> theirs
 .game-search-results {
     position: absolute;
     background: #0a1a2a;
     border: 1px solid #3bf7bf99;
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
     border-radius: 10px;
     margin-top: 2px;
     z-index: 10;
@@ -192,6 +621,7 @@ body, .live-page, .live-viewer {
     min-width: 220px;
     box-shadow: 0 2px 16px #00ffd422;
 }
+
 .game-search-result {
     display: flex;
     align-items: center;
@@ -202,9 +632,124 @@ body, .live-page, .live-viewer {
     font-size: 1.04rem;
     transition: background 0.13s;
 }
+
+<<<<<<< ours
+<<<<<<< ours
+.live-mode-switch button.active {
+    background: rgba(0, 255, 170, 0.16);
+    color: #3bf7bf;
+}
+
+.live-mode-content { display: none; }
+.live-mode-content.active { display: block; }
+=======
+    align-items: center;
+    gap: 0.3em;
+}
+>>>>>>> theirs
+
+.live-supporters {
+    border: 1.5px solid var(--neon-pink);
+    box-shadow: 0 0 18px 2px var(--neon-pink);
+}
+
+.live-supporter-rank {
+    color: var(--neon-pink);
+}
+
+<<<<<<< ours
+.live-start-btn {
+    background: var(--neon-pink);
+    border-color: var(--neon-pink);
+    font-weight: 700;
+=======
+    align-items: center;
+    gap: 0.3em;
+}
+
+.live-supporters {
+    border: 1.5px solid var(--neon-pink);
+    box-shadow: 0 0 18px 2px var(--neon-pink);
+}
+
+.live-supporter-rank {
+    color: var(--neon-pink);
+>>>>>>> theirs
+}
+
+.live-viewer-side {
+    position: sticky;
+    top: 2.5rem;
+    min-width: 320px;
+    max-width: 380px;
+}
+
+<<<<<<< ours
+<<<<<<< ours
+.live-start-btn {
+    margin-top: 0.7rem;
+    font-weight: 700;
+    background: var(--neon-pink);
+    box-shadow: 0 0 18px 2px var(--neon-pink);
+=======
+.cyber-btn.active {
+    box-shadow: 0 0 12px rgba(255, 0, 255, 0.55);
+}
+
+#direct-status {
+    margin-top: 0.6rem;
+    min-height: 1.2rem;
+    font-size: 0.95rem;
+>>>>>>> theirs
+}
+=======
+.live-viewer-side {
+    position: sticky;
+    top: 2.5rem;
+    min-width: 320px;
+    max-width: 380px;
+}
+
+@media (max-width: 700px) {
+    .live-layout {
+        grid-template-columns: 1fr;
+    }
+>>>>>>> theirs
+
+    .live-viewer-main {
+        flex-direction: column;
+    }
+
+<<<<<<< ours
+.live-feedback {
+    min-height: 1.2rem;
+    color: #7dfbd0;
+}
+
+@media (max-width: 700px) {
+    .live-layout {
+        grid-template-columns: 1fr;
+    }
+<<<<<<< ours
+
+=======
+>>>>>>> theirs
+=======
+@media (max-width: 700px) {
+    .live-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .live-viewer-main {
+        flex-direction: column;
+    }
+
+>>>>>>> theirs
+=======
 .game-search-result:hover {
     background: #1be6b633;
 }
+
 .game-search-result .game-cover {
     width: 32px;
     height: 32px;
@@ -212,258 +757,59 @@ body, .live-page, .live-viewer {
     border-radius: 7px;
     box-shadow: 0 0 6px #00ffd422;
 }
+
 .game-search-result .game-name {
     flex: 1;
 }
-#game-search-row {
-    position: relative;
-}
-=======
+
+/* Mobile Anpassungen */
+@media (max-width: 700px) {
+    .live-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .live-viewer-main {
+        flex-direction: column;
+    }
+
 >>>>>>> theirs
 =======
+.game-search-result:hover {
+    background: #1be6b633;
+}
+
+.game-search-result .game-cover {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 7px;
+    box-shadow: 0 0 6px #00ffd422;
+}
+
+.game-search-result .game-name {
+    flex: 1;
+}
+
+/* Mobile Anpassungen */
+@media (max-width: 700px) {
+    .live-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .live-viewer-main {
+        flex-direction: column;
+    }
+
 >>>>>>> theirs
-.live-page {
-    max-width: 1140px;
-    margin: 2rem auto 4rem;
-    padding: 0 1rem;
-    color: #e8f6ff;
-}
-
-.live-page__header h1 {
-    margin-bottom: 0.3rem;
-}
-
-.live-page__eyebrow {
-    color: #32f7b7;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.live-layout {
-    display: grid;
-    gap: 1.2rem;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    align-items: start;
-}
-
-.live-panel,
-.live-preview {
-    background: rgba(6, 12, 30, 0.82);
-    border: 1px solid rgba(112, 243, 255, 0.25);
-    border-radius: 14px;
-    padding: 1rem;
-    box-shadow: 0 0 20px rgba(73, 255, 204, 0.08);
-}
-
-.live-form {
-    display: grid;
-    gap: 0.65rem;
-}
-
-.live-form input,
-.live-form select {
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    color: #fff;
-    padding: 0.65rem 0.75rem;
-}
-
-.live-mode-switch {
-    display: inline-flex;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 10px;
-    overflow: hidden;
-    margin: 0.35rem 0;
-}
-
-.live-mode-switch button {
-    background: transparent;
-    color: #d6deff;
-    border: none;
-    padding: 0.55rem 0.8rem;
-    cursor: pointer;
-}
-
-.live-mode-switch button.active {
-    background: rgba(0, 255, 170, 0.16);
-    color: #3bf7bf;
-}
-
-.live-mode-content {
-    display: none;
-}
-
-.live-mode-content.active {
-    display: block;
-}
-
-.stream-key-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 0.45rem;
-}
-
-.stream-key-row button,
-.direct-actions button,
-.live-start-btn {
-    border: 1px solid rgba(91, 255, 217, 0.35);
-    background: rgba(22, 212, 178, 0.15);
-    color: #fff;
-    border-radius: 10px;
-    padding: 0.55rem 0.75rem;
-    cursor: pointer;
-}
-
-.direct-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.live-start-btn {
-    margin-top: 0.7rem;
-    font-weight: 600;
-}
-
-.live-preview video {
-    width: 100%;
-    min-height: 230px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: #07070a;
-}
-
-.live-feedback {
-    min-height: 1.2rem;
-    color: #7dfbd0;
+    .live-viewer-side {
+        position: static;
+        min-width: unset;
+        max-width: unset;
+    }
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
-<<<<<<< ours
-<<<<<<< HEAD
-=======
-}.live-page {
-    max-width: 1140px;
-    margin: 2rem auto 4rem;
-    padding: 0 1rem;
-    color: #e8f6ff;
-}
-
-.live-page__header h1 {
-    margin-bottom: 0.3rem;
-}
-
-.live-page__eyebrow {
-    color: #32f7b7;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.live-layout {
-    display: grid;
-    gap: 1.2rem;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    align-items: start;
-}
-
-.live-panel,
-.live-preview {
-    background: rgba(6, 12, 30, 0.82);
-    border: 1px solid rgba(112, 243, 255, 0.25);
-    border-radius: 14px;
-    padding: 1rem;
-    box-shadow: 0 0 20px rgba(73, 255, 204, 0.08);
-}
-
-.live-form {
-    display: grid;
-    gap: 0.65rem;
-}
-
-.live-form input,
-.live-form select {
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    color: #fff;
-    padding: 0.65rem 0.75rem;
-}
-
-.live-mode-switch {
-    display: inline-flex;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 10px;
-    overflow: hidden;
-    margin: 0.35rem 0;
-}
-
-.live-mode-switch button {
-    background: transparent;
-    color: #d6deff;
-    border: none;
-    padding: 0.55rem 0.8rem;
-    cursor: pointer;
-}
-
-.live-mode-switch button.active {
-    background: rgba(0, 255, 170, 0.16);
-    color: #3bf7bf;
-}
-
-.live-mode-content {
-    display: none;
-}
-
-.live-mode-content.active {
-    display: block;
-}
-
-.stream-key-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 0.45rem;
-}
-
-.stream-key-row button,
-.direct-actions button,
-.live-start-btn {
-    border: 1px solid rgba(91, 255, 217, 0.35);
-    background: rgba(22, 212, 178, 0.15);
-    color: #fff;
-    border-radius: 10px;
-    padding: 0.55rem 0.75rem;
-    cursor: pointer;
-}
-
-.direct-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.live-start-btn {
-    margin-top: 0.7rem;
-    font-weight: 600;
-}
-
-.live-preview video {
-    width: 100%;
-    min-height: 230px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: #07070a;
-}
-
-.live-feedback {
-    min-height: 1.2rem;
-    color: #7dfbd0;
->>>>>>> ca53806 (Login reperatur)
 =======
 >>>>>>> theirs
 =======

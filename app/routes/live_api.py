@@ -41,7 +41,8 @@ def live_platform(platform):
 def pulse_live_platform(platform):
     if billing_enabled():
         user_id = session.get("user_id")
-        user = User.query.get(user_id) if user_id else None
+        from app.extensions.main import db
+        user = db.session.get(User, user_id) if user_id else None
         entitlements = get_user_entitlements(user)
         if not entitlements["pulse_allowed"]:
             return jsonify({"success": False, "error": "Pulse ist in deinem aktuellen Abo nicht freigeschaltet."}), 403

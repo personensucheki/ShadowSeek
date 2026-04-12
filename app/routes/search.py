@@ -42,7 +42,8 @@ def api_search():
     try:
         payload = build_search_payload(request.form)
         user_id = session.get("user_id")
-        user = User.query.get(user_id) if user_id else None
+        from app.extensions.main import db
+        user = db.session.get(User, user_id) if user_id else None
         entitlements = get_user_entitlements(user)
 
         if billing_enabled():
