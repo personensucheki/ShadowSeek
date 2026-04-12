@@ -5,6 +5,7 @@ import re
 from flask import Blueprint, jsonify, redirect, request, session, url_for
 
 from ..extensions import db
+from ..extensions import csrf
 from ..models.user import User
 
 
@@ -49,6 +50,7 @@ def _set_auth_session(user: User) -> None:
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
+@csrf.exempt
 def register():
     if request.method == "GET":
         return redirect(url_for("search.home"))
@@ -99,7 +101,7 @@ def register():
     if username.upper() == "ADMIN" or email == "personensucheki@gmail.com":
         return _auth_response(
             False,
-            "Dieser Benutzername oder diese E-Mail ist reserviert.",
+            "Dieser Benutzername oder diese E-Mail ist reserviert. Bitte mit dem Eigentuemer-Account anmelden.",
             redirect_to=url_for("search.home"),
             status_code=403,
         )
@@ -140,6 +142,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@csrf.exempt
 def login():
     if request.method == "GET":
         return redirect(url_for("search.home"))
@@ -195,6 +198,7 @@ def logout():
 
 
 @auth_bp.route("/forgot-password", methods=["POST"])
+@csrf.exempt
 def forgot_password():
     return _auth_response(
         False,

@@ -54,6 +54,10 @@ class BaseConfig:
     STRIPE_PRICE_ID_ABO_2 = os.environ.get("STRIPE_PRICE_ID_ABO_2", "")
     STRIPE_PRICE_ID_ABO_3 = os.environ.get("STRIPE_PRICE_ID_ABO_3", "")
     STRIPE_PRICE_ID_ABO_4 = os.environ.get("STRIPE_PRICE_ID_ABO_4", "")
+    OWNER_BOOTSTRAP_ENABLED = os.environ.get("OWNER_BOOTSTRAP_ENABLED", "false")
+    OWNER_BOOTSTRAP_USERNAME = os.environ.get("OWNER_BOOTSTRAP_USERNAME", "")
+    OWNER_BOOTSTRAP_EMAIL = os.environ.get("OWNER_BOOTSTRAP_EMAIL", "")
+    OWNER_BOOTSTRAP_PASSWORD = os.environ.get("OWNER_BOOTSTRAP_PASSWORD", "")
 
 
 

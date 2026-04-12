@@ -7,6 +7,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 from .extensions import csrf, db, migrate
 from .services.billing import build_configured_plans
+from .services.owner_bootstrap import ensure_owner_account
 
 
 def _resolve_default_config():
@@ -52,6 +53,8 @@ def create_app(config_class=None):
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
+    with app.app_context():
+        ensure_owner_account(app)
     @app.after_request
     def add_api_cors_headers(response):
         if request.path.startswith("/api/"):
