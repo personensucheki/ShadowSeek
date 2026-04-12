@@ -208,4 +208,7 @@ def create_app(config_class=None):
     app.register_blueprint(live_api_bp)
     app.register_blueprint(query_api_bp)
 
+    # Beispiel für spätere Domain-Restriktion:
+    # app.config["SOCKETIO_CORS_ORIGINS"] = ["https://shadowseek.app"]
+
     return app
