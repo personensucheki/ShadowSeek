@@ -11,6 +11,7 @@ from .extensions import csrf, db, migrate
 from .extensions.socketio import create_socketio
 from .services.billing import build_configured_plans
 from .services.owner_bootstrap import ensure_owner_account
+from .sockets import live_socket
 
 
 def _configure_database_uri(app):
@@ -82,6 +83,9 @@ def create_app(config_class=None):
     # SocketIO initialisieren (Option A, MVP, Redis vorbereitet)
     socketio = create_socketio(app)
     app.socketio = socketio  # Referenz für späteren Import
+
+    # SocketIO-Events für Live-Streams
+    live_socket.init_app(app)
 
     with app.app_context():
        from app.models.user import User
