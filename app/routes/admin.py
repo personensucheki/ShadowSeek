@@ -62,7 +62,9 @@ def _build_dashboard_context():
     total_users = User.query.count()
     active_users = User.query.filter_by(is_active=True).count()
     paid_users = User.query.filter(User.subscription_status.in_(("active", "trialing"))).count()
-    recent_searches = SearchLog.query.count()
+    # SearchLog has a model field named "query", so using SearchLog.query would
+    # resolve to that column instead of Flask-SQLAlchemy's query descriptor.
+    recent_searches = db.session.query(func.count(SearchLog.id)).scalar() or 0
 
     return {
         "admin_actor": actor,
