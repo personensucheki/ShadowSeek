@@ -49,8 +49,54 @@ class LiveNamespace(Namespace):
         if stream_id:
             handle_leave_stream(self.server, sid, stream_id)
 
-    # Platzhalter für weitere Events (send_message, send_like, send_gift)
+    def on_send_message(self, data):
+        stream_id = data.get("stream_id")
+        message = (data.get("message") or "").strip()
+        sid = request.sid
+        user_id = session.get("user_id")
+        # Validierung
+        if not stream_id or not message or len(message) > 500:
+            return
+        # Hier könnte DB-Speicherung erfolgen
+        payload = {
+            "stream_id": stream_id,
+            "user_id": user_id,
+            "message": message,
+        }
+        room = get_stream_room(stream_id)
+        emit("new_message", payload, room=room)
 
+    def on_send_like(self, data):
+        stream_id = data.get("stream_id")
+        sid = request.sid
+        user_id = session.get("user_id")
+        if not stream_id:
+            return
+        # Hier könnte Like in DB gespeichert werden
+        payload = {
+            "stream_id": stream_id,
+            "user_id": user_id,
+        }
+        room = get_stream_room(stream_id)
+        emit("new_like", payload, room=room)
+
+    def on_send_gift(self, data):
+        stream_id = data.get("stream_id")
+        gift_type = data.get("gift_type")
+        amount = int(data.get("amount") or 1)
+        sid = request.sid
+        user_id = session.get("user_id")
+        if not stream_id or not gift_type or amount < 1:
+            return
+        # Hier könnte Gift in DB gespeichert werden
+        payload = {
+            "stream_id": stream_id,
+            "user_id": user_id,
+            "gift_type": gift_type,
+            "amount": amount,
+        }
+        room = get_stream_room(stream_id)
+        emit("new_gift", payload, room=room)
 
 def init_app(app):
     socketio = app.socketio
