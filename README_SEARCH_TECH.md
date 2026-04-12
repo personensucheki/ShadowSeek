@@ -66,3 +66,15 @@
 	REVENUE_DEFAULT_CURRENCY=EUR
 	REVENUE_MAX_ROWS_PER_RUN=100
 	REVENUE_WRITE_BATCH_SIZE=25
+
+
+# Pulse Creator Dashboard (offizielle APIs)
+
+ShadowSeek kann im Pulse Creator Dashboard zusaetzliche, **offizielle** Metriken ziehen, wenn du die passenden API-Keys setzt:
+
+	TWITCH_CLIENT_ID=...
+	TWITCH_CLIENT_SECRET=...
+	YOUTUBE_API_KEY=...
+	REDDIT_USER_AGENT=ShadowSeek/1.0 (contact: you@example.com)
+
+Hinweis: "Live-Einnahmen" sind bei den grossen Plattformen i.d.R. nicht oeffentlich. Ohne Creator-Auth/OAuth gibt es dort keine verifizierbaren Revenue-Daten.

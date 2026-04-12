@@ -411,6 +411,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Creator Search Panel Logic
     const creatorForm = document.getElementById("creator-search-form");
     const creatorStatus = document.getElementById("creator-search-status");
+    const oauthStatus = document.getElementById("oauth-connection-status");
+    const oauthConnectTwitch = document.getElementById("oauth-connect-twitch");
+    const oauthConnectGoogle = document.getElementById("oauth-connect-google");
+    const oauthMeTwitch = document.getElementById("oauth-me-twitch");
+    const oauthMeYouTube = document.getElementById("oauth-me-youtube");
     const kpiToday = document.getElementById("creator-kpi-today");
     const kpiTotal = document.getElementById("creator-kpi-total");
     kpiToday.textContent = "$0";
@@ -425,9 +430,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderCreatorKpis(metrics) {
-        kpiToday.textContent = formatUsd(metrics.estimated_earnings_today_usd);
-        kpiTotal.textContent = formatUsd(metrics.estimated_earnings_total_usd);
-        kpiDiamonds.textContent = formatNumber(metrics.diamonds_today);
+        const today = metrics.estimated_earnings_today_usd;
+        const total = metrics.estimated_earnings_total_usd;
+        kpiToday.textContent = today === null || today === undefined ? "n/a" : formatUsd(today);
+        kpiTotal.textContent = total === null || total === undefined ? "n/a" : formatUsd(total);
+        const diamonds = metrics.diamonds_today;
+        kpiDiamonds.textContent = diamonds === null || diamonds === undefined ? "n/a" : formatNumber(diamonds);
         kpiRanking.textContent = metrics.ranking_country || "-";
     }
 
@@ -472,7 +480,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     renderCreatorMeta(null);
                     return;
                 }
-                setCreatorStatus("Treffer geladen");
+                const note = data?.source?.note ? ` (${data.source.note})` : "";
+                const sourceType = data?.source?.type ? ` [${data.source.type}]` : "";
+                setCreatorStatus(`Treffer geladen${sourceType}${note}`);
                 renderCreatorKpis(data.metrics || {});
                 renderCreatorMeta(data.creator || {});
             } catch (err) {
@@ -481,6 +491,51 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderCreatorMeta(null);
             }
         });
+    }
+
+    async function loadOAuthConnections() {
+        if (!oauthStatus) return;
+        try {
+            const payload = await fetchJson("/auth/connections", { cache: "no-store", credentials: "same-origin" });
+            const con = payload.connections || {};
+            const twitch = con.twitch ? "verbunden" : "nicht verbunden";
+            const google = con.google ? "verbunden" : "nicht verbunden";
+            oauthStatus.textContent = `OAuth: Twitch ${twitch}, YouTube/Google ${google}`;
+            oauthStatus.style.color = "#00ff9f";
+            if (oauthConnectTwitch) {
+                oauthConnectTwitch.textContent = con.twitch ? "Twitch neu verbinden" : "Twitch verbinden";
+            }
+            if (oauthConnectGoogle) {
+                oauthConnectGoogle.textContent = con.google ? "YouTube/Google neu verbinden" : "YouTube/Google verbinden";
+            }
+            if (oauthMeTwitch) {
+                oauthMeTwitch.style.display = con.twitch ? "inline-flex" : "none";
+            }
+            if (oauthMeYouTube) {
+                oauthMeYouTube.style.display = con.google ? "inline-flex" : "none";
+            }
+        } catch (err) {
+            oauthStatus.textContent = "OAuth: nicht verfuegbar (bitte einloggen).";
+            oauthStatus.style.color = "#ff00ff";
+        }
+    }
+
+    async function loadMyConnected(platform) {
+        setCreatorStatus(`Lade verbundenes Konto (${platform}) ...`);
+        try {
+            const data = await fetchJson(`/api/pulse/me/${platform}`, { cache: "no-store", credentials: "same-origin" });
+            if (!data.success) {
+                setCreatorStatus(data.error || "Fehler beim Laden", true);
+                return;
+            }
+            const note = data?.source?.note ? ` (${data.source.note})` : "";
+            const sourceType = data?.source?.type ? ` [${data.source.type}]` : "";
+            setCreatorStatus(`Verbundenes Konto geladen${sourceType}${note}`);
+            renderCreatorKpis(data.metrics || {});
+            renderCreatorMeta(data.creator || {});
+        } catch (err) {
+            setCreatorStatus("Fehler beim Laden des verbundenen Kontos", true);
+        }
     }
 
 
@@ -494,9 +549,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     Promise.all([loadSummary(), loadLive("tiktok")]).then(() => {
+        void loadOAuthConnections();
         startSummaryRefresh();
     }).catch(() => {
         liveStatus.textContent = "Initiale Pulse-Daten konnten nicht geladen werden.";
         queryStatus.textContent = "Initiale Pulse-Daten konnten nicht geladen werden.";
     });
+
+    if (oauthMeTwitch) {
+        oauthMeTwitch.addEventListener("click", () => void loadMyConnected("twitch"));
+    }
+    if (oauthMeYouTube) {
+        oauthMeYouTube.addEventListener("click", () => void loadMyConnected("youtube"));
+    }
 });

@@ -6,6 +6,7 @@ from .user import User
 from .assistant_feedback import AssistantFeedback
 from .einnahme_info import EinnahmeInfo
 from .processed_webhook_event import ProcessedWebhookEvent
+from .oauth_token import OAuthToken
 
 __all__ = [
     "PublicProfile",
@@ -15,4 +16,5 @@ __all__ = [
     "AssistantFeedback",
     "EinnahmeInfo",
     "ProcessedWebhookEvent",
+    "OAuthToken",
 ]

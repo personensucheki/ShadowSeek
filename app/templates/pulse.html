@@ -42,6 +42,38 @@
                     <div class="pulse-creator-form-actions">
                         <button type="submit" class="pulse-btn pulse-btn--primary">Search</button>
                     </div>
+                    <div class="pulse-creator-oauth">
+                        <div class="pulse-creator-oauth-title">Integrationen</div>
+                        <div class="pulse-creator-oauth-actions">
+                            <a id="oauth-connect-twitch" class="pulse-btn pulse-btn--ghost" href="/auth/connect/twitch">Twitch verbinden</a>
+                            <a id="oauth-connect-google" class="pulse-btn pulse-btn--ghost" href="/auth/connect/google">YouTube/Google verbinden</a>
+                            <button type="button" id="oauth-me-twitch" class="pulse-btn pulse-btn--primary" style="display:none;">My Twitch</button>
+                            <button type="button" id="oauth-me-youtube" class="pulse-btn pulse-btn--primary" style="display:none;">My YouTube</button>
+                        </div>
+                        <div id="youtube-analytics-controls" style="display:none; margin-top:10px;">
+                            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+                                <label style="min-width:160px;">
+                                    Zeitraum
+                                    <select id="youtube-analytics-range" class="pulse-creator-input">
+                                        <option value="7">Letzte 7 Tage</option>
+                                        <option value="30">Letzte 30 Tage</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+                                </label>
+                                <label id="youtube-analytics-start-wrap" style="display:none; min-width:160px;">
+                                    Start
+                                    <input id="youtube-analytics-start" type="date" class="pulse-creator-input">
+                                </label>
+                                <label id="youtube-analytics-end-wrap" style="display:none; min-width:160px;">
+                                    Ende
+                                    <input id="youtube-analytics-end" type="date" class="pulse-creator-input">
+                                </label>
+                                <button type="button" id="youtube-analytics-load" class="pulse-btn pulse-btn--ghost">Analytics laden</button>
+                            </div>
+                            <div id="youtube-analytics-status" class="pulse-status" style="margin-top:8px;">Analytics: bereit</div>
+                        </div>
+                        <div id="oauth-connection-status" class="pulse-status">OAuth: Status wird geladen ...</div>
+                    </div>
                     <div id="creator-search-status" class="pulse-creator-status pulse-status">Bereit</div>
                 </form>
             </div>
@@ -66,6 +98,9 @@
                 </div>
                 <div class="pulse-creator-meta-box" id="creator-meta-box">
                     <!-- Creator-Info wird per JS gerendert -->
+                </div>
+                <div class="pulse-creator-meta-box" id="youtube-analytics-box" style="display:none; margin-top:14px;">
+                    <!-- YouTube Analytics wird per JS gerendert -->
                 </div>
             </div>
         </div>

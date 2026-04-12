@@ -10,3 +10,4 @@ Flask-Migrate
 Flask-WTF
 Pillow
 ImageHash
+cryptography

@@ -115,6 +115,7 @@ def create_app(config_class=None):
     from .routes.profile import profile_bp
     from .routes.analysis import analysis_bp
     from .routes.pulse import bp as pulse_bp
+    from .routes.oauth_connect import oauth_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(search_bp)
@@ -129,6 +130,7 @@ def create_app(config_class=None):
     app.register_blueprint(profile_bp)
     app.register_blueprint(analysis_bp)
     app.register_blueprint(pulse_bp)
+    app.register_blueprint(oauth_bp)
     from .routes.einnahmen_api import api_bp
     app.register_blueprint(api_bp)
     from .routes.live_api import live_api_bp
