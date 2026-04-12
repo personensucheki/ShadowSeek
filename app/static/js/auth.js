@@ -22,6 +22,38 @@ function hideAllModals() {
     ["login-modal", "register-modal", "forgot-modal"].forEach(hideModal);
 }
 
+function setModalError(id, message) {
+    const target = document.getElementById(id);
+    if (!target) {
+        return;
+    }
+    target.textContent = message || "";
+}
+
+async function submitAuthForm(form, errorId) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+    const formData = new FormData(form);
+
+    const response = await fetch(form.action, {
+        method: "POST",
+        body: formData,
+        headers: {
+            Accept: "application/json",
+            ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+        },
+        credentials: "same-origin",
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.success === false) {
+        setModalError(errorId, payload.message || "Aktion fehlgeschlagen.");
+        return;
+    }
+
+    hideAllModals();
+    window.location.href = payload.redirect || "/search";
+}
+
 window.addEventListener("openLoginModal", () => {
     hideAllModals();
     showModal("login-modal");
@@ -57,6 +89,39 @@ document.addEventListener("DOMContentLoaded", function() {
             event.preventDefault();
             hideAllModals();
             showModal("forgot-modal");
+        });
+    }
+
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) {
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            setModalError("login-error", "");
+            await submitAuthForm(loginForm, "login-error");
+        });
+    }
+
+    const registerForm = document.getElementById("register-form");
+    if (registerForm) {
+        registerForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            setModalError("register-error", "");
+            const password = registerForm.querySelector('input[name="password"]')?.value || "";
+            const password2 = registerForm.querySelector('input[name="password2"]')?.value || "";
+            if (password !== password2) {
+                setModalError("register-error", "Passwoerter stimmen nicht ueberein.");
+                return;
+            }
+            await submitAuthForm(registerForm, "register-error");
+        });
+    }
+
+    const forgotForm = document.getElementById("forgot-form");
+    if (forgotForm) {
+        forgotForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            setModalError("forgot-error", "");
+            await submitAuthForm(forgotForm, "forgot-error");
         });
     }
 });

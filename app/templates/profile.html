@@ -1,28 +1,119 @@
 {% extends "base.html" %}
-{% block title %}Profil – ShadowSeek{% endblock %}
+{% block title %}Profil - ShadowSeek{% endblock %}
 {% block content %}
-<div class="card neon-card" style="max-width:520px;margin:2em auto 0 auto;padding:2.5em 2em 2em 2em;background:#111;border-radius:18px;box-shadow:0 0 32px #00FF9F44,0 0 12px #FF00FF33;">
-    <h2 style="color:#FF00FF;font-size:2em;letter-spacing:0.08em;margin-bottom:1.2em;text-align:center;">PROFILE</h2>
-    <form id="profile-form" autocomplete="off">
-        <div class="form-group">
-            <label for="display_name">Display Name</label>
-            <input type="text" name="display_name" id="display_name" value="{{ current_user.display_name or '' }}" placeholder="z.B. NeonHunter" style="width:100%">
+<div class="card neon-card" style="max-width:980px;margin:2em auto 0 auto;padding:2em;background:#111;border-radius:18px;box-shadow:0 0 32px #00FF9F44,0 0 12px #FF00FF33;">
+    <h2 style="color:#FF00FF;font-size:2em;letter-spacing:0.08em;margin-bottom:1em;text-align:center;">PROFILE</h2>
+
+    <div style="position:relative;border-radius:14px;overflow:hidden;margin-bottom:1.4em;border:1px solid #2a2a2a;">
+        <img
+            src="{{ url_for('static', filename=(current_user.banner or 'img/default_avatar.png')) }}"
+            alt="Banner"
+            style="width:100%;height:210px;object-fit:cover;display:block;opacity:0.92;"
+        >
+        <div style="position:absolute;left:1.2em;bottom:1.1em;display:flex;align-items:center;gap:0.8em;">
+            <img
+                src="{{ url_for('static', filename=(current_user.avatar or 'img/default_avatar.png')) }}"
+                alt="Profilbild"
+                style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid #00FF9F;box-shadow:0 0 14px #00FF9F77,0 0 8px #FF00FF44;background:#000;"
+            >
+            <div>
+                <div style="color:#00FF9F;font-weight:700;font-size:1.05em;">{{ current_user.username }}</div>
+                <div style="color:#FF00FF;font-size:0.92em;">Rolle: {{ current_user.role }}</div>
+                <div style="color:#c8c8c8;font-size:0.84em;">Mitglied seit: {{ current_user.created_at.strftime('%d.%m.%Y') if current_user.created_at else '-' }}</div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="email">E-Mail</label>
-            <input type="email" name="email" id="email" value="{{ current_user.email }}" style="width:100%">
+    </div>
+
+    <form id="profile-form" autocomplete="off" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1em;">
+            <div class="form-group">
+                <label for="display_name">Display Name</label>
+                <input type="text" name="display_name" id="display_name" value="{{ current_user.display_name or '' }}" placeholder="z.B. NeonHunter" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="profile_title">Titel</label>
+                <input type="text" name="profile_title" id="profile_title" value="{{ current_user.profile_title or '' }}" placeholder="z.B. SuperAdmin / Support Lead" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="email">E-Mail</label>
+                <input type="email" name="email" id="email" value="{{ current_user.email }}" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="password">Neues Passwort</label>
+                <input type="password" name="password" id="password" placeholder="Neues Passwort (optional)" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="birthdate">Geburtsdatum</label>
+                <input type="date" name="birthdate" id="birthdate" value="{{ current_user.birthdate.isoformat() if current_user.birthdate else '' }}" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="gender">Geschlecht</label>
+                <input type="text" name="gender" id="gender" value="{{ current_user.gender or '' }}" placeholder="z.B. maennlich / weiblich / divers" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="height_cm">Koerpergroesse (cm)</label>
+                <input type="number" name="height_cm" id="height_cm" min="80" max="260" value="{{ current_user.height_cm or '' }}" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="support_contact">Support Kontakt</label>
+                <input type="text" name="support_contact" id="support_contact" value="{{ current_user.support_contact or '' }}" placeholder="z.B. personensucheki@gmail.com" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="donation_link">Spenden-Link</label>
+                <input type="url" name="donation_link" id="donation_link" value="{{ current_user.donation_link or '' }}" placeholder="https://..." style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="avatar_upload">Avatar Upload</label>
+                <input type="file" name="avatar_upload" id="avatar_upload" accept="image/png,image/jpeg,image/webp,image/gif" style="width:100%">
+            </div>
+            <div class="form-group">
+                <label for="banner_upload">Banner Upload</label>
+                <input type="file" name="banner_upload" id="banner_upload" accept="image/png,image/jpeg,image/webp,image/gif" style="width:100%">
+            </div>
         </div>
-        <div class="form-group">
-            <label for="password">Neues Passwort</label>
-            <input type="password" name="password" id="password" placeholder="Neues Passwort (optional)" style="width:100%">
-        </div>
-        <div class="form-group">
+
+        <div class="form-group" style="margin-top:0.9em;">
             <label for="bio">Bio</label>
-            <textarea name="bio" id="bio" rows="3" placeholder="Sag etwas über dich ..." style="width:100%">{{ current_user.bio or '' }}</textarea>
+            <textarea name="bio" id="bio" rows="3" placeholder="Sag etwas ueber dich ..." style="width:100%">{{ current_user.bio or '' }}</textarea>
         </div>
+        <div class="form-group" style="margin-top:0.9em;">
+            <label for="hobbies">Hobbys</label>
+            <textarea name="hobbies" id="hobbies" rows="2" placeholder="z.B. Coding, Gaming, Fitness" style="width:100%">{{ current_user.hobbies or '' }}</textarea>
+        </div>
+        <div class="form-group" style="margin-top:0.9em;">
+            <label for="interests">Interessen</label>
+            <textarea name="interests" id="interests" rows="2" placeholder="z.B. OSINT, Cybersecurity, Community" style="width:100%">{{ current_user.interests or '' }}</textarea>
+        </div>
+        <div class="form-group" style="margin-top:0.9em;">
+            <label for="preferences">Vorlieben</label>
+            <textarea name="preferences" id="preferences" rows="2" placeholder="z.B. Teamarbeit, Events, Reisen" style="width:100%">{{ current_user.preferences or '' }}</textarea>
+        </div>
+
+        <div style="margin-top:1.2em;">
+            <div style="color:#FF00FF;font-weight:700;margin-bottom:0.7em;">Social Accounts verbinden</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8em;">
+                {% for platform in profile_platforms %}
+                    <div class="form-group">
+                        <label for="social_{{ platform.slug }}">{{ platform.name }}</label>
+                        <input
+                            type="text"
+                            id="social_{{ platform.slug }}"
+                            name="social_{{ platform.slug }}"
+                            placeholder="Handle oder Profil-URL"
+                            value="{{ social_accounts.get(platform.slug, '') }}"
+                            style="width:100%"
+                        >
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
         <button type="submit" class="profile-save-btn" style="width:100%;margin-top:1.2em;background:linear-gradient(90deg,#FF00FF,#00FF9F);color:#fff;font-weight:700;font-size:1.1em;border:none;border-radius:8px;padding:0.7em 0;box-shadow:0 0 16px #00FF9F55,0 0 8px #FF00FF33;cursor:pointer;">SAVE PROFILE</button>
         <div id="profile-message" style="margin-top:1.2em;text-align:center;"></div>
     </form>
 </div>
 {% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/profile.js') }}"></script>{% endblock %}

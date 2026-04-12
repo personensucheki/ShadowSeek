@@ -15,6 +15,6 @@ def subscription():
 
 @admin_bp.route("/")
 @login_required
-@role_required('admin', 'super_admin')
+@role_required('admin', 'super_admin', 'moderator')
 def admin_dashboard():
     return render_template("admin.html")

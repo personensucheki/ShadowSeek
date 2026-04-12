@@ -14,7 +14,18 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     display_name = db.Column(db.String(80), unique=False, nullable=True)
     bio = db.Column(db.String(500), nullable=True)
+    profile_title = db.Column(db.String(120), nullable=True)
+    birthdate = db.Column(db.Date, nullable=True)
+    gender = db.Column(db.String(32), nullable=True)
+    height_cm = db.Column(db.Integer, nullable=True)
+    hobbies = db.Column(db.String(1000), nullable=True)
+    interests = db.Column(db.String(1000), nullable=True)
+    preferences = db.Column(db.String(1000), nullable=True)
+    social_accounts = db.Column(db.Text, nullable=True)
+    support_contact = db.Column(db.String(255), nullable=True)
+    donation_link = db.Column(db.String(255), nullable=True)
     avatar = db.Column(db.String(255), nullable=True)
+    banner = db.Column(db.String(255), nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Billing/Subscription
@@ -53,7 +64,18 @@ class User(db.Model):
             "email": self.email,
             "display_name": self.display_name,
             "bio": self.bio,
+            "profile_title": self.profile_title,
+            "birthdate": self.birthdate.isoformat() if self.birthdate else None,
+            "gender": self.gender,
+            "height_cm": self.height_cm,
+            "hobbies": self.hobbies,
+            "interests": self.interests,
+            "preferences": self.preferences,
+            "social_accounts": self.social_accounts,
+            "support_contact": self.support_contact,
+            "donation_link": self.donation_link,
             "avatar": self.avatar,
+            "banner": self.banner,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "is_active": self.is_active,
