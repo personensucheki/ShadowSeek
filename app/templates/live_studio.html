@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>ShadowSeek Live Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/live_studio.css') }}">
+</head>
+<body class="live-studio-body">
+<div class="live-root" id="live-root">
+    <div class="live-stage" id="live-stage">
+        <video id="stage-video" autoplay muted playsinline aria-label="Live Kamera Vorschau"></video>
+        <div class="live-stage-fallback" id="stage-fallback" role="status" aria-live="polite">
+            <div class="live-stage-fallback__title">Kamera-Vorschau bereit machen</div>
+            <div class="live-stage-fallback__text">Aktiviere die Geraetekamera fuer eine vollflaechige Live-Stage.</div>
+            <button type="button" class="ss-btn ss-btn--pink" id="fallback-enable-camera">Kamera aktivieren</button>
+        </div>
+        <div class="live-stage-gradient live-stage-gradient--top"></div>
+        <div class="live-stage-gradient live-stage-gradient--bottom"></div>
+    </div>
+
+    <header class="studio-topbar">
+        <button type="button" class="icon-fab icon-fab--left" id="top-close" aria-label="Live Studio verlassen">x</button>
+        <div class="top-right-actions">
+            <button type="button" class="icon-fab" data-open-sheet="goal" aria-label="Belohnungen und Ziele">S</button>
+            <button type="button" class="icon-fab" data-open-sheet="settings" aria-label="Status und Schutz">P</button>
+            <button type="button" class="icon-fab" data-open-sheet="live-center" aria-label="Highlights und Media">M</button>
+        </div>
+    </header>
+
+    <div class="hint-toast" id="hint-toast">
+        <div class="hint-toast__text">Gestaffelte LIVE-Belohnungen: Schliesse Missionen ab und schalte Rewards frei.</div>
+        <button type="button" class="hint-toast__close" id="hint-toast-close" aria-label="Hinweis schliessen">x</button>
+    </div>
+
+    <section class="stage-event-layer" aria-live="polite" aria-label="Live Ereignisse">
+        <div class="stage-stats-pill">
+            <span class="stage-stats-pill__label">Viewer</span>
+            <strong id="stage-viewer-count">0</strong>
+            <span class="stage-stats-pill__dot"></span>
+            <span id="stage-like-count">0 Likes</span>
+        </div>
+        <ul class="stage-activity-feed" id="stage-activity-feed" aria-label="Live Activity Feed"></ul>
+        <div class="stage-reactions-layer" id="stage-reactions-layer" aria-hidden="true"></div>
+    </section>
+
+    <section class="studio-control-zone" aria-label="Live Studio Steuerung">
+        <div class="studio-panel">
+            <div class="studio-header">
+                <div class="studio-cover" id="studio-cover" aria-hidden="true"></div>
+                <div class="studio-header-meta">
+                    <div class="studio-title-wrap">
+                        <label class="sr-only" for="live-title-input">Live Titel</label>
+                        <input id="live-title-input" class="studio-title-input" maxlength="120" value="ShadowSeek Live Session">
+                        <button type="button" class="icon-inline-btn" id="edit-title-btn" aria-label="Titel bearbeiten">Edit</button>
+                    </div>
+                    <div class="studio-meta-row">
+                        <div class="pill-group">
+                            <button type="button" class="meta-pill" id="category-pill" data-open-sheet="category">Games</button>
+                            <button type="button" class="meta-pill meta-pill--ghost" data-open-sheet="goal">LIVE-Ziel hinzufuegen</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <article class="studio-info-card">
+                <h2>Gestaffelte LIVE-Belohnungen</h2>
+                <p>Sammle Aktivitaet durch Geschenke und Top-Kommentare fuer mehr Reichweite.</p>
+            </article>
+
+            <button type="button" class="quick-action-card" data-open-sheet="live-center" aria-label="Highlight Modul oeffnen">
+                <span class="quick-action-card__icon">*</span>
+                <span class="quick-action-card__text">Speichere und veroeffentliche Highlights direkt aus dem Stream.</span>
+                <span class="quick-action-card__arrow">></span>
+            </button>
+
+            <div class="tools-grid" id="tools-grid" role="toolbar" aria-label="Live Tools">
+                <button type="button" class="tool-cell" data-open-sheet="hint"><span>Hinweise</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="settings"><span>Einstellungen</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="share"><span>Teilen</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="co-stream"><span>Zusammen streamen</span></button>
+                <button type="button" class="tool-cell" data-tool-action="switch-camera"><span>Ausrichtung</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="live-center"><span>LIVE-Zentrum</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="poll"><span>Abstimmung</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="fanclub"><span>Fanclub</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="promote"><span>Werben</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="transfer"><span>Uebertragen</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="share-camera"><span>Kamera teilen</span></button>
+                <button type="button" class="tool-cell" data-open-sheet="add-camera"><span>Kamera hinzufuegen</span></button>
+            </div>
+
+            <div class="studio-start-zone">
+                <button type="button" id="start-live-btn" class="ss-btn ss-btn--pink ss-btn--xl" disabled>LIVE starten</button>
+                <p class="studio-status-line" id="studio-status-line" role="status" aria-live="polite"></p>
+            </div>
+
+            <div class="mode-switch" id="mode-switch" role="tablist" aria-label="Live Modi">
+                <button type="button" role="tab" data-mode="voice">Sprachchat</button>
+                <button type="button" role="tab" data-mode="direct" class="is-active">Geraetekamera</button>
+                <button type="button" role="tab" data-mode="mobile">Handyspiele</button>
+                <button type="button" role="tab" data-mode="studio">LIVE Studio</button>
+            </div>
+
+            <div class="inline-controls">
+                <button type="button" id="inline-front-camera" class="tiny-pill is-active">Frontkamera</button>
+                <button type="button" id="inline-back-camera" class="tiny-pill">Rueckkamera</button>
+                <button type="button" id="inline-mic-toggle" class="tiny-pill is-active">Mikro an</button>
+                <button type="button" id="obs-copy-key" class="tiny-pill">Stream-Key kopieren</button>
+            </div>
+        </div>
+    </section>
+
+    <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+    <aside class="sheet-layer" id="sheet-layer" aria-live="polite">
+        <section class="sheet shell-sheet" data-sheet="settings" hidden>
+            <header class="sheet-header">
+                <h3>Einstellungen</h3>
+                <button type="button" class="sheet-close" data-close-sheet aria-label="Sheet schliessen">x</button>
+            </header>
+            <div class="sheet-content settings-list" id="settings-list"></div>
+        </section>
+
+        <section class="sheet shell-sheet" data-sheet="share" hidden>
+            <header class="sheet-header">
+                <h3>Teilen</h3>
+                <button type="button" class="sheet-close" data-close-sheet aria-label="Sheet schliessen">x</button>
+            </header>
+            <div class="sheet-content">
+                <div class="share-contacts" id="share-contacts"></div>
+                <div class="share-actions" id="share-actions"></div>
+            </div>
+        </section>
+
+        <section class="sheet shell-sheet" data-sheet="poll" hidden>
+            <header class="sheet-header">
+                <h3>Neue Abstimmung erstellen</h3>
+                <button type="button" class="sheet-close" data-close-sheet aria-label="Sheet schliessen">x</button>
+            </header>
+            <form class="sheet-content poll-form" id="poll-form" novalidate>
+                <label for="poll-question">Frage</label>
+                <input id="poll-question" maxlength="150" placeholder="Gib bis zu 150 Zeichen ein">
+                <label for="poll-option-a">Option A</label>
+                <input id="poll-option-a" maxlength="50" placeholder="Option A">
+                <label for="poll-option-b">Option B</label>
+                <input id="poll-option-b" maxlength="50" placeholder="Option B">
+                <div id="poll-extra-options"></div>
+                <button type="button" class="ss-btn ss-btn--ghost" id="poll-add-option">Option hinzufuegen</button>
+                <button type="submit" class="ss-btn ss-btn--pink" id="poll-save-btn" disabled>Speichern</button>
+            </form>
+        </section>
+
+        <section class="sheet shell-sheet" data-sheet="goal" hidden>
+            <header class="sheet-header">
+                <h3>Geschenkziel</h3>
+                <button type="button" class="sheet-close" data-close-sheet aria-label="Sheet schliessen">x</button>
+            </header>
+            <div class="sheet-content">
+                <div class="tab-switch">
+                    <button type="button" class="tab-switch__btn is-active" data-goal-tab="gift">Geschenkziel</button>
+                    <button type="button" class="tab-switch__btn" data-goal-tab="fan">Super Fan</button>
+                </div>
+                <div class="goal-grid" id="goal-grid"></div>
+                <button type="button" class="ss-btn ss-btn--pink" id="save-goal-btn">Speichern</button>
+            </div>
+        </section>
+
+        <section class="sheet shell-sheet" data-sheet="add-camera" hidden>
+            <header class="sheet-header">
+                <h3>Kameraansicht hinzufuegen</h3>
+                <button type="button" class="sheet-close" data-close-sheet aria-label="Sheet schliessen">x</button>
+            </header>
+            <div class="sheet-content add-camera-sheet">
+                <div class="add-camera-visual" aria-hidden="true"></div>
+                <p>Fuge eine zweite Kamera als Reaction-Quelle hinzu. Vorbereitung fuer Multi-Cam ist aktiviert.</p>
+                <button type="button" class="ss-btn ss-btn--pink" id="add-camera-btn">Hinzufuegen</button>
+            </div>
+        </section>
+
+        <section class="sheet shell-sheet" data-sheet="category" hidden>
+            <header class="sheet-header">
+                <h3>Thema hinzufuegen</h3>
+                <button type="button" class="sheet-close" data-close-sheet aria-label="Sheet schliessen">x</button>
+            </header>
+            <div class="sheet-content">
+                <input id="category-search" class="category-search" placeholder="Suchen">
+                <div class="category-list" id="category-list">
+                    {% for category in categories %}
+                    <button type="button" class="category-item" data-category-value="{{ category }}">{{ category }}</button>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="sheet shell-sheet" data-sheet="live-center" hidden>
+            <header class="sheet-header">
+                <h3>LIVE-Zentrum</h3>
+                <button type="button" class="sheet-close" data-close-sheet aria-label="Sheet schliessen">x</button>
+            </header>
+            <div class="sheet-content">
+                <article class="center-card">
+                    <h4>Tools und Ressourcen</h4>
+                    <div class="center-grid">
+                        <button type="button" class="center-chip">LIVE-Aufnahmen</button>
+                        <button type="button" class="center-chip">LIVE Events</button>
+                        <button type="button" class="center-chip">Beitraege</button>
+                        <button type="button" class="center-chip">Fanclub</button>
+                    </div>
+                </article>
+                <article class="center-card">
+                    <h4>LIVE-Analyse</h4>
+                    <div class="center-stats">
+                        <div><strong id="stat-views">0</strong><span>Gesamtaufrufe</span></div>
+                        <div><strong id="stat-followers">0</strong><span>Neue Follower</span></div>
+                        <div><strong id="stat-duration">0</strong><span>LIVE-Dauer (min)</span></div>
+                    </div>
+                </article>
+            </div>
+        </section>
+        <section class="sheet shell-sheet" data-sheet="utility" hidden>
+            <header class="sheet-header">
+                <h3 id="utility-sheet-title">Tool</h3>
+                <button type="button" class="sheet-close" data-close-sheet aria-label="Sheet schliessen">x</button>
+            </header>
+            <div class="sheet-content">
+                <p id="utility-sheet-text">Dieses Modul ist vorbereitet.</p>
+            </div>
+        </section>
+    </aside>
+</div>
+<script>
+window.LIVE_STUDIO_BOOTSTRAP = {{ {
+    "categories": categories,
+    "streamKey": stream_key,
+    "ingestUrl": ingest_url,
+    "liveReady": live_ready
+}|tojson }};
+</script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/live_studio.js') }}"></script>
+</body>
+</html>

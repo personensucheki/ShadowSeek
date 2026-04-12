@@ -452,26 +452,46 @@ def execute_search(payload, request_base_url, image_file=None):
     serper_meta = {"used": False, "queries": 0, "provider": None}
     search_engine_meta = {"used": False, "queries": 0, "provider": None}
 
-    if has_serper_api_key():
-        serper_profiles, serper_meta = collect_serper_profiles(payload, username_variations, selected_platforms)
-        if serper_profiles:
-            # When a search provider is available, return provider-backed results first.
-            # Local candidate links remain useful as a fallback, but they should not overshadow real results.
-            profiles = list(serper_profiles)
-    else:
-        discovered = discover_profiles(payload, username_variations, selected_platforms)
-        if isinstance(discovered, tuple) and len(discovered) == 2:
-            discovered_profiles, search_engine_meta = discovered
+    # External search providers should only run when explicitly enabled via the UI
+    # ("Oeffentliche Quellen"). Otherwise keep results local (candidate links only).
+    if payload.public_sources:
+        if has_serper_api_key():
+            serper_profiles, serper_meta = collect_serper_profiles(
+                payload, username_variations, selected_platforms
+            )
+            if serper_profiles:
+                # When a search provider is available, return provider-backed results first.
+                # Local candidate links remain useful as a fallback, but they should not overshadow real results.
+                profiles = list(serper_profiles)
         else:
-            discovered_profiles = discovered
-        if discovered_profiles:
-            profiles.extend(discovered_profiles)
+            discovered = discover_profiles(payload, username_variations, selected_platforms)
+            if isinstance(discovered, tuple) and len(discovered) == 2:
+                discovered_profiles, search_engine_meta = discovered
+            else:
+                discovered_profiles = discovered
+            if discovered_profiles:
+                profiles.extend(discovered_profiles)
+
 
     profiles = dedupe_and_limit_profiles(profiles, payload.deep_search)
 
-    ai_applied = False
-    if should_ai_rerank(payload, profiles):
-        profiles, ai_applied = rerank_profiles_with_openai(payload, username_variations, profiles)
+    # --- AI reranker integration (optional, robust fallback) ---
+    ai_reranked = False
+    rerank_provider = None
+    rerank_fallback_used = False
+    reranked_profiles = profiles
+    if getattr(payload, "ai_rerank", False):
+        try:
+            from app.services.ai_reranker import rerank_results
+            reranked = rerank_results(profiles)
+            if reranked is not None and isinstance(reranked, list) and len(reranked) == len(profiles):
+                reranked_profiles = reranked
+                ai_reranked = True
+                rerank_provider = "openai"
+            else:
+                rerank_fallback_used = True
+        except Exception:
+            rerank_fallback_used = True
 
     reverse_image_links = {}
     if image_file and getattr(image_file, "filename", ""):
@@ -496,14 +516,16 @@ def execute_search(payload, request_base_url, image_file=None):
                 **profile,
                 "confidence": profile.get("confidence") or _confidence_from_score(profile["match_score"]),
             }
-            for profile in profiles
+            for profile in reranked_profiles
         ],
         "reverse_image_search": reverse_image_links,
         "meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "platform_count": len(payload.platforms),
-            "profile_count": len(profiles),
-            "ai_reranking_applied": ai_applied,
+            "profile_count": len(reranked_profiles),
+            "ai_reranked": ai_reranked,
+            "rerank_provider": rerank_provider,
+            "rerank_fallback_used": rerank_fallback_used,
             "serper_used": bool(serper_meta.get("used")),
             "serper_queries": int(serper_meta.get("queries") or 0),
             "search_engine_used": bool(search_engine_meta.get("used")),

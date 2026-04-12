@@ -122,7 +122,7 @@ def pulse_query():
     )
 
 
-@query_api_bp.route("/api/pulse/search", methods=["POST"])
+@query_api_bp.route("/api/pulse/query/search", methods=["POST"])
 @feature_required(FEATURE_PULSE)
 def pulse_search():
     return pulse_query()

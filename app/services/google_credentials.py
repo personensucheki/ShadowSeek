@@ -102,6 +102,15 @@ def google_credentials_status() -> dict:
         missing_fields.append("GOOGLE_CLOUD_PROJECT_ID")
     if not location:
         missing_fields.append("GOOGLE_CLOUD_LOCATION")
+    location_valid = False
+    location_error = None
+    if location:
+        try:
+            validate_gcp_location(location)
+            location_valid = True
+        except ProviderError as exc:
+            location_error = exc.as_dict()
+
     bucket_valid = False
     bucket_error = None
     if not output_bucket:
@@ -221,11 +230,3 @@ def require_google_credentials() -> Path:
         )
 
     return cred_path
-    location_valid = False
-    location_error = None
-    if location:
-        try:
-            validate_gcp_location(location)
-            location_valid = True
-        except ProviderError as exc:
-            location_error = exc.as_dict()

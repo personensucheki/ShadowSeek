@@ -1,6 +1,6 @@
 import secrets
 
-from flask import Blueprint, abort, current_app, render_template
+from flask import Blueprint, abort, current_app, render_template, request
 
 from app.models import LiveGift, LiveStream, User
 from app.rbac_helpers import login_required
@@ -22,8 +22,9 @@ def live_page():
     stream_key = configured_key or secrets.token_urlsafe(18)
     ingest_url = (current_app.config.get("LIVE_RTMP_INGEST_URL") or "").strip()
     live_ready = bool(ingest_url)
+    template_name = "live.html" if request.args.get("legacy") == "1" else "live_studio.html"
     return render_template(
-        "live.html",
+        template_name,
         categories=categories,
         stream_key=stream_key,
         ingest_url=ingest_url,

@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request
 from app.services.response_utils import api_success, api_error
 
 from app.services.deepsearch import run_deepsearch
+from app.services.feature_gating import feature_required
+from app.services.permissions import FEATURE_FULL_ACCESS
 from app.services.image_similarity import compare_uploaded_against_gallery
 from app.services.risk_score import calculate_osint_risk
 from app.services.screenshot_engine import capture_profile_screenshot
@@ -85,6 +87,7 @@ def risk_score():
 
 
 @analysis_bp.route("/search/deepsearch", methods=["POST"])
+@feature_required(FEATURE_FULL_ACCESS)
 def deepsearch():
     data, error = _get_json_payload()
     if error:

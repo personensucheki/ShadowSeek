@@ -403,7 +403,38 @@ function resetAnalysisWidgets() {
     renderDeepSearchResponse(null);
 }
 
-function buildDeepSearchPayload(searchPayload) {
+function normalizeHandleInput(value) {
+    return String(value ?? "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9._-]/g, "")
+        .replace(/^[._-]+|[._-]+$/g, "");
+}
+
+function generateClientVariations(username, deepSearchEnabled) {
+    const base = normalizeHandleInput(username);
+    if (!base || base.length < 2) {
+        return [];
+    }
+
+    const compact = base.replace(/[._-]+/g, "");
+    const variants = [
+        base,
+        ...(compact && compact !== base ? [compact] : []),
+        `${base}official`,
+        `${base}tv`,
+        `${base}live`,
+    ];
+
+    if (deepSearchEnabled) {
+        variants.push(`${base}_official`, `${base}.official`, `${base}app`);
+    }
+
+    return Array.from(new Set(variants)).filter((item) => item.length >= 2 && item.length <= 32).slice(0, 10);
+}
+
+function buildDeepSearchPayload(searchPayload, queryContext = {}) {
     const profiles = Array.isArray(searchPayload?.profiles) ? searchPayload.profiles : [];
     const profileUrls = profiles
         .map((profile) => profile?.url || profile?.profile_url)
@@ -413,27 +444,41 @@ function buildDeepSearchPayload(searchPayload) {
         ? Math.max(...searchPayload.image_similarity.matches.map((item) => Number(item?.score) || 0), 0)
         : 0;
 
+    const rawUsername = String(queryContext?.username || "").trim();
+    const baseUsername = normalizeHandleInput(rawUsername);
+    const realName = String(queryContext?.real_name || "").trim();
+    const clanName = String(queryContext?.clan_name || "").trim();
+    const ageValue = String(queryContext?.age || "").replace(/\D/g, "");
+    const postalCode = String(queryContext?.postal_code || "").trim();
+
+    const candidates = generateClientVariations(baseUsername, true);
+
     return {
-        base_username: "",
-        candidates: [],
+        base_username: baseUsername,
+        candidates,
         profile_urls: profileUrls,
         reference_image: searchPayload?.reverse_image_search?.asset_url || null,
         gallery: [],
+        real_name: realName,
+        clan_name: clanName,
+        age: ageValue,
+        postal_code: postalCode,
         riskdata: {
-            has_real_name: false,
-            has_age: false,
-            username_count: 0,
+            has_real_name: Boolean(realName),
+            has_age: Boolean(ageValue),
+            has_location: Boolean(postalCode),
+            username_count: candidates.length,
             platform_count: profiles.length,
             has_reverse_image: Boolean(searchPayload?.reverse_image_search?.asset_url),
             image_reuse_score: maxImageScore,
         },
-        usernames: [],
+        usernames: candidates,
         profiles,
         reverse_image: searchPayload?.reverse_image_search || {},
     };
 }
 
-async function requestDeepSearchAnalysis(searchPayload, csrfToken) {
+async function requestDeepSearchAnalysis(searchPayload, csrfToken, queryContext) {
     const response = await fetch("/search/deepsearch", {
         method: "POST",
         headers: {
@@ -441,7 +486,7 @@ async function requestDeepSearchAnalysis(searchPayload, csrfToken) {
             ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
         },
         credentials: "same-origin",
-        body: JSON.stringify(buildDeepSearchPayload(searchPayload)),
+        body: JSON.stringify(buildDeepSearchPayload(searchPayload, queryContext)),
     });
 
     const contentType = response.headers.get("content-type") || "";
@@ -815,7 +860,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (deepSearchToggle?.checked) {
                 try {
-                    const deepSearchPayload = await requestDeepSearchAnalysis(payload, csrfToken);
+                    const queryContext = {
+                        username: form.querySelector('input[name="username"]')?.value || "",
+                        real_name: form.querySelector('input[name="real_name"]')?.value || "",
+                        clan_name: form.querySelector('input[name="clan_name"]')?.value || "",
+                        age: form.querySelector('input[name="age"]')?.value || "",
+                        postal_code: form.querySelector('input[name="postal_code"]')?.value || "",
+                    };
+                    const deepSearchPayload = await requestDeepSearchAnalysis(payload, csrfToken, queryContext);
                     renderDeepSearchResponse(deepSearchPayload);
                 } catch (deepSearchError) {
                     resetAnalysisWidgets();
