@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify, session
 from app.models import User
 from app.services.pulse_service import search_creator_service
-from app.services.billing import billing_enabled, get_user_entitlements
+from app.services.feature_gating import feature_required
+from app.services.permissions import FEATURE_PULSE
 from app.services.oauth_token_store import get_valid_access_token, require_user_session_user_id
 import requests
 from datetime import date, datetime, timedelta
@@ -9,15 +10,9 @@ from datetime import date, datetime, timedelta
 bp = Blueprint("pulse", __name__)
 
 @bp.route("/api/pulse/search", methods=["POST"])
+@feature_required(FEATURE_PULSE)
 def pulse_search():
     try:
-        if billing_enabled():
-            user_id = session.get("user_id")
-            from app.extensions.main import db
-            user = db.session.get(User, user_id) if user_id else None
-            entitlements = get_user_entitlements(user)
-            if not entitlements["pulse_allowed"]:
-                return jsonify({"success": False, "error": "Pulse ist in deinem aktuellen Abo nicht freigeschaltet."}), 403
         data = request.get_json(force=True)
         username = data.get("username", "").strip()
         platform = data.get("platform", "").strip().lower()
@@ -43,6 +38,7 @@ def pulse_search():
 
 
 @bp.route("/api/pulse/me/<platform>", methods=["GET"])
+@feature_required(FEATURE_PULSE)
 def pulse_me(platform: str):
     """
     Fetches data for the currently connected account (OAuth) for supported platforms.

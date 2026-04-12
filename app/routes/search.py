@@ -2,6 +2,15 @@ from flask import Blueprint, jsonify, render_template, request, send_file, sessi
 
 from ..models import User
 from ..services.billing import billing_enabled, get_user_entitlements
+from ..services.feature_gating import any_feature_required
+from ..services.permissions import (
+    FEATURE_FULL_ACCESS,
+    FEATURE_PLATFORM_DATING_CHAT_ALL,
+    FEATURE_PLATFORM_INSTAGRAM,
+    FEATURE_PLATFORM_SOCIAL_ALL,
+    FEATURE_PLATFORM_TIKTOK,
+    has_permission,
+)
 from ..services.search_service import (
     PLATFORM_INDEX,
     SearchValidationError,
@@ -21,6 +30,13 @@ def home():
 
 
 @search_bp.route("/search", methods=["GET"])
+@any_feature_required(
+    FEATURE_PLATFORM_INSTAGRAM,
+    FEATURE_PLATFORM_TIKTOK,
+    FEATURE_PLATFORM_SOCIAL_ALL,
+    FEATURE_PLATFORM_DATING_CHAT_ALL,
+    FEATURE_FULL_ACCESS,
+)
 def search():
     return render_template(
         "search.html",
@@ -33,6 +49,13 @@ def search():
 
 
 @search_bp.route("/platforms", methods=["GET"])
+@any_feature_required(
+    FEATURE_PLATFORM_INSTAGRAM,
+    FEATURE_PLATFORM_TIKTOK,
+    FEATURE_PLATFORM_SOCIAL_ALL,
+    FEATURE_PLATFORM_DATING_CHAT_ALL,
+    FEATURE_FULL_ACCESS,
+)
 def platforms():
     return jsonify(list_platform_cards())
 
@@ -57,7 +80,7 @@ def api_search():
                     ),
                     401,
                 )
-            if not entitlements["search_allowed"]:
+            if not entitlements.get("enabled_platforms"):
                 return (
                     jsonify(
                         {
@@ -69,29 +92,27 @@ def api_search():
                     403,
                 )
             for platform in payload.platforms:
-                if platform not in entitlements["enabled_platforms"]:
+                if platform not in entitlements.get("enabled_platforms", []):
                     return (
                         jsonify(
                             {
                                 "error": f"Dein aktuelles Abo erlaubt keine Suche auf: {platform}.",
-                                "required": entitlements["enabled_platforms"],
+                                "required": entitlements.get("enabled_platforms", []),
                                 "missing": platform,
                                 "feature_gating": True,
                             }
                         ),
                         403,
                     )
-            if payload.deep_search and not entitlements["deepsearch_allowed"]:
-                return (
-                    jsonify(
-                        {
-                            "error": "DeepSearch ist in deinem aktuellen Abo nicht freigeschaltet.",
-                            "feature_gating": True,
-                            "entitlements": entitlements,
-                        }
-                    ),
-                    403,
-                )
+            # DeepSearch wird aktuell nur in Abo 4 via full_access erlaubt.
+            if payload.deep_search and not has_permission(user, FEATURE_FULL_ACCESS):
+                return jsonify(
+                    {
+                        "error": "DeepSearch ist in deinem aktuellen Abo nicht freigeschaltet.",
+                        "feature_gating": True,
+                        "entitlements": entitlements,
+                    }
+                ), 403
 
         result = execute_search(
             payload,

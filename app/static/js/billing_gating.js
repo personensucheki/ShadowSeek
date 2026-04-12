@@ -29,17 +29,44 @@ function applyFeatureGating(entitlements) {
 
     const lockedReason = "Upgrade noetig fuer dieses Feature";
     const lockedPlatformReason = "Upgrade noetig fuer diese Plattform";
+    const features = Array.isArray(entitlements.features) ? entitlements.features : [];
+    const has = (feature) => features.includes("full_access") || features.includes(feature);
+    const hasAny = (featureList) => featureList.some((feature) => has(feature));
 
     document.querySelectorAll("[data-feature]").forEach((element) => {
         const feature = element.getAttribute("data-feature");
-        if (!entitlements.ui_modules.includes(feature)) {
-            setLockedState(element, lockedReason);
+        if (!has(feature)) {
+            const isNavbarItem = element.closest(".navbar-center") && element.tagName === "A";
+            if (isNavbarItem) {
+                element.style.display = "none";
+            } else {
+                setLockedState(element, lockedReason);
+            }
+        }
+    });
+
+    document.querySelectorAll("[data-any-feature]").forEach((element) => {
+        const raw = element.getAttribute("data-any-feature") || "";
+        const list = raw
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+        if (!list.length) {
+            return;
+        }
+        if (!hasAny(list)) {
+            const isNavbarItem = element.closest(".navbar-center") && element.tagName === "A";
+            if (isNavbarItem) {
+                element.style.display = "none";
+            } else {
+                setLockedState(element, lockedReason);
+            }
         }
     });
 
     document.querySelectorAll("[data-platform]").forEach((element) => {
         const platform = element.getAttribute("data-platform");
-        if (!entitlements.enabled_platforms.includes(platform)) {
+        if (!Array.isArray(entitlements.enabled_platforms) || !entitlements.enabled_platforms.includes(platform)) {
             const tile = element.closest(".platform-tile") || element;
             setLockedState(tile, lockedPlatformReason);
         }

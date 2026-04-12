@@ -12,10 +12,20 @@ except ModuleNotFoundError:  # pragma: no cover - depends on optional local depe
 from app.extensions.main import db
 from app.models import ProcessedWebhookEvent, User
 from app.services.search_service import PLATFORM_INDEX
+from app.services.permissions import (
+    FEATURE_FULL_ACCESS,
+    FEATURE_PLATFORM_DATING_CHAT_ALL,
+    FEATURE_PLATFORM_INSTAGRAM,
+    FEATURE_PLATFORM_SOCIAL_ALL,
+    FEATURE_PLATFORM_TIKTOK,
+    get_permission_snapshot,
+)
 
 
 SUBSCRIPTION_ACTIVE_STATUSES = {"active", "trialing"}
 ALL_SEARCH_PLATFORMS = tuple(sorted(PLATFORM_INDEX.keys()))
+SOCIAL_ALL_CATEGORIES = {"social", "gaming", "forums"}
+DATING_CHAT_CATEGORIES = {"dating", "adult", "porn", "cam"}
 
 PLAN_DEFINITIONS = {
     "abo_1": {
@@ -54,6 +64,15 @@ PLAN_DEFINITIONS = {
         "enabled_platforms": ALL_SEARCH_PLATFORMS,
         "deepsearch_allowed": True,
     },
+}
+
+# Feste Price-IDs (wie im Projekt angelegt). Werden zusätzlich zu .env/config gemappt,
+# damit Webhooks auch dann sauber auf Plan-Codes auflösen, wenn Config noch leer ist.
+DEFAULT_PRICE_ID_TO_PLAN = {
+    "price_1TLIGpQOOkzbRZU4sLvRJF6t": "abo_1",
+    "price_1TLILBQOOkzbRZU4RwLyMT05": "abo_2",
+    "price_1TLILMQOOkzbRZU4722usbdC": "abo_3",
+    "price_1TLILbQOOkzbRZU4i4ZZkaEv": "abo_4",
 }
 
 
@@ -105,26 +124,33 @@ def is_subscription_active(user: User | None) -> bool:
 
 def get_plan_entitlements(plan_code: str | None):
     plan = get_configured_plans().get(plan_code or "")
-    if not plan:
-        return {
-            "plan_code": None,
-            "plan_name": None,
-            "enabled_platforms": [],
-            "ui_modules": [],
-            "deepsearch_allowed": False,
-            "search_allowed": False,
-            "pulse_allowed": False,
-        }
-
     return {
-        "plan_code": plan["code"],
-        "plan_name": plan["name"],
-        "enabled_platforms": list(plan["enabled_platforms"]),
-        "ui_modules": list(plan["ui_modules"]),
-        "deepsearch_allowed": bool(plan["deepsearch_allowed"]),
-        "search_allowed": "search" in plan["ui_modules"],
-        "pulse_allowed": "pulse" in plan["ui_modules"],
+        "plan_code": plan["code"] if plan else None,
+        "plan_name": plan["name"] if plan else None,
     }
+
+
+def _enabled_platforms_for_snapshot(snapshot):
+    if snapshot.has(FEATURE_FULL_ACCESS):
+        return list(ALL_SEARCH_PLATFORMS)
+
+    enabled = set()
+    if snapshot.has(FEATURE_PLATFORM_INSTAGRAM):
+        enabled.add("instagram")
+    if snapshot.has(FEATURE_PLATFORM_TIKTOK):
+        enabled.add("tiktok")
+
+    if snapshot.has(FEATURE_PLATFORM_SOCIAL_ALL):
+        for slug, platform in PLATFORM_INDEX.items():
+            if platform.category in SOCIAL_ALL_CATEGORIES:
+                enabled.add(slug)
+
+    if snapshot.has(FEATURE_PLATFORM_DATING_CHAT_ALL):
+        for slug, platform in PLATFORM_INDEX.items():
+            if platform.category in DATING_CHAT_CATEGORIES:
+                enabled.add(slug)
+
+    return sorted(enabled)
 
 
 def get_user_entitlements(user: User | None):
@@ -133,25 +159,21 @@ def get_user_entitlements(user: User | None):
             "plan_code": "local-open",
             "plan_name": "Local Open Access",
             "enabled_platforms": list(ALL_SEARCH_PLATFORMS),
-            "ui_modules": ["search", "pulse", "deepsearch"],
-            "deepsearch_allowed": True,
-            "search_allowed": True,
-            "pulse_allowed": True,
+            "features": ["full_access"],
             "billing_enabled": False,
             "access_enabled": True,
         }
 
-    entitlements = get_plan_entitlements(user.plan_code if user else None)
-    access_enabled = is_subscription_active(user)
-    if not access_enabled:
-        entitlements["enabled_platforms"] = []
-        entitlements["ui_modules"] = []
-        entitlements["deepsearch_allowed"] = False
-        entitlements["search_allowed"] = False
-        entitlements["pulse_allowed"] = False
-
-    entitlements["billing_enabled"] = True
-    entitlements["access_enabled"] = access_enabled
+    snapshot = get_permission_snapshot(user)
+    entitlements = {
+        **get_plan_entitlements(user.plan_code if user else None),
+        "plan_code_effective": snapshot.plan_code,
+        "subscription_active": snapshot.subscription_active,
+        "features": list(snapshot.features),
+        "enabled_platforms": _enabled_platforms_for_snapshot(snapshot),
+        "billing_enabled": True,
+        "access_enabled": True,
+    }
     return entitlements
 
 
@@ -289,10 +311,13 @@ def sync_subscription_from_stripe(subscription_id: str):
     item_data = subscription.get("items", {}).get("data", [])
     price_id = item_data[0]["price"]["id"] if item_data else None
     plan_code = None
-    for code, plan in get_configured_plans().items():
-        if plan["price_id"] == price_id:
-            plan_code = code
-            break
+    if price_id:
+        plan_code = DEFAULT_PRICE_ID_TO_PLAN.get(price_id)
+        if not plan_code:
+            for code, plan in get_configured_plans().items():
+                if plan["price_id"] == price_id:
+                    plan_code = code
+                    break
 
     period_end = subscription.get("current_period_end")
     period_end_dt = (
@@ -357,6 +382,9 @@ def handle_subscription_deleted(event):
         return
 
     user.subscription_status = "canceled"
+    user.plan_code = None
+    user.stripe_subscription_id = None
+    user.subscription_period_end = None
     db.session.commit()
 
 

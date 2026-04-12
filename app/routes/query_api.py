@@ -5,7 +5,8 @@ from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import EinnahmeInfo, User
-from app.services.billing import billing_enabled, get_user_entitlements
+from app.services.feature_gating import feature_required
+from app.services.permissions import FEATURE_MEINE_SUCHE, FEATURE_PULSE
 from app.services.pulse_profile_scan import build_query_rows, run_creator_profile_scan
 from app.services.request_validation import ValidationError, parse_date, parse_float, parse_pagination
 from app.services.revenue_events import serialize_revenue_event
@@ -68,6 +69,7 @@ def _collect_revenue_query_rows(data):
 
 
 @query_api_bp.route("/api/einnahmen/query", methods=["POST"])
+@feature_required(FEATURE_MEINE_SUCHE)
 def einnahmen_query():
     data = request.get_json(silent=True) or {}
     if not isinstance(data, dict):
@@ -79,14 +81,8 @@ def einnahmen_query():
 
 
 @query_api_bp.route("/api/pulse/query", methods=["POST"])
+@feature_required(FEATURE_PULSE)
 def pulse_query():
-    if billing_enabled():
-        user_id = session.get("user_id")
-        from app.extensions.main import db
-        user = db.session.get(User, user_id) if user_id else None
-        entitlements = get_user_entitlements(user)
-        if not entitlements["pulse_allowed"]:
-            return jsonify({"success": False, "error": "Pulse ist in deinem aktuellen Abo nicht freigeschaltet."}), 403
     data = request.get_json(silent=True) or {}
     if not isinstance(data, dict):
         return jsonify({"success": False, "error": "Invalid JSON body."}), 400
@@ -127,5 +123,6 @@ def pulse_query():
 
 
 @query_api_bp.route("/api/pulse/search", methods=["POST"])
+@feature_required(FEATURE_PULSE)
 def pulse_search():
     return pulse_query()

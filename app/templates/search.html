@@ -24,7 +24,7 @@
                     <button type="button" class="chip chip--green" data-mod="public_sources">Oeffentliche Quellen</button>
                     <button type="button" class="chip chip--pink" data-mod="secure_mode">Sicherer Suchmodus</button>
                     <button type="button" class="chip chip--cyan" data-mod="ai_rerank">KI-gestuetzte Bewertung</button>
-                    <button type="button" class="chip chip--gray" data-mod="deepsearch">DeepSearch bereit</button>
+                    <button type="button" class="chip chip--gray" data-mod="deepsearch" data-feature="full_access">DeepSearch bereit</button>
                     <button type="button" class="chip chip--blue" data-mod="precision_mode">Praezise Treffer</button>
                 </div>
             </div>
@@ -80,11 +80,15 @@
                     </div>
                 </div>
                 <div class="form-actions">
-                    <label class="toggle" data-feature="deepsearch">
-                        <input type="checkbox" name="deep_search" data-feature="deepsearch">
+                    <label class="toggle" data-feature="full_access">
+                        <input type="checkbox" name="deep_search" data-feature="full_access">
                         <span>DeepSearch + KI-Reranking aktivieren</span>
                     </label>
-                    <button class="btn-scan" type="submit" data-feature="search">Scan starten</button>
+                    <button
+                        class="btn-scan"
+                        type="submit"
+                        data-any-feature="platform.instagram,platform.tiktok,platform.social_all,platform.dating_chat_all,full_access"
+                    >Scan starten</button>
                     <button class="btn-reset" type="button" id="reset-btn">Zuruecksetzen</button>
                 </div>
             </form>
@@ -108,13 +112,13 @@
         <div class="recon-card recon-card--results">
             <div class="results-title">Gefundene Profile</div>
             <div class="results-tabs" id="results-tabs">
-                <button type="button" class="tab-btn" data-tab="social" data-feature="search">Social Media</button>
+                <button type="button" class="tab-btn" data-tab="social" data-any-feature="platform.instagram,platform.tiktok,platform.social_all,full_access">Social Media</button>
                 <button type="button" class="tab-btn" data-tab="dating">Dating</button>
                 <button type="button" class="tab-btn" data-tab="adult">Adult</button>
                 <button type="button" class="tab-btn" data-tab="porn">Porn</button>
                 <button type="button" class="tab-btn" data-tab="web">Webseiten</button>
                 <button type="button" class="tab-btn" data-tab="forum">Foren</button>
-                <button type="button" class="tab-btn" data-tab="image" data-feature="search">Bilder</button>
+                <button type="button" class="tab-btn" data-tab="image" data-any-feature="platform.instagram,platform.tiktok,platform.social_all,platform.dating_chat_all,full_access">Bilder</button>
                 <button type="button" class="tab-btn" data-tab="video">Videos</button>
                 <button type="button" class="tab-btn" data-tab="news">News</button>
                 <button type="button" class="tab-btn" data-tab="community">Communities</button>
