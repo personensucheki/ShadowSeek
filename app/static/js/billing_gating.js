@@ -38,7 +38,9 @@ function applyFeatureGating(entitlements) {
         if (!has(feature)) {
             const isNavbarItem = element.closest(".navbar-center") && element.tagName === "A";
             if (isNavbarItem) {
-                element.style.display = "none";
+                // Navbar-Links nicht verschwinden lassen -> deaktivieren + auf Billing lenken.
+                setLockedState(element, lockedReason);
+                element.setAttribute("href", "/billing");
             } else {
                 setLockedState(element, lockedReason);
             }
@@ -57,7 +59,8 @@ function applyFeatureGating(entitlements) {
         if (!hasAny(list)) {
             const isNavbarItem = element.closest(".navbar-center") && element.tagName === "A";
             if (isNavbarItem) {
-                element.style.display = "none";
+                setLockedState(element, lockedReason);
+                element.setAttribute("href", "/billing");
             } else {
                 setLockedState(element, lockedReason);
             }
