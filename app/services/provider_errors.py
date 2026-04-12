@@ -6,6 +6,7 @@ from dataclasses import dataclass
 # Canonical provider error codes for UI/API.
 PROVIDER_ERROR_CODES = {
     "credentials_missing",
+    "invalid_credentials_format",
     "provider_auth_failed",
     "provider_permission_denied",
     "provider_not_ready",
@@ -28,4 +29,3 @@ class ProviderError(Exception):
         if self.detail:
             payload["detail"] = self.detail
         return payload
-

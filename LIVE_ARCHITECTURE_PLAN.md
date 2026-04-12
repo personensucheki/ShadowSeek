@@ -52,6 +52,18 @@
   - `GOOGLE_SERVICE_ACCOUNT_EMAIL` (optional, Validierung/Logging)
 - Das Backend liefert nur **Status/Error-Codes** für die UI, keine Secrets.
 
+## Security-Policy: kompromittierte Credentials
+- **Offengelegte Service-Account JSONs / private keys gelten als kompromittiert** (z.B. via unsicherem Chat/Upload/Leak).
+- Konsequenz:
+  - **Betroffene Keys müssen gelöscht/rotiert werden** (neuer Service-Account-Key erstellen, alten deaktivieren/löschen).
+  - **Der Service Account selbst darf bestehen bleiben** (Identität/Rollen/Bindings bleiben).
+  - **Nicht-geheime Metadaten** wie `project_id`, Bucket-Name, Region/Location können weiterverwendet werden.
+  - `project_id` ersetzt **kein** Credential: ohne gültigen privaten Key gibt es keine Auth.
+- ShadowSeek Zielzustand:
+  - kompromittierte Secrets konsequent ersetzen/rotieren,
+  - niemals Secrets ins Frontend,
+  - niemals Credentials ins Repo.
+
 ---
 
 *Stand: April 2026*

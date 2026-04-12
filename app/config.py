@@ -87,6 +87,9 @@ class BaseConfig:
     GOOGLE_CLOUD_OUTPUT_BUCKET = os.environ.get("GOOGLE_CLOUD_OUTPUT_BUCKET", "").strip()
     GOOGLE_APPLICATION_CREDENTIALS = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
     GOOGLE_SERVICE_ACCOUNT_EMAIL = os.environ.get("GOOGLE_SERVICE_ACCOUNT_EMAIL", "").strip()
+    # Optional: SHA256 denylist for known-compromised service account JSON files.
+    # Comma-separated, lowercase hex digests. Never put secrets themselves here.
+    GOOGLE_COMPROMISED_CREDENTIAL_SHA256 = os.environ.get("GOOGLE_COMPROMISED_CREDENTIAL_SHA256", "").strip()
     REDDIT_USER_AGENT = os.environ.get("REDDIT_USER_AGENT", "ShadowSeek/1.0 (contact: admin@shadowseek.local)")
     APP_BASE_URL = os.environ.get("APP_BASE_URL", PUBLIC_BASE_URL or "http://localhost:5000").rstrip("/")
     _billing_gate_raw = (os.environ.get("BILLING_GATING_ENABLED") or "").strip().lower()

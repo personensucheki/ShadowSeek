@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 from flask import current_app
@@ -87,14 +88,14 @@ def require_google_credentials() -> Path:
         payload = json.loads(raw)
     except Exception:
         raise ProviderError(
-            "provider_auth_failed",
+            "invalid_credentials_format",
             "Google credentials file could not be parsed as JSON.",
             detail={"path": str(cred_path)},
         )
 
     if not isinstance(payload, dict) or payload.get("type") != "service_account":
         raise ProviderError(
-            "provider_auth_failed",
+            "invalid_credentials_format",
             "Google credentials are not a service account JSON.",
             detail={"path": str(cred_path)},
         )
@@ -104,10 +105,26 @@ def require_google_credentials() -> Path:
     missing = [k for k in required_keys if not payload.get(k)]
     if missing:
         raise ProviderError(
-            "provider_auth_failed",
+            "invalid_credentials_format",
             "Google service account JSON is missing required fields.",
             detail={"missing": missing},
         )
+
+    # Optional: block usage of known-compromised credential files via SHA256 denylist.
+    denylist_raw = (current_app.config.get("GOOGLE_COMPROMISED_CREDENTIAL_SHA256") or "").strip()
+    if denylist_raw:
+        denylist = {
+            item.strip().lower()
+            for item in denylist_raw.split(",")
+            if item.strip()
+        }
+        file_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest().lower()
+        if file_hash in denylist:
+            raise ProviderError(
+                "provider_permission_denied",
+                "Google credentials are marked as compromised and must be rotated.",
+                detail={"sha256": file_hash},
+            )
 
     # Optional: if GOOGLE_SERVICE_ACCOUNT_EMAIL is configured, enforce it matches.
     expected_email = (current_app.config.get("GOOGLE_SERVICE_ACCOUNT_EMAIL") or "").strip()
@@ -119,4 +136,3 @@ def require_google_credentials() -> Path:
         )
 
     return cred_path
-
