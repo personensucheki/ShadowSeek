@@ -72,6 +72,19 @@ class BaseConfig:
     OPENAI_RERANK_MODEL = os.environ.get("OPENAI_RERANK_MODEL", "gpt-5-mini")
     OPENAI_TIMEOUT = float(os.environ.get("OPENAI_TIMEOUT", 12))
     OPENAI_MAX_RERANK_CANDIDATES = int(os.environ.get("OPENAI_MAX_RERANK_CANDIDATES", 12))
+    PROVIDER_DEFAULT_TIMEOUT_SECONDS = float(os.environ.get("PROVIDER_DEFAULT_TIMEOUT_SECONDS", 6))
+    PROVIDER_DEFAULT_RETRIES = int(os.environ.get("PROVIDER_DEFAULT_RETRIES", 2))
+    ENABLE_TIKTOK_PLAYWRIGHT_FALLBACK = os.environ.get(
+        "ENABLE_TIKTOK_PLAYWRIGHT_FALLBACK",
+        "false",
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    TIKTOK_SCRAPER_TIMEOUT_MS = int(os.environ.get("TIKTOK_SCRAPER_TIMEOUT_MS", 12000))
+    OSINT_ENGINE_ENABLED = os.environ.get("OSINT_ENGINE_ENABLED", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     TWITCH_CLIENT_ID = os.environ.get("TWITCH_CLIENT_ID")
     TWITCH_CLIENT_SECRET = os.environ.get("TWITCH_CLIENT_SECRET")
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")

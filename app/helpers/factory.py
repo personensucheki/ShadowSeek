@@ -27,6 +27,7 @@ def register_blueprints(app):
     from app.routes.feed_api import feed_api_bp
     from app.routes.provider_status import provider_status_bp
     from app.routes.date_match import date_match_ui_bp, date_match_api_bp
+    from app.routes.osint_engine import osint_bp
 
     app.register_blueprint(admin_feedback_bp)
     app.register_blueprint(auth_bp)
@@ -56,6 +57,7 @@ def register_blueprints(app):
     app.register_blueprint(provider_status_bp)
     app.register_blueprint(date_match_ui_bp)
     app.register_blueprint(date_match_api_bp)
+    app.register_blueprint(osint_bp)
 
 
 def register_hooks(app):

@@ -14,6 +14,15 @@ from .live_stream import LiveStream, LiveLike, LiveChatMessage, LiveGift
 from .swipe_action import SwipeAction
 from .match import Match
 from .media_post import MediaPost
+from .osint_engine import (
+    ExternalProfile,
+    IdentityMatch,
+    ImageHash,
+    ProfileAnalysis,
+    GraphNode,
+    GraphEdge,
+    Watchlist,
+)
 
 __all__ = [
     "PublicProfile",
@@ -32,4 +41,11 @@ __all__ = [
     "MediaPost",
     "SwipeAction",
     "Match",
+    "ExternalProfile",
+    "IdentityMatch",
+    "ImageHash",
+    "ProfileAnalysis",
+    "GraphNode",
+    "GraphEdge",
+    "Watchlist",
 ]

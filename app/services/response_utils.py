@@ -48,6 +48,20 @@ API Response Utilities for ShadowSeek
 """
 from flask import jsonify
 
+
+def api_envelope(*, success: bool, data=None, error=None, meta=None, status=200):
+    """
+    Unified API envelope for new OSINT engine endpoints.
+    Shape: {success, data, error, meta}
+    """
+    payload = {
+        "success": bool(success),
+        "data": data if data is not None else {},
+        "error": error,
+        "meta": meta if isinstance(meta, dict) else {},
+    }
+    return jsonify(payload), status
+
 def api_success(data=None, message=None, status=200):
     resp = {"success": True}
     if data is not None:
@@ -62,3 +76,11 @@ def api_error(message, status=400, errors=None):
     if errors:
         resp["errors"] = errors
     return jsonify(resp), status
+
+
+def api_ok(data=None, meta=None, status=200):
+    return api_envelope(success=True, data=data if data is not None else {}, error=None, meta=meta, status=status)
+
+
+def api_fail(error, *, data=None, meta=None, status=400):
+    return api_envelope(success=False, data=data if data is not None else {}, error=error, meta=meta, status=status)
