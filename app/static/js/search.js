@@ -405,8 +405,164 @@ function renderDeepSearchResponse(response) {
     renderRiskScore(response.data.risk_score);
 }
 
+function renderIdentityMatches(envelope) {
+    const list = document.getElementById("identity-list");
+    if (!list) {
+        return;
+    }
+
+    if (!envelope || !envelope.success) {
+        list.innerHTML = `<div class="empty-state">No data available</div>`;
+        return;
+    }
+
+    const data = envelope.data || {};
+    const profiles = Array.isArray(data.profiles) ? data.profiles : [];
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="empty-state">No data available</div>`;
+        return;
+    }
+
+    list.innerHTML = profiles.slice(0, 10).map((profile) => {
+        const platform = String(profile.platform || "unknown").toUpperCase();
+        const username = String(profile.username || "");
+        const display = String(profile.display_name || username);
+        const score = Number(profile.score || 0);
+        const confidence = String(profile.confidence || "low").toUpperCase();
+        const links = Array.isArray(profile.links) ? profile.links : [];
+        const linkHtml = links.slice(0, 6).map((link) => {
+            const url = typeof link === "string" ? link : link?.url;
+            const type = typeof link === "string" ? "link" : (link?.type || "link");
+            if (!url) {
+                return "";
+            }
+            return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(type)}</a>`;
+        }).join("");
+
+        return `
+            <div class="identity-item">
+                <div class="identity-head">
+                    <div class="identity-title">${escapeHtml(platform)} · ${escapeHtml(display)} <span style="opacity:.75">@${escapeHtml(username)}</span></div>
+                    <div class="identity-score">${escapeHtml(String(score))} · ${escapeHtml(confidence)}</div>
+                </div>
+                ${linkHtml ? `<div class="identity-links">${linkHtml}</div>` : ""}
+            </div>
+        `;
+    }).join("");
+}
+
+function renderReverseImageMatches(envelope) {
+    const list = document.getElementById("reverse-image-list");
+    if (!list) {
+        return;
+    }
+
+    if (!envelope || !envelope.success) {
+        list.innerHTML = `<div class="empty-state">No data available</div>`;
+        return;
+    }
+
+    const data = envelope.data || {};
+    const hashes = data.hashes || {};
+    const matches = Array.isArray(data.possible_matches) ? data.possible_matches : [];
+
+    const metaHtml = (hashes.phash || hashes.dhash)
+        ? `
+            <div class="reverse-image-meta">
+                ${hashes.phash ? `<div class="reverse-image-chip">pHash <span style="opacity:.8">${escapeHtml(String(hashes.phash))}</span></div>` : ""}
+                ${hashes.dhash ? `<div class="reverse-image-chip">dHash <span style="opacity:.8">${escapeHtml(String(hashes.dhash))}</span></div>` : ""}
+            </div>
+        `
+        : "";
+
+    if (matches.length === 0) {
+        list.innerHTML = `${metaHtml}<div class="empty-state">No matches found</div>`;
+        return;
+    }
+
+    list.innerHTML = `${metaHtml}${matches.slice(0, 12).map((item) => {
+        const similarity = Number(item.similarity || 0);
+        const distance = Number(item.distance ?? "");
+        const srcPlatform = String(item.source_platform || "unknown").toUpperCase();
+        const srcProfile = String(item.source_profile || "unknown");
+        const hashType = String(item.hash_type || "hash");
+        const scoreLabel = `${Math.round(similarity * 100)}%`;
+        return `
+            <div class="reverse-image-item">
+                <div class="reverse-image-head">
+                    <div class="reverse-image-title">${escapeHtml(srcPlatform)} · ${escapeHtml(srcProfile)}</div>
+                    <div class="reverse-image-score">${escapeHtml(scoreLabel)}</div>
+                </div>
+                <div style="opacity:.85">${escapeHtml(hashType)} · distance ${escapeHtml(String(distance))}</div>
+            </div>
+        `;
+    }).join("")}`;
+}
+
+async function requestReverseImageMatch(file, { username, sourcePlatform }, csrfToken) {
+    if (!file) {
+        return null;
+    }
+
+    const body = new FormData();
+    body.append("image", file, file.name || "upload.png");
+    body.append("source_platform", sourcePlatform || "unknown");
+    body.append("source_profile", username || "unknown");
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+
+    try {
+        const response = await fetch("/api/reverse-image", {
+            method: "POST",
+            body,
+            headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},
+            credentials: "same-origin",
+            signal: controller.signal,
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        return contentType.includes("application/json") ? await response.json() : null;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
+
+async function requestIdentityMatch(formData, csrfToken) {
+    const payload = {
+        username: formData.get("username") || "",
+        realname: formData.get("real_name") || "",
+        clanname: formData.get("clan_name") || "",
+        plz: formData.get("postal_code") || "",
+        bio: "",
+        known_platform: "",
+    };
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+
+    try {
+        const response = await fetch("/api/identity/match", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+            },
+            credentials: "same-origin",
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+        });
+        const contentType = response.headers.get("content-type") || "";
+        return contentType.includes("application/json") ? await response.json() : null;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
+
 function resetAnalysisWidgets() {
     renderDeepSearchResponse(null);
+    renderIdentityMatches(null);
+    renderReverseImageMatches(null);
 }
 
 function buildDeepSearchPayload(searchPayload) {
@@ -820,6 +976,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             renderProfiles(payload.profiles, resultsList);
             resetAnalysisWidgets();
 
+            const identityList = document.getElementById("identity-list");
+            if (identityList) {
+                identityList.innerHTML = `<div class="empty-state">Loading identity matches...</div>`;
+            }
+            const reverseImageList = document.getElementById("reverse-image-list");
+            if (reverseImageList) {
+                reverseImageList.innerHTML = `<div class="empty-state">No data available</div>`;
+            }
+
             if (deepSearchToggle?.checked) {
                 try {
                     const deepSearchPayload = await requestDeepSearchAnalysis(payload, csrfToken);
@@ -830,6 +995,49 @@ document.addEventListener("DOMContentLoaded", async () => {
                         messageBox,
                         "pink",
                         deepSearchError.message || "DeepSearch fehlgeschlagen"
+                    );
+                }
+            }
+
+            try {
+                const identityEnvelope = await requestIdentityMatch(formData, csrfToken);
+                renderIdentityMatches(identityEnvelope);
+            } catch (identityError) {
+                renderIdentityMatches(null);
+                appendMessage(
+                    messageBox,
+                    "gray",
+                    identityError?.name === "AbortError"
+                        ? "Identity Match Timeout."
+                        : "Identity Match nicht verfuegbar."
+                );
+            }
+
+            const imageInput = form.querySelector('input[type="file"][name="image"]');
+            const imageFile = imageInput?.files && imageInput.files.length > 0 ? imageInput.files[0] : null;
+            if (imageFile) {
+                if (reverseImageList) {
+                    reverseImageList.innerHTML = `<div class="empty-state">Analyzing image hashes...</div>`;
+                }
+                try {
+                    const selectedSlugs = platformCheckboxes()
+                        .filter((checkbox) => checkbox.checked)
+                        .map((checkbox) => checkbox.value);
+                    const preferredPlatform = selectedSlugs.length === 1 ? selectedSlugs[0] : "search";
+                    const reverseEnvelope = await requestReverseImageMatch(
+                        imageFile,
+                        { username: String(formData.get("username") || ""), sourcePlatform: preferredPlatform },
+                        csrfToken
+                    );
+                    renderReverseImageMatches(reverseEnvelope);
+                } catch (reverseError) {
+                    renderReverseImageMatches(null);
+                    appendMessage(
+                        messageBox,
+                        "gray",
+                        reverseError?.name === "AbortError"
+                            ? "Reverse Image Timeout."
+                            : "Reverse Image nicht verfuegbar."
                     );
                 }
             }
