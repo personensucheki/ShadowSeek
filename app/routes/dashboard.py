@@ -22,6 +22,10 @@ dashboard_bp = Blueprint("dashboard", __name__)
 logger = logging.getLogger("pulse_dashboard")
 
 
+def _summary_success(payload):
+    return {"success": True, "data": payload, **payload}, 200
+
+
 @dashboard_bp.route("/pulse")
 @dashboard_bp.route("/dashboard")
 def dashboard():
@@ -139,7 +143,7 @@ def einnahmen_summary():
             for platform, total in sorted(platform_totals_map.items(), key=lambda item: item[1], reverse=True)
         ]
         logging.warning("[TRACE] /api/einnahmen/summary before return api_success")
-        return api_success({
+        return _summary_success({
             "labels": labels,
             "values": values,
             "top_gifter": top_gifter,
@@ -154,4 +158,4 @@ def einnahmen_summary():
     except Exception as exc:
         import traceback
         logging.error(f"[TRACE] /api/einnahmen/summary exception: {type(exc).__name__}: {exc}\n{traceback.format_exc()}")
-        return api_success(_empty_summary_payload(labels, collector_status="waiting"))
+        return _summary_success(_empty_summary_payload(labels, collector_status="unavailable"))

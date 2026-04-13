@@ -18,6 +18,12 @@ live_api_bp = Blueprint("live_api", __name__)
 logger = logging.getLogger("pulse_live")
 
 
+def _success_payload(payload):
+    if not isinstance(payload, dict):
+        return api_success(payload)
+    return {**payload, "success": True}, 200
+
+
 def _collect_live_rows(platform):
     try:
         query = EinnahmeInfo.query.filter(EinnahmeInfo.platform == platform)
@@ -54,7 +60,7 @@ def pulse_live_platform(platform):
         except SearchValidationError as error:
             return api_error("Validation error", status=400, errors=error.errors)
 
-        return api_success({
+        return _success_payload({
             "mode": "profile_scan",
             "platform": platform,
             "query": scan_result.get("query", {}),
@@ -63,7 +69,7 @@ def pulse_live_platform(platform):
             "rows": build_live_rows(scan_result),
         })
 
-    return api_success({
+    return _success_payload({
         "mode": "revenue",
         "platform": platform,
         "rows": _collect_live_rows(platform),

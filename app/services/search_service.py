@@ -301,8 +301,11 @@ def build_search_payload(form):
     age = re.sub(r"\D", "", form.get("age", ""))
     postal_code = re.sub(r"[^A-Za-z0-9]", "", form.get("postal_code", "")).upper()
     deep_search = str(form.get("deep_search", "")).lower() in {"1", "true", "on", "yes"}
-    public_sources = str(form.get("public_sources", "")).lower() in {"1", "true", "on", "yes"}
-    ai_rerank = str(form.get("ai_rerank", "")).lower() in {"1", "true", "on", "yes"}
+    public_sources = str(form.get("public_sources", "on")).lower() in {"1", "true", "on", "yes"}
+    ai_rerank_raw = str(form.get("ai_rerank", "")).lower()
+    ai_rerank = ai_rerank_raw in {"1", "true", "on", "yes"}
+    if not ai_rerank_raw and deep_search:
+        ai_rerank = True
     secure_mode = str(form.get("secure_mode", "")).lower() in {"1", "true", "on", "yes"}
     precision_mode = str(form.get("precision_mode", "")).lower() in {"1", "true", "on", "yes"}
     import logging
@@ -532,14 +535,13 @@ def execute_search(payload, request_base_url, image_file=None):
     reranked_profiles = profiles
     if getattr(payload, "ai_rerank", False):
         try:
-            from app.services.ai_reranker import rerank_results
-            reranked = rerank_results(profiles)
-            if reranked is not None and isinstance(reranked, list) and len(reranked) == len(profiles):
-                reranked_profiles = reranked
-                ai_reranked = True
-                rerank_provider = "openai"
-            else:
-                rerank_fallback_used = True
+            reranked_profiles, ai_reranked = rerank_profiles_with_openai(
+                payload,
+                username_variations,
+                profiles,
+            )
+            rerank_provider = "openai" if ai_reranked else None
+            rerank_fallback_used = not ai_reranked
         except Exception:
             rerank_fallback_used = True
 
@@ -574,6 +576,7 @@ def execute_search(payload, request_base_url, image_file=None):
             "platform_count": len(payload.platforms),
             "profile_count": len(reranked_profiles),
             "ai_reranked": ai_reranked,
+            "ai_reranking_applied": ai_reranked,
             "rerank_provider": rerank_provider,
             "rerank_fallback_used": rerank_fallback_used,
             "serper_used": bool(serper_meta.get("used")),
